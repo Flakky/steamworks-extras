@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "name": "Steamworks Dev Chrome Extension",
+    "name": "Steamworks extra reports",
     "version": "1.0",
     "permissions": [
       "activeTab"
