@@ -22,8 +22,8 @@ var addSummaryNetRow = () => {
     var nameElem = document.createElement('td');
     var sumElem = document.createElement('td');
     var descElem = document.createElement('td');
-    descElem.textContent = '(Net revenue for the developer. Net * 0.7)'
-    nameElem.textContent = 'Lifetime Steam revenue (developer net)';
+    descElem.textContent = '(Net revenue - Steam revenue share)'
+    nameElem.textContent = 'Lifetime developer revenue share';
     sumElem.textContent = `$${devRevenueString}`
     sumElem.setAttribute('align', 'right')
     newRow.appendChild(nameElem);
@@ -53,26 +53,57 @@ var addSalesNetRow = () => {
     var salesTable = salesDiv.getElementsByTagName('table')[0];
 
     var rows = salesTable.rows;
+
     console.log(rows);
-    var revenueCell = rows[13].cells[2];
+
+    let revenueRow = undefined;
+    let revenueRowIndex = -1;
+    
+    for(const row of rows) {
+        revenueRowIndex++;
+        const rowName = row.getElementsByTagName('td')[0];
+
+        console.log(rowName.textContent);
+
+        const bElemWithText = row.getElementsByTagName('b')[0];
+        if(!bElemWithText) continue;
+
+        if(bElemWithText.textContent == 'Total revenue'){
+            revenueRow = row;
+            break;
+        }
+    }
+
+    if(!revenueRow) {
+        console.error('Revenue row was not found!');
+        return;
+    }
+
+    var revenueCell = revenueRow.cells[2];
     var revenue = revenueCell.textContent;
     revenue = revenue.replace('$', '');
     revenue = revenue.replace(',', '');
     console.log(Number(revenue))
-    var devRevenue = Number(revenue * 0.51);
+    var devRevenue = Number(revenue * 0.53);
     var devRevenueString = numberWithCommas(Math.floor(devRevenue));
 
-    var newRow = salesTable.insertRow(14); // Insert after net
+    var newRow = salesTable.insertRow(revenueRowIndex+1); // Insert after total revenue
 
     var nameElem = document.createElement('td');
     var sumElem = document.createElement('td');
     var spacerElem = document.createElement('td');
-    nameElem.innerHTML = '<b>Developer net revenue</b>';
-    sumElem.textContent = `$${devRevenueString}`
-    sumElem.setAttribute('align', 'right')
+    nameElem.innerHTML = '<b>Developer revenue share</b>';
+    sumElem.innerHTML = `<b>~$${devRevenueString}</b>`;
+    sumElem.setAttribute('align', 'right');
+    
     newRow.appendChild(nameElem);
     newRow.appendChild(spacerElem);
     newRow.appendChild(sumElem);
+
+    for(let i = 3; i<revenueRow.cells.length;i++){
+        var cell = document.createElement('td');
+        newRow.appendChild(cell);
+    }
 
     console.log("Steamworks Dev Net: Added sales for date range net");
 }
