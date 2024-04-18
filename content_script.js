@@ -3,7 +3,7 @@ var numberWithCommas = (x) => {
 }
 
 var addSummaryNetRow = () => {
-    var table = document.querySelector('.lifetimeSummaryCtn table');
+    var table = getSummaryTable();
     if (!table) return; // If no table is found, exit the function
 
     console.log(table);
@@ -34,23 +34,7 @@ var addSummaryNetRow = () => {
 }
 
 var addSalesNetRow = () => {
-    var parentElement = document.getElementById('gameDataLeft');
-
-    var childElements = parentElement.children;
-    var divs = [];
-
-    // Filter out only those children that are divs
-    for (var i = 0; i < childElements.length; i++) {
-        if (childElements[i].tagName === 'DIV') {
-            divs.push(childElements[i]);
-        }
-    }
-
-    var salesDiv = divs[3];
-
-    console.log(salesDiv);
-
-    var salesTable = salesDiv.getElementsByTagName('table')[0];
+    var salesTable = getSalesTable();
 
     var rows = salesTable.rows;
 
@@ -108,7 +92,61 @@ var addSalesNetRow = () => {
     console.log("Steamworks Dev Net: Added sales for date range net");
 }
 
+const getSummaryTable = () => {
+    return document.querySelector('.lifetimeSummaryCtn table');
+}
+
+var getSalesTable = () => {
+    var parentElement = document.getElementById('gameDataLeft');
+
+    var childElements = parentElement.children;
+    var divs = [];
+
+    // Filter out only those children that are divs
+    for (var i = 0; i < childElements.length; i++) {
+        if (childElements[i].tagName === 'DIV') {
+            divs.push(childElements[i]);
+        }
+    }
+
+    var salesDiv = divs[3];
+
+    console.log(salesDiv);
+
+    return salesDiv.getElementsByTagName('table')[0];
+}
+
+var getPackageId = () => {
+    const salesTable = getSalesTable();
+
+    const rows = salesTable.rows;
+
+    const packageRow = rows[2];
+
+    const packageLink = packageRow.getElementsByTagName('a')[0];
+
+    const id = packageLink.href.match(/\/package\/details\/(\d+)/)[1];
+
+    return id;
+}
+
+var addRefundDataLink = () => {
+    const summaryTable = getSummaryTable();
+    if (!summaryTable) return; // If no table is found, exit the function
+
+    console.log(summaryTable);
+
+    var rows = summaryTable.rows;
+    var refundCell = rows[7].cells[2];
+
+    const packageId = getPackageId();
+    console.log(`Package id: ${packageId}`);
+
+    refundCell.innerHTML += ` (<a href="https://partner.steampowered.com/package/refunds/${packageId}/">Refund data</a>)`;
+}
+
 console.log("Steamworks Dev Net: Begin");
 
 addSummaryNetRow();
 addSalesNetRow();
+addRefundDataLink();
