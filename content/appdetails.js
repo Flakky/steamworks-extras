@@ -1,20 +1,19 @@
 let settings = {};
 let usRevenue = -1; // -1 means did not receive US share or got an error 
+let usRevenueForDateRange = -1; // -1 means did not receive US share or got an error 
 
 const init = () => {
     console.log("Steamworks extras: Init");
 
-    helpers.getCountryRevenue(getAppID(), 'United States').then((revenue) => {
-        usRevenue = revenue;
-
-        updateSummaryRows();
-    });
-
-    chrome.storage.local.get(['usSalesTax', 'usSalesTax', 'grossRoyalties', 'netRoyalties', 'otherRoyalties', 'localTax', 'royaltiesAfterTax'], (result) => {
+    chrome.storage.local.get(['usSalesTax', 'usSalesTax', 'grossRoyalties', 'netRoyalties', 'otherRoyalties', 'localTax', 'royaltiesAfterTax', 'showZeroRevenues'], (result) => {
         settings = result;
+
+        requestTotalUSRevenue();
+        requestUSRevenueForCurrentDateRange();
         
         updateSummaryRows();
-        addSalesNetRow();
+        updateSalesNetRow();
+
         addRefundDataLink();
     });
 }
@@ -83,7 +82,7 @@ const updateSummaryRowUnderExtend = (index, title, description, calculation) => 
     const cell = helpers.findElementByText('td', title);
     let row = helpers.findParentByTag(cell, 'tr');
 
-    let sumElem = undefined;
+    let sumElem, descElem = undefined;
 
     if(row === undefined){
         const table = getSummaryTable();
@@ -98,8 +97,7 @@ const updateSummaryRowUnderExtend = (index, title, description, calculation) => 
 
         sumElem = document.createElement('td');
 
-        const descElem = document.createElement('td');
-        descElem.textContent = description;
+        descElem = document.createElement('td');
 
         row.appendChild(nameElem);
         row.appendChild(sumElem);
@@ -107,7 +105,10 @@ const updateSummaryRowUnderExtend = (index, title, description, calculation) => 
     }
     else {
         sumElem = row.cells[1];
+        descElem = row.cells[2];
     }
+
+    descElem.textContent = description;
 
     const calculatedNumber = calculation();
     const revenueString = helpers.numberWithCommas(Math.floor(calculatedNumber));
@@ -174,16 +175,17 @@ const updateFinalRevenueRow = (revenue, index) => {
     console.log("Steamworks extras: Updated final revenue");
 }
 
-const getRevenueMap = () => {
+const getRevenueMap = (gross, net, usGross) => {
+    const grossRevenue = gross || getTotalRevenue(true);
+    const netRevenue = net || getTotalRevenue(false);
+
     const out = {};
 
-    const usRevenueShare = usRevenue <= 0 ? 0 : usRevenue / getTotalRevenue(true); 
+    const usRevenueShare = usGross <= 0 ? 0 : usGross / grossRevenue; 
 
-    console.log(usRevenue);
-
-    out.royaltyAfterSteamShare = getTotalRevenue(false) * 0.7;
-    out.royaltyAfterUSShare = out.royaltyAfterSteamShare - (getTotalRevenue(false) * usRevenueShare * settings.usSalesTax/100);
-    out.royaltyAfterExtraGrossTake = out.royaltyAfterUSShare - (getTotalRevenue(true) * (settings.grossRoyalties/100));
+    out.royaltyAfterSteamShare = netRevenue * 0.7;
+    out.royaltyAfterUSShare = out.royaltyAfterSteamShare - (((netRevenue * usRevenueShare) * 0.7) * settings.usSalesTax/100);
+    out.royaltyAfterExtraGrossTake = out.royaltyAfterUSShare - (grossRevenue * (settings.grossRoyalties/100));
     out.royaltyAfterExtraNetTake = out.royaltyAfterExtraGrossTake - (out.royaltyAfterExtraGrossTake * (settings.netRoyalties/100));
     out.revenueAfterOtherRoyalties = out.royaltyAfterExtraNetTake - (out.royaltyAfterExtraNetTake * (settings.otherRoyalties/100));
     out.revenueAfterTax = out.revenueAfterOtherRoyalties - (out.revenueAfterOtherRoyalties * (settings.localTax/100));
@@ -199,17 +201,37 @@ const updateSummaryRows = () => {
     royaltyAfterExtraNetTake,
     revenueAfterOtherRoyalties,
     revenueAfterTax,
-    finalRevenue} = getRevenueMap();
+    finalRevenue} = getRevenueMap(getTotalRevenue(true), getTotalRevenue(false), usRevenue);
 
     updateFinalRevenueRow(finalRevenue, 2);
 
     updateSummaryRowUnderExtend(3, "Revenue after Steam share", "(Net revenue * 0.7)", () => {return royaltyAfterSteamShare});
-    updateSummaryRowUnderExtend(4, "Revenue after US share", `Revenue after tax (${settings.usSalesTax}%) that is deducted from US sales.`, () => {return royaltyAfterUSShare});
-    updateSummaryRowUnderExtend(5, "Revenue after Gross royalties", `Revenue after other royalties (${settings.grossRoyalties}%) you pay from Gross.`, () => {return royaltyAfterExtraGrossTake});
-    updateSummaryRowUnderExtend(6, "Revenue after Net royalties", `Revenue after royalties you pay after receiving Net and paying gross royalties. (${settings.netRoyalties}%)`, () => {return royaltyAfterExtraNetTake});
-    updateSummaryRowUnderExtend(7, "Revenue after Other royalties", `Revenue after any other payments (${settings.otherRoyalties}%) you make from what's left but before your local taxes`, () => {return revenueAfterOtherRoyalties});
-    updateSummaryRowUnderExtend(8, "Revenue after local tax", `Revenue after your local income tax (${settings.localTax}%)`, () => {return revenueAfterTax});
-    updateSummaryRowUnderExtend(9, "Final developer revenue", `Final revenue after extra payments (${settings.royaltiesAfterTax}%) after taxes.`, () => {return finalRevenue});
+  
+    let rowIndex = 4;
+
+    if(settings.showZeroRevenues || royaltyAfterUSShare != royaltyAfterSteamShare){
+        updateSummaryRowUnderExtend(rowIndex, "Revenue after US share", `Revenue after tax (${settings.usSalesTax}%) that is deducted from US sales. ($${helpers.numberWithCommas(usRevenue)})`, () => {return royaltyAfterUSShare});
+        rowIndex++;
+    }
+
+    if(settings.showZeroRevenues || royaltyAfterExtraGrossTake != royaltyAfterUSShare){
+        updateSummaryRowUnderExtend(rowIndex, "Revenue after Gross royalties", `Revenue after other royalties (${settings.grossRoyalties}%) you pay from Gross.`, () => {return royaltyAfterExtraGrossTake});
+        rowIndex++;
+    }
+    if(settings.showZeroRevenues || royaltyAfterExtraNetTake != royaltyAfterExtraGrossTake){
+        updateSummaryRowUnderExtend(rowIndex, "Revenue after Net royalties", `Revenue after royalties you pay after receiving Net and paying gross royalties. (${settings.netRoyalties}%)`, () => {return royaltyAfterExtraNetTake});
+        rowIndex++;
+    }
+    if(settings.showZeroRevenues || revenueAfterOtherRoyalties != royaltyAfterExtraNetTake){
+        updateSummaryRowUnderExtend(rowIndex, "Revenue after Other royalties", `Revenue after any other payments (${settings.otherRoyalties}%) you make from what's left but before your local taxes`, () => {return revenueAfterOtherRoyalties});
+        rowIndex++;
+    }
+    if(settings.showZeroRevenues || revenueAfterTax != revenueAfterOtherRoyalties){
+        updateSummaryRowUnderExtend(rowIndex, "Revenue after local tax", `Revenue after your local income tax (${settings.localTax}%)`, () => {return revenueAfterTax});
+        rowIndex++;
+    }
+
+    updateSummaryRowUnderExtend(rowIndex, "Final developer revenue", `Final revenue after extra payments (${settings.royaltiesAfterTax}%) after taxes.`, () => {return finalRevenue});
 }
 
 const toggleExtraSummaryRows = () => {
@@ -232,7 +254,7 @@ const toggleExtraSummaryRows = () => {
     extendLinkElem.textContent = extendButtonElem.textContent.replace(newShow ? '►' : '▼', newShow ? '▼' : '►');
 }
 
-const addSalesNetRow = () => {
+const updateSalesNetRow = () => {
     const salesTable = getSalesTable();
 
     const rows = salesTable.rows;
@@ -261,30 +283,44 @@ const addSalesNetRow = () => {
     let revenue = revenueCell.textContent;
     revenue = revenue.replace('$', '');
     revenue = revenue.replace(',', '');
+
+    const grossNetRatio = getTotalRevenue(false) / getTotalRevenue(true);
+
+    const {finalRevenue} = getRevenueMap(revenue, revenue * grossNetRatio, usRevenueForDateRange);
+
+    const devRevenueString = helpers.numberWithCommas(Math.floor(finalRevenue));
+
+    const cell = helpers.findElementByText('b', 'Developer revenue');
+    let newRow = helpers.findParentByTag(cell, 'tr');
+
+    console.log(newRow);
+
+    if(newRow === undefined){
+        let newRow = salesTable.insertRow(revenueRowIndex+1); // Insert after total revenue
+
+        const nameElem = document.createElement('td');
+        nameElem.innerHTML = '<b>Developer revenue</b>';
+        newRow.appendChild(nameElem);
+
+        sumElem = document.createElement('td');
+        const spacerElem = document.createElement('td');
     
-    const {finalRevenue} = getRevenueMap();
-    const finalRevenueRatio = finalRevenue / getTotalRevenue(true);
-
-    const devRevenueString = helpers.numberWithCommas(Math.floor(revenue * finalRevenueRatio));
-
-    const newRow = salesTable.insertRow(revenueRowIndex+1); // Insert after total revenue
-
-    const nameElem = document.createElement('td');
-    const sumElem = document.createElement('td');
-    const spacerElem = document.createElement('td');
-    nameElem.innerHTML = '<b>Developer revenue</b>';
-    sumElem.innerHTML = `<b>$${devRevenueString}</b>`;
-    sumElem.setAttribute('align', 'right');
+        sumElem.setAttribute('align', 'right');
+        
+        newRow.appendChild(spacerElem);
+        newRow.appendChild(sumElem);
     
-    newRow.appendChild(nameElem);
-    newRow.appendChild(spacerElem);
-    newRow.appendChild(sumElem);
-
-    for(let i = 3; i<revenueRow.cells.length;i++){
-        const cell = document.createElement('td');
-        newRow.appendChild(cell);
+        for(let i = 3; i<revenueRow.cells.length;i++){
+            const cell = document.createElement('td');
+            newRow.appendChild(cell);
+        }
     }
-
+    else{
+        sumElem = newRow.cells[2];
+    }
+    
+    sumElem.innerHTML = `<b>$${devRevenueString}</b>`;
+    
     console.log("Steamworks extras: Added sales for date range net");
 }
 
@@ -299,6 +335,42 @@ const addRefundDataLink = () => {
     refundDescCell.innerHTML += ` (<a href="https://partner.steampowered.com/package/refunds/${packageId}/">Refund data</a>)`;
 
     console.log("Steamworks extras: Added refund data link");
+}
+
+const requestUSRevenueForCurrentDateRange = () => {
+
+    // URL format:
+    // https://partner.steampowered.com/app/details/AppID/?dateStart=2024-08-21&dateEnd=2024-08-27
+    const urlObj = new URL(window.location.href);
+
+    const dateStartString = urlObj.searchParams.get('dateStart');
+    const dateEndString = urlObj.searchParams.get('dateEnd');
+
+    console.log(dateStartString)
+    console.log(dateEndString)
+    
+    let dateStart = new Date();
+    let dateEnd = new Date();
+
+    if(!helpers.isStringEmpty(dateStartString)) dateStart = new Date(dateStartString);
+    if(!helpers.isStringEmpty(dateEndString)) dateEnd = new Date(dateEndString);
+
+    console.log(dateStart)
+    console.log(dateEnd)
+
+    helpers.getCountryRevenue(getAppID(), 'United States', dateStart, dateEnd).then((revenue) => {
+        usRevenueForDateRange = revenue;
+
+        updateSalesNetRow();
+    });
+}
+
+const requestTotalUSRevenue = () => {
+    helpers.getCountryRevenue(getAppID(), 'United States').then((revenue) => {
+        usRevenue = revenue;
+
+        updateSummaryRows();
+    });
 }
 
 init();
