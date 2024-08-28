@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "Steamworks extra reports",
     "version": "1.4",
-    "permissions": ["storage"],
+    "permissions": ["storage", "runtime"],
     "content_scripts": [
       {
         "matches": ["https://partner.steampowered.com/app/details/*"],
@@ -13,7 +13,9 @@
       }
     ],
     "options_page": "options/options.html",
-    "background": {},
+    "background": {
+      "service_worker": "background/extensionservice.js"
+    },
     "action": {},
     "icons": {
       "16": "assets/icon-16.png",
