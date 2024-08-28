@@ -1,6 +1,6 @@
 # Steamworks extra reports
 
-![Steamworks extra reports](/icon-128.png)
+![Steamworks extra reports](assets/icon-128.png)
 
 This extension shows extra information about your game in Steamworks console.
 

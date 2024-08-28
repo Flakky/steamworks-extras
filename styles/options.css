@@ -1,0 +1,76 @@
+
+body {
+    background-color: #0e141bcc;
+    padding: 0;
+    margin: 0;
+    font-family: "Motiva Sans", Sans-serif;
+}
+
+label {
+    color: #ffffff;
+}
+
+h1 {
+    color: #ffffff;
+}
+
+td {
+    width: 300px;
+}
+
+#header {
+    background-color: #000000;
+    display: flex;
+    padding: 20px;
+}
+
+#header img {
+    float: left;
+    width: 50px;
+    height: 50px;
+}
+
+#header h1 {
+    line-height: 0.8em;
+    margin-left: 20px;
+}
+
+#content {
+    padding: 20px;
+}
+
+#settings_table {
+    background-color: #242424;
+    padding: 20px;
+}
+
+tr {
+    display: block;
+    padding: 2px 0 2px 0;
+    border-top: 1px solid #424242;
+}
+
+.description {
+    color: #8b969c;
+    font-size: 12px;
+    width: 500px;
+    font-weight: lighter;
+}
+
+.table_value {
+    width: 80px;
+}
+
+.table_value input {
+    background-color: #333;
+    color: #ffffff;
+    border: 0px;
+    height: 20px;
+    margin: 0 5px 0 5px;
+}
+
+.table_label {
+    width: 200px;
+    text-align: end;
+    font-weight: bold;
+}
