@@ -4,6 +4,7 @@ chrome.runtime.onMessage.addListener((request) => {
     console.log('Steamworks extras: Show options')
     chrome.runtime.openOptionsPage();
   }
+
 });
 
 console.log("Steamworks extras: Extension service initiated");
