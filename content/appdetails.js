@@ -181,7 +181,7 @@ const getRevenueMap = (gross, net, usGross) => {
 
     const out = {};
 
-    const usRevenueShare = usGross <= 0 ? 0 : usGross / grossRevenue; 
+    const usRevenueShare = (usGross <= 0 ? 0 : usGross) * (grossRevenue <= 0 ? 0 : 1 / grossRevenue); 
 
     out.royaltyAfterSteamShare = netRevenue * 0.7;
     out.royaltyAfterUSShare = out.royaltyAfterSteamShare - (((netRevenue * usRevenueShare) * 0.7) * settings.usSalesTax/100);
