@@ -12,48 +12,80 @@
         <h1>Steamworks extra reports Settings</h1>
     </div>
     <div id="content">
-        <table id="settings_table">
-            <tr>
-                <td class="table_label"><label for="us_sales_tax">US sales Tax (in %):</label></td>
-                <td class="table_value"><input type="number" min=0 max=100 value=0 id="us_sales_tax"></td>
-                <td class="description">Extra tax that is deducted from US sales.</td>
-            </tr>
-            <tr>
-                <td class="table_label"><label for="gross_royalties">Royalties from Gross (in %):</label></td>
-                <td class="table_value"><input type="number" min=0 max=100 value=0 id="gross_royalties"></td>
-                <td class="description">Extra royalties you pay from Gross. For example: 5% - Unreal Engine for Revenue > 1m$</td>
-            </tr>
-            <tr>
-                <td class="table_label"><label for="net_royalties">Revenue royalties (in %):</label></td>
-                <td class="table_value"><input type="number" min=0 max=100 value=0 id="net_royalties"></td>
-                <td class="description">Royalties you pay after Net and gross royalties. For example your publisher</td>
-            </tr>
-            <tr>
-                <td class="table_label"><label for="other_royalties">Other royalties from the rest (in %):</label></td>
-                <td class="table_value"><input type="number" min=0 max=100 value=0 id="other_royalties"></td>
-                <td class="description">Any other payments you make from what's left but before your local taxes. For example other team member dividents before your local taxes</td>
-            </tr>
-            <tr>
-                <td class="table_label"><label for="local_tax">Your local Tax (in %):</label></td>
-                <td class="table_value"><input type="number" min=0 max=100 value=0 id="local_tax"></td>
-                <td class="description">Your local income tax</td>
-            </tr>
-            <tr>
-                <td class="table_label"><label for="extra_royalties_after_tax">Extra royalties after tax (in %):</label></td>
-                <td class="table_value"><input type="number" min=0 max=100 value=0 id="extra_royalties_after_tax"></td>
-                <td class="description">What you might pay after income tax. For example extra divident tax</td>
-            </tr>
-            <tr>
-                <td class="table_label"><label for="extra_royalties_after_tax">Show revenues w/o deductions:</label></td>
-                <td class="table_value"><input type="checkbox" defaultValue="false" id="show_zero_revenues"></td>
-                <td class="description">Show revenues in the summary table that do not have deductions and are equal to the previous revenue flow step.</td>
-            </tr>
-            <tr>
-                <td colspan="2"><button id="save">Save</button></td>
-            </tr>
-        </table>
+        <div id="settings_block" class="content_block">
+            <table id="settings_table">
+                <tr>
+                    <td class="table_category_title" colspan="3">Tax and payments setup</td>
+                </tr>
+                <tr>
+                    <td class="table_label"><label for="us_sales_tax">US sales Tax (in %):</label></td>
+                    <td class="table_value"><input type="number" min=0 max=100 value=0 id="us_sales_tax"></td>
+                    <td class="description">Extra tax that is deducted from US sales.</td>
+                </tr>
+                <tr>
+                    <td class="table_label"><label for="gross_royalties">Royalties from Gross (in %):</label></td>
+                    <td class="table_value"><input type="number" min=0 max=100 value=0 id="gross_royalties"></td>
+                    <td class="description">Extra royalties you pay from Gross. For example: 5% - Unreal Engine for Revenue > 1m$</td>
+                </tr>
+                <tr>
+                    <td class="table_label"><label for="net_royalties">Revenue royalties (in %):</label></td>
+                    <td class="table_value"><input type="number" min=0 max=100 value=0 id="net_royalties"></td>
+                    <td class="description">Royalties you pay after Net and gross royalties. For example your publisher</td>
+                </tr>
+                <tr>
+                    <td class="table_label"><label for="other_royalties">Other royalties from the rest (in %):</label></td>
+                    <td class="table_value"><input type="number" min=0 max=100 value=0 id="other_royalties"></td>
+                    <td class="description">Any other payments you make from what's left but before your local taxes. For example other team member dividents before your local taxes</td>
+                </tr>
+                <tr>
+                    <td class="table_label"><label for="local_tax">Your local Tax (in %):</label></td>
+                    <td class="table_value"><input type="number" min=0 max=100 value=0 id="local_tax"></td>
+                    <td class="description">Your local income tax</td>
+                </tr>
+                <tr>
+                    <td class="table_label"><label for="extra_royalties_after_tax">Extra royalties after tax (in %):</label></td>
+                    <td class="table_value"><input type="number" min=0 max=100 value=0 id="extra_royalties_after_tax"></td>
+                    <td class="description">What you might pay after income tax. For example extra divident tax</td>
+                </tr>
+                <tr>
+                    <td class="table_category_title" colspan="3">UI settings</td>
+                </tr>
+                <tr>
+                    <td class="table_label"><label for="extra_royalties_after_tax">Show revenues w/o deductions:</label></td>
+                    <td class="table_value"><input type="checkbox" defaultValue="false" id="show_zero_revenues"></td>
+                    <td class="description">Show revenues in the summary table that do not have deductions and are equal to the previous revenue flow step.</td>
+                </tr>
+                <tr>
+                    <td class="table_label"></td>
+                    <td class="table_value"><button id="save">Save</button></td>
+                    <td class="description"></td>
+                </tr>
+            </table>
+        </div>
+        <div id="info" class="content_block">
+            <table>
+                <tr>
+                    <td class="table_category_title" colspan="2">Extension info and links</td>
+                </tr>
+                <tr>
+                    <td class="table_label">Version:</td>
+                    <td class="description"><b id="ext_version">0.0</b></td>
+                </tr>
+                <tr>
+                    <td class="table_label">Extension in Chrome Web Store:</td>
+                    <td class="description"><a href="https://chromewebstore.google.com/detail/cdobnjfogldjaihapojppnopiaccgpag">https://chromewebstore.google.com/detail/cdobnjfogldjaihapojppnopiaccgpag</a></td>
+                </tr>
+                <tr>
+                    <td class="table_label">Github:</td>
+                    <td class="description"><a href="https://github.com/Flakky/steamworks-dev-chrome-ext">https://github.com/Flakky/steamworks-dev-chrome-ext</a></td>
+                </tr>
+                <tr>
+                    <td class="table_label">Issues & suggestions:</td>
+                    <td class="description"><a href="https://github.com/Flakky/steamworks-dev-chrome-ext/issues">https://github.com/Flakky/steamworks-dev-chrome-ext/issues</a></td>
+                </tr>
+            </table>
+        </div>
     </div>
-
     <script src="options.js"></script>
 </body>
 </html>

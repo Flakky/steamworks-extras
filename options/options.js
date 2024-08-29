@@ -1,5 +1,3 @@
-
-
 const initSettings = () => {
     chrome.storage.local.get(['usSalesTax', 'usSalesTax', 'grossRoyalties', 'netRoyalties', 'otherRoyalties', 'localTax', 'royaltiesAfterTax', 'showZeroRevenues'], (result) => {
         document.getElementById('us_sales_tax').value = result.usSalesTax || 0;
@@ -12,6 +10,8 @@ const initSettings = () => {
     });
 
     document.getElementById('save').addEventListener('click', saveSettings);
+
+    initVersion();
 }
 
 const saveSettings = () => {
@@ -27,6 +27,11 @@ const saveSettings = () => {
     chrome.storage.local.set(result, () => {
         alert('Settings saved!');
     });
+}
+
+const initVersion = () => {
+    const version = chrome.runtime.getManifest().version;
+    document.getElementById('ext_version').textContent = version;
 }
 
 document.addEventListener('DOMContentLoaded', initSettings);
