@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Steamworks extra reports",
-  "version": "1.6",
+  "version": "1.7",
   "permissions": [
     "storage"
   ],
@@ -11,8 +11,22 @@
         "https://partner.steampowered.com/app/details/*"
       ],
       "js": [
+        "scripts/chart.umd.min.js",
         "scripts/helpers.js",
         "content/appdetails.js"
+      ],
+      "css": [
+        "styles/appdetails.css"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "data/chartcolors.json"
+      ],
+      "matches": [
+        "<all_urls>"
       ]
     }
   ],

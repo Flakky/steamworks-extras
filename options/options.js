@@ -1,5 +1,5 @@
 const initSettings = () => {
-  chrome.storage.local.get(['usSalesTax', 'usSalesTax', 'grossRoyalties', 'netRoyalties', 'otherRoyalties', 'localTax', 'royaltiesAfterTax', 'showZeroRevenues', 'showPercentages'], (result) => {
+  chrome.storage.local.get(['usSalesTax', 'usSalesTax', 'grossRoyalties', 'netRoyalties', 'otherRoyalties', 'localTax', 'royaltiesAfterTax', 'showZeroRevenues', 'showPercentages', 'chartMaxBreakdown'], (result) => {
     document.getElementById('us_sales_tax').value = result.usSalesTax || 0;
     document.getElementById('gross_royalties').value = result.grossRoyalties || 0;
     document.getElementById('net_royalties').value = result.netRoyalties || 0;
@@ -8,6 +8,7 @@ const initSettings = () => {
     document.getElementById('extra_royalties_after_tax').value = result.royaltiesAfterTax || 0;
     document.getElementById('show_zero_revenues').checked = result.showZeroRevenues || false;
     document.getElementById('show_percentages').checked = result.showPercentages || false;
+    document.getElementById('chart_max_breakdown').value = result.chartMaxBreakdown || 10;
   });
 
   document.getElementById('save').addEventListener('click', saveSettings);
@@ -25,6 +26,7 @@ const saveSettings = () => {
   result.royaltiesAfterTax = document.getElementById('extra_royalties_after_tax').valueAsNumber;
   result.showZeroRevenues = document.getElementById('show_zero_revenues').checked;
   result.showPercentages = document.getElementById('show_percentages').checked;
+  result.chartMaxBreakdown = document.getElementById('chart_max_breakdown').valueAsNumber;
 
   chrome.storage.local.set(result, () => {
     alert('Settings saved!');
