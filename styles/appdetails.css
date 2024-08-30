@@ -1,3 +1,10 @@
+.extra_content_block {
+  background: #242424;
+  padding: 16px;
+  border-radius: 3px;
+  margin-top: 20px;
+}
+
 .extra_chart_select_name {
   padding: 0 3px 0 7px;
 }

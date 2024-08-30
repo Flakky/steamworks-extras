@@ -462,15 +462,27 @@ const createSalesChart = () => {
   const oldChartElemParentDiv = helpers.findParentByTag(oldChartElem, 'div');
   const AllStatsDiv = helpers.findParentByTag(oldChartElemParentDiv, 'div');
   const dateWithCSVLinkElem = AllStatsDiv.children[0];
+  const oldChartControlsElem = AllStatsDiv.children[2];
 
   AllStatsDiv.style.display = 'none';
 
   const chartBlockElem = document.createElement('div');
-  chartBlockElem.classList.add('lifetimeSummaryCtn');
+  chartBlockElem.classList.add('extra_content_block');
+
+  const oldChartBlockElem = document.createElement('div');
+  oldChartBlockElem.classList.add('extra_content_block');
+  oldChartBlockElem.appendChild(oldChartControlsElem);
+  oldChartBlockElem.appendChild(oldChartElem);
+
+  const heatmapBlockElem = document.createElement('div');
+  heatmapBlockElem.classList.add('extra_content_block');
+  heatmapBlockElem.appendChild(heatmapElem);
 
   dataElem.appendChild(dateWithCSVLinkElem);
   dataElem.appendChild(chartBlockElem);
-  dataElem.appendChild(heatmapElem);
+  dataElem.appendChild(oldChartBlockElem);
+  dataElem.appendChild(heatmapBlockElem);
+
 
   const createChartSelect = (options, name, defaultValue, onSelect) => {
     const nameElem = document.createElement("b");
