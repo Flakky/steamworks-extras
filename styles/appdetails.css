@@ -6,8 +6,13 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  align-items: flex-start;
+
   align-content: flex-start;
+}
+
+#extra_main_content_block .extra_content_block {
+  width: 800px;
+  justify-content: center;
 }
 
 #extra_toolbar_block {
