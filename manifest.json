@@ -13,6 +13,7 @@
       "js": [
         "scripts/chart.umd.min.js",
         "scripts/helpers.js",
+        "data/defaultsettings.js",
         "content/appdetails.js"
       ],
       "css": [
@@ -23,7 +24,8 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "data/chartcolors.json"
+        "data/chartcolors.json",
+        "data/defaulsettings.js"
       ],
       "matches": [
         "<all_urls>"

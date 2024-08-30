@@ -1,19 +1,23 @@
 const initSettings = () => {
-  chrome.storage.local.get(['usSalesTax', 'usSalesTax', 'grossRoyalties', 'netRoyalties', 'otherRoyalties', 'localTax', 'royaltiesAfterTax', 'showZeroRevenues', 'showPercentages', 'chartMaxBreakdown'], (result) => {
-    document.getElementById('us_sales_tax').value = result.usSalesTax || 0;
-    document.getElementById('gross_royalties').value = result.grossRoyalties || 0;
-    document.getElementById('net_royalties').value = result.netRoyalties || 0;
-    document.getElementById('other_royalties').value = result.otherRoyalties || 0;
-    document.getElementById('local_tax').value = result.localTax || 0;
-    document.getElementById('extra_royalties_after_tax').value = result.royaltiesAfterTax || 0;
-    document.getElementById('show_zero_revenues').checked = result.showZeroRevenues || false;
-    document.getElementById('show_percentages').checked = result.showPercentages || false;
-    document.getElementById('chart_max_breakdown').value = result.chartMaxBreakdown || 10;
+  chrome.storage.local.get(Object.keys(defaultSettings), (result) => {
+    document.getElementById('us_sales_tax').value = result.usSalesTax || defaultSettings.usSalesTax;
+    document.getElementById('gross_royalties').value = result.grossRoyalties || defaultSettings.grossRoyalties;
+    document.getElementById('net_royalties').value = result.netRoyalties || defaultSettings.netRoyalties;
+    document.getElementById('other_royalties').value = result.otherRoyalties || defaultSettings.otherRoyalties;
+    document.getElementById('local_tax').value = result.localTax || defaultSettings.localTax;
+    document.getElementById('extra_royalties_after_tax').value = result.royaltiesAfterTax || defaultSettings.royaltiesAfterTax;
+    document.getElementById('show_zero_revenues').checked = result.showZeroRevenues || defaultSettings.showZeroRevenues;
+    document.getElementById('show_percentages').checked = result.showPercentages || defaultSettings.showPercentages;
+    document.getElementById('chart_max_breakdown').value = result.chartMaxBreakdown || defaultSettings.chartMaxBreakdown;
   });
 
   document.getElementById('save').addEventListener('click', saveSettings);
 
   initVersion();
+}
+
+const clearSettings = () => {
+  chrome.storage.local.clear();
 }
 
 const saveSettings = () => {
