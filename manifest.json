@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Steamworks extra reports",
-  "version": "1.7",
+  "version": "1.8",
   "permissions": [
     "storage"
   ],

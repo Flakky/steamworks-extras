@@ -10,11 +10,22 @@ let chartColors = undefined;
 const init = () => {
   console.log("Steamworks extras: Init");
 
-  readChartColors();
-  createSalesChart();
-
-  chrome.storage.local.get(['usSalesTax', 'usSalesTax', 'grossRoyalties', 'netRoyalties', 'otherRoyalties', 'localTax', 'royaltiesAfterTax', 'showZeroRevenues', 'showPercentages', 'chartMaxBreakdown'], (result) => {
+  chrome.storage.local.get(defaultSettings, (result) => {
     settings = result;
+
+    readChartColors();
+
+    createCustomContentBlock();
+
+    moveGameTitle();
+    moveLinksToTop();
+    moveDateRangeSelectionToTop();
+
+    moveSummaryTableToNewBlock();
+    createSalesChart();
+    moveSalesTableToNewBlock();
+    moveHeatmapNewBlock();
+    moveOldChartToNewBlock();
 
     requestTotalUSRevenue();
     requestUSRevenueForCurrentDateRange();
@@ -24,11 +35,13 @@ const init = () => {
     updateSalesNetRow();
 
     addRefundDataLink();
+
+    hideOriginalMainBlock();
   });
 }
 
 const getSummaryTable = () => {
-  return document.querySelector('.lifetimeSummaryCtn table');
+  return document.querySelector('#extra_summary_block table');
 }
 
 const getAppID = () => {
@@ -42,21 +55,7 @@ const getAppID = () => {
 }
 
 const getSalesTable = () => {
-  var parentElement = document.getElementById('gameDataLeft');
-
-  var childElements = parentElement.children;
-  var divs = [];
-
-  // Filter out only those children that are divs
-  for (var i = 0; i < childElements.length; i++) {
-    if (childElements[i].tagName === 'DIV') {
-      divs.push(childElements[i]);
-    }
-  }
-
-  const salesDiv = divs[3];
-
-  return salesDiv.getElementsByTagName('table')[0];
+  return document.querySelector('#extra_sales_table_block table');
 }
 
 const getPackageId = () => {
@@ -103,6 +102,7 @@ const updateSummaryRowUnderExtend = (index, title, description, calculation) => 
 
     nameElem = document.createElement('td');
     nameElem.textContent = title;
+    nameElem.classList.add('extra_extend_title');
 
     sumElem = document.createElement('td');
 
@@ -291,8 +291,7 @@ const addPercentageToGrossAndNet = () => {
 const AddPercentageToRevenue = (elem, share, fixnum) => {
   elem.textContent += ` `
   shareElem = document.createElement('i');
-  shareElem.style.color = '#8b969c';
-  shareElem.style.fontSize = '0.8em';
+  shareElem.classList.add('extra_revenue_percentage');
   const percentage = (share * 100).toFixed(fixnum);
   shareElem.textContent = `${percentage}%`;
 
@@ -455,33 +454,21 @@ const requestSales = () => {
 }
 
 const createSalesChart = () => {
+  const contentBlock = createFlexContentBlock('Sales chart', 'extra_sales_chart_block');
 
   const dataElem = document.getElementById('gameDataLeft');
   const oldChartElem = document.getElementById('ChartUnitsHistory');
-  const heatmapElem = document.getElementById('heatmapArea');
   const oldChartElemParentDiv = helpers.findParentByTag(oldChartElem, 'div');
   const AllStatsDiv = helpers.findParentByTag(oldChartElemParentDiv, 'div');
   const dateWithCSVLinkElem = AllStatsDiv.children[0];
-  const oldChartControlsElem = AllStatsDiv.children[2];
 
   AllStatsDiv.style.display = 'none';
 
   const chartBlockElem = document.createElement('div');
-  chartBlockElem.classList.add('extra_content_block');
+  chartBlockElem.id = 'extras_sales_chart';
 
-  const oldChartBlockElem = document.createElement('div');
-  oldChartBlockElem.classList.add('extra_content_block');
-  oldChartBlockElem.appendChild(oldChartControlsElem);
-  oldChartBlockElem.appendChild(oldChartElem);
-
-  const heatmapBlockElem = document.createElement('div');
-  heatmapBlockElem.classList.add('extra_content_block');
-  heatmapBlockElem.appendChild(heatmapElem);
-
-  dataElem.appendChild(dateWithCSVLinkElem);
-  dataElem.appendChild(chartBlockElem);
-  dataElem.appendChild(oldChartBlockElem);
-  dataElem.appendChild(heatmapBlockElem);
+  contentBlock.appendChild(chartBlockElem);
+  contentBlock.appendChild(dateWithCSVLinkElem);
 
 
   const createChartSelect = (options, name, defaultValue, onSelect) => {
@@ -535,8 +522,8 @@ const createSalesChart = () => {
 
   const canvas = document.createElement('canvas');
   canvas.id = 'salesChart';
-  canvas.width = 400;
-  canvas.height = 200;
+  canvas.width = 800;
+  canvas.height = 400;
 
   chartBlockElem.appendChild(canvas);
 
@@ -667,6 +654,190 @@ const readChartColors = () => {
       });
     }
   });
+}
+
+const createCustomContentBlock = () => {
+  const newBlockElem = document.createElement('div');
+  newBlockElem.id = 'extra_main_block';
+
+  document.body.insertBefore(newBlockElem, document.body.children[2]); // After header toolbar
+
+  const extraToolbarBlock = document.createElement('div');
+  extraToolbarBlock.id = 'extra_toolbar_block';
+
+  const contentBlockElem = document.createElement('div');
+  contentBlockElem.id = 'extra_main_content_block';
+
+  newBlockElem.appendChild(extraToolbarBlock);
+  newBlockElem.appendChild(contentBlockElem);
+}
+
+const getCustomMainBlock = () => {
+  return document.getElementById('extra_main_block');
+}
+
+const getCustomContentBlock = () => {
+  return document.getElementById('extra_main_content_block');
+}
+
+const getExtraToolbarBlock = () => {
+  return document.getElementById('extra_toolbar_block');
+}
+
+const createFlexContentBlock = (title, id) => {
+  const newBlockElem = document.createElement('div');
+  newBlockElem.id = id;
+  newBlockElem.classList.add('extra_content_block');
+
+  const titleElem = document.createElement('h2');
+  titleElem.textContent = title;
+
+  newBlockElem.appendChild(titleElem);
+
+  getCustomContentBlock().appendChild(newBlockElem);
+
+  return newBlockElem;
+}
+
+const moveLinksToTop = () => {
+  const contentBlock = document.getElementById('gameDataLeft');
+  const linksElem = contentBlock.children[1];
+  linksElem.style.display = 'none';
+
+  const newLinksBlockElem = document.createElement('div');
+  newLinksBlockElem.classList.add('extra_content_block');
+  newLinksBlockElem.id = 'extra_links_block';
+
+  const toolbarBlock = getExtraToolbarBlock();
+  toolbarBlock.appendChild(newLinksBlockElem);
+
+  const appID = getAppID();
+  const toolbarData = [
+    {
+      label: 'General',
+      links: [
+        { text: 'Store page', href: `http://store.steampowered.com/app/${appID}` },
+        { text: 'Steamworks page', href: `https://partner.steamgames.com/apps/landing/${appID}` },
+      ]
+    },
+    {
+      label: 'Regional reports',
+      links: [
+        { text: 'Regional sales report', href: `https://partner.steampowered.com/region/${appID}` },
+        { text: 'Regional key activations report', href: `https://partner.steampowered.com/cdkeyreport.php?appID=${appID}` },
+        { text: 'Downloads by Region', href: `https://partner.steampowered.com/nav_regions.php?downloads=1&appID=${appID}` }
+      ]
+    },
+    {
+      label: 'Hardware',
+      links: [
+        { text: 'Hardware survey', href: `https://partner.steampowered.com/survey2.php?appID=${appID}` },
+        { text: 'Controller stats', href: `https://partner.steampowered.com/app/controllerstats/${appID}` },
+        { text: 'Remote Play stats', href: `https://partner.steampowered.com/app/remoteplay/${appID}` }
+      ]
+    }
+  ];
+
+  const toolbar = document.createElement('div');
+  toolbar.className = 'toolbar';
+
+  toolbarData.forEach(item => {
+    const dropdown = document.createElement('div');
+    dropdown.className = 'dropdown';
+
+    const button = document.createElement('button');
+    button.textContent = item.label;
+
+    const dropdownContent = document.createElement('div');
+    dropdownContent.className = 'dropdown-content';
+
+    item.links.forEach(link => {
+      const anchor = document.createElement('a');
+      anchor.href = link.href;
+      anchor.textContent = link.text;
+      dropdownContent.appendChild(anchor);
+    });
+
+    // Assemble the dropdown
+    dropdown.appendChild(button);
+    dropdown.appendChild(dropdownContent);
+    toolbar.appendChild(dropdown);
+  });
+
+  newLinksBlockElem.appendChild(toolbar);
+}
+
+const moveSummaryTableToNewBlock = () => {
+  const contentBlock = createFlexContentBlock('Lifetime summary', 'extra_summary_block');
+  const summaryTable = document.querySelector('.lifetimeSummaryCtn table');
+
+  contentBlock.appendChild(summaryTable);
+}
+
+const moveOldChartToNewBlock = () => {
+  const contentBlock = createFlexContentBlock('Original chart', 'extra_original_chart_block');
+
+  const oldChartControlsElem = document.getElementsByClassName('graphControls')[0];
+  const oldChartElem = helpers.findParentByTag(document.getElementById('ChartUnitsHistory'), 'div');
+
+  contentBlock.appendChild(oldChartControlsElem);
+  contentBlock.appendChild(oldChartElem);
+}
+
+const moveHeatmapNewBlock = () => {
+  const contentBlock = createFlexContentBlock('Sales heatmap', 'extra_sales_heatmap_block');
+
+  const heatmapElem = document.getElementById('heatmapArea');
+
+  contentBlock.appendChild(heatmapElem);
+}
+
+const moveDateRangeSelectionToTop = () => {
+  const toolbarBlock = getExtraToolbarBlock();
+
+  const periodSelectBlock = document.getElementsByClassName('PeriodLinks')[0];
+  const periodSelectWholeBlock = helpers.findParentByTag(periodSelectBlock, 'div');
+
+  const newDateRangeContainerElem = document.createElement('div');
+  newDateRangeContainerElem.classList.add('extra_content_block');
+  newDateRangeContainerElem.id = 'extra_period_block';
+
+  newDateRangeContainerElem.appendChild(periodSelectWholeBlock);
+
+  toolbarBlock.appendChild(newDateRangeContainerElem);
+}
+
+const moveSalesTableToNewBlock = () => {
+  const contentBlock = createFlexContentBlock('Sales table', 'extra_sales_table_block');
+
+  var parentElement = document.getElementById('gameDataLeft');
+
+  var childElements = parentElement.children;
+  var divs = [];
+
+  // Filter out only those children that are divs
+  for (var i = 0; i < childElements.length; i++) {
+    if (childElements[i].tagName === 'DIV') {
+      divs.push(childElements[i]);
+    }
+  }
+
+  const salesTable = divs[2].children[0];
+
+  contentBlock.appendChild(salesTable);
+}
+
+const moveGameTitle = () => {
+  const toolbarBlock = getExtraToolbarBlock();
+
+  const titleElem = document.getElementsByTagName('h1')[0];
+
+  toolbarBlock.insertBefore(titleElem, toolbarBlock.firstChild);
+}
+
+const hideOriginalMainBlock = () => {
+  const elem = document.getElementsByClassName('ContentWrapper')[0];
+  elem.style.display = 'none';
 }
 
 init();
