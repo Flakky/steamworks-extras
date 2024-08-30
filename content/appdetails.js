@@ -623,7 +623,7 @@ const updateSalesChart = (split, valueType) => {
     labels = Object.keys(top10EntriesObject);
     const data = Object.entries(top10EntriesObject).map(([key, value]) => value.gross);
     const colors = Object.entries(top10EntriesObject).map(([key, value]) => {
-      return chartColors[key] || `rgb(${55 + Math.round(Math.random() * 200)}, ${55 + Math.round(Math.random() * 200)}, ${55 + Math.round(Math.random() * 200)})`;
+      return chartColors[key] || `rgb(${30 + Math.round(Math.random() * 225)}, ${30 + Math.round(Math.random() * 225)}, ${30 + Math.round(Math.random() * 225)})`;
     });
 
     datasets.push({
