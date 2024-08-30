@@ -723,7 +723,7 @@ const moveLinksToTop = () => {
     {
       label: 'Regional reports',
       links: [
-        { text: 'Regional sales report', href: `https://partner.steampowered.com/region/${appID}` },
+        { text: 'Regional sales report', href: `https://partner.steampowered.com/region/${appID}/` },
         { text: 'Regional key activations report', href: `https://partner.steampowered.com/cdkeyreport.php?appID=${appID}` },
         { text: 'Downloads by Region', href: `https://partner.steampowered.com/nav_regions.php?downloads=1&appID=${appID}` }
       ]
@@ -732,8 +732,8 @@ const moveLinksToTop = () => {
       label: 'Hardware',
       links: [
         { text: 'Hardware survey', href: `https://partner.steampowered.com/survey2.php?appID=${appID}` },
-        { text: 'Controller stats', href: `https://partner.steampowered.com/app/controllerstats/${appID}` },
-        { text: 'Remote Play stats', href: `https://partner.steampowered.com/app/remoteplay/${appID}` }
+        { text: 'Controller stats', href: `https://partner.steampowered.com/app/controllerstats/${appID}/` },
+        { text: 'Remote Play stats', href: `https://partner.steampowered.com/app/remoteplay/${appID}/` }
       ]
     }
   ];
