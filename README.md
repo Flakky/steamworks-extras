@@ -1,14 +1,14 @@
 # Steamworks extra reports
+![Steamworks extra reports](assets/AppDetailsScreenshot.jpg)
 
-![Steamworks extra reports](assets/icon-128.png)
+This extension shows extra information about your game in Steamworks financial report page.
 
-This extension shows extra information about your game in Steamworks console.
-
-Current extra info:
-- Lifetime developer revenue
-- Detailed revenue flow display
-- Extension options screen with each step share setup
-- Developer revenue by selected date range
+Features:
+- Lifetime developer revenue calculation
+- Full revenue flow visualization with configurable taxes and royalties
+- Final revenue calculation for current date range
+- Better sales chart with different data types and view categories
+- App details page better layout
 
 The extension does not collect any information about your game. It calculates and inserts new data directly on the page.
 
@@ -28,4 +28,4 @@ https://chromewebstore.google.com/detail/steamworks-extra-reports/cdobnjfogldjai
 
 ## Setup
 
-The extension has an options page where you can set up all the revenue shares and taxes. To open settings, activate the plugin, find its icon on your browser toolbar, press the right mouse button and select "Options". Another way to find the settings page is simply by going to your game financial info and pressing the "Setup" button near the final revenue display.
+The extension has an options page where you can set up all the revenue shares and taxes. To open settings, activate the plugin, find its icon on your browser toolbar, press the right mouse button and select "Options". Another way to find the settings page is simply by going to your app details page and pressing the "Setup" button near the final revenue display.
