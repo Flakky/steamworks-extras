@@ -549,6 +549,7 @@ const updateSalesChart = (split, valueType) => {
     console.log("Steamworks extras: Sales for Date Rage are not yet ready to be used in sales chart");
   }
 
+  // Fill labels (dates) for chart
   let labels = [];
 
   salesForDateRange.forEach((element, index) => {
@@ -560,6 +561,7 @@ const updateSalesChart = (split, valueType) => {
     }
   });
 
+  // Calculate data entries for chart
   const grossByDateAndSplit = {};
 
   salesForDateRange.forEach((element, index) => {
@@ -568,7 +570,7 @@ const updateSalesChart = (split, valueType) => {
     if (helpers.isStringEmpty(splitData)) return;
 
     if (!grossByDateAndSplit.hasOwnProperty(splitData)) {
-      grossByDateAndSplit[splitData] = { dates: [], gross: [] };
+      grossByDateAndSplit[splitData] = { dates: labels, gross: new Array(labels.length).fill(0) };
     }
 
     const date = element['Date'];
@@ -580,13 +582,9 @@ const updateSalesChart = (split, valueType) => {
     if (dateIndex >= 0) {
       grossByDateAndSplit[splitData].gross[dateIndex] += value;
     }
-    else {
-
-      grossByDateAndSplit[splitData].dates.push(date);
-      grossByDateAndSplit[splitData].gross.push(value);
-    }
   });
 
+  // Filter only top entries by total value
   const entriesWithSum = Object.entries(grossByDateAndSplit).map(([key, value]) => {
     const grossSum = value.gross.reduce((acc, cur) => acc + cur, 0);
     return { key, value, grossSum };
@@ -601,9 +599,11 @@ const updateSalesChart = (split, valueType) => {
     return obj;
   }, {});
 
+  // Determine if we only have one day
   const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
   const oneDay = dateStart.toISOString().split('T')[0] === dateEnd.toISOString().split('T')[0];
 
+  // Fill chart data set
   const datasets = [];
 
   if (oneDay) {
@@ -633,6 +633,8 @@ const updateSalesChart = (split, valueType) => {
       });
     }
   }
+
+  console.log(datasets);
 
   salesChart.data.labels = labels;
   salesChart.data.datasets = datasets;
