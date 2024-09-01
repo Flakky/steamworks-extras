@@ -55,4 +55,5 @@ The extension has an options page where you can set up all the revenue shares an
 [chrome_ext_link]: https://chromewebstore.google.com/detail/steamworks-extra-reports/cdobnjfogldjaihapojppnopiaccgpag
 
 [chrome_store_rating_badge]: https://img.shields.io/chrome-web-store/rating/cdobnjfogldjaihapojppnopiaccgpag
-[chrome_store_users_badge]: https://img.shields.io/chrome-web-store/rating/cdobnjfogldjaihapojppnopiaccgpag
+[chrome_store_users_badge]: https://img.shields.io/chrome-web-store/users/cdobnjfogldjaihapojppnopiaccgpag
+
