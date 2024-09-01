@@ -1,16 +1,29 @@
+<div align="center">
+
 # Steamworks extra reports
+
+**This extension shows extra information about your game in Steamworks financial report page.**
+
+[![GitHub Release][github_release_badge]][github_release_link]
+[![GitHub License][github_license_badge]][github_license_link]
+--
+[![][chrome_ext_badge]][chrome_ext_link]
+[![][chrome_store_rating_badge]][chrome_ext_link]
+[![][chrome_store_users_badge]][chrome_ext_link]
+
 ![Steamworks extra reports](assets/AppDetailsScreenshot.jpg)
+</div>
 
-This extension shows extra information about your game in Steamworks financial report page.
+## Features
 
-Features:
 - Lifetime developer revenue calculation
 - Full revenue flow visualization with configurable taxes and royalties
 - Final revenue calculation for current date range
 - Better sales chart with different data types and view categories
 - App details page better layout
 
-The extension does not collect any information about your game. It calculates and inserts new data directly on the page.
+> [!NOTE]
+> The extension does not collect any information about your game. It calculates and inserts new data directly on the page.
 
 ## Install
 
@@ -29,3 +42,17 @@ https://chromewebstore.google.com/detail/steamworks-extra-reports/cdobnjfogldjai
 ## Setup
 
 The extension has an options page where you can set up all the revenue shares and taxes. To open settings, activate the plugin, find its icon on your browser toolbar, press the right mouse button and select "Options". Another way to find the settings page is simply by going to your app details page and pressing the "Setup" button near the final revenue display.
+
+<!-- Links for readme -->
+
+[github_license_badge]: https://img.shields.io/github/license/Flakky/steamworks-dev-chrome-ext
+[github_license_link]: https://github.com/Flakky/steamworks-dev-chrome-ext/blob/main/LICENSE
+
+[github_release_badge]: https://img.shields.io/github/v/release/Flakky/steamworks-dev-chrome-ext
+[github_release_link]: https://github.com/Flakky/steamworks-dev-chrome-ext/releases
+
+[chrome_ext_badge]: https://img.shields.io/badge/Chrome_Extension-test
+[chrome_ext_link]: https://chromewebstore.google.com/detail/steamworks-extra-reports/cdobnjfogldjaihapojppnopiaccgpag
+
+[chrome_store_rating_badge]: https://img.shields.io/chrome-web-store/rating/cdobnjfogldjaihapojppnopiaccgpag
+[chrome_store_users_badge]: https://img.shields.io/chrome-web-store/rating/cdobnjfogldjaihapojppnopiaccgpag
