@@ -1047,7 +1047,7 @@ const updateReviewsChart = () => {
 
   reviewsChart.config.type = 'bar';
 
-  reviewsChart.options.scales = { x: { stacked: true }, y: { stacked: true } }
+  reviewsChart.options.scales = { x: { stacked: !oneDay }, y: { stacked: !oneDay } }
 
   reviewsChart.update();
 
