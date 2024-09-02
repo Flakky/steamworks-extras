@@ -79,6 +79,20 @@ helpers.findParentByTag = (element, tagName) => {
 }
 
 /**
+ * Converts a Date object to a readable string with format of YYYY-MM-DD. For example 2020-01-20
+ *
+ * @param {Date} date - AppID of the game
+ * @returns {string} - Formatted date string
+ *
+ * @example
+ * // returns '2020-01-20'
+ * await dateToString(new Date('2020-01-20'));
+ */
+helpers.dateToString = (date) => {
+  return date.toISOString().split('T')[0];
+}
+
+/**
  * Asyncroniosly request specific country revenue of given date rage.
  *
  * @param {string} appID - AppID of the game
@@ -96,8 +110,8 @@ helpers.getCountryRevenue = async (appID, country, dateStart, dateEnd) => {
   const startDate = dateStart || new Date(2010, 0, 1);
   const endDate = dateEnd || new Date();
 
-  const formattedStartDate = startDate.toISOString().split('T')[0];
-  const formattedEndDate = endDate.toISOString().split('T')[0];
+  const formattedStartDate = helpers.dateToString(startDate);
+  const formattedEndDate = helpers.dateToString(endDate);
 
   const countryRevenueURL = `https://partner.steampowered.com/region/?dateStart=${formattedStartDate}&dateEnd=${formattedEndDate}&appID=${appID}`;
   console.log(countryRevenueURL);
@@ -141,8 +155,8 @@ helpers.getSaleDataCSV = async (pkgID, dateStart, dateEnd) => {
   const startDate = dateStart || new Date(2010, 0, 1);
   const endDate = dateEnd || new Date();
 
-  const formattedStartDate = startDate.toISOString().split('T')[0];
-  const formattedEndDate = endDate.toISOString().split('T')[0];
+  const formattedStartDate = helpers.dateToString(startDate);
+  const formattedEndDate = helpers.dateToString(endDate);
 
   console.log(`Steamworks extras: Request sales in CSV between ${formattedStartDate} and ${formattedEndDate}`);
 
@@ -274,4 +288,81 @@ helpers.csvTextToArray = (strData, strDelimiter) => {
 
   // Return the parsed data.
   return (arrData);
+}
+
+/**
+ * Asyncroniosly request all reviews for the game
+ *
+ * @param {string} appID - AppID of the game
+ * @returns {Promise<object>} - Promise with reviews array
+ *
+ * @example
+ * // returns [...]
+ * await RequestGameReviews(000000);
+ */
+helpers.requestGameReviews = async (appID) => {
+  // Request documentation: https://partner.steamgames.com/doc/store/getreviews
+
+  let cursor = '*'
+
+  let reviews = [];
+
+  while (true) {
+    const request_data = {
+      'filter': 'recent',
+      'language': 'all',
+      'review_type': 'all',
+      'purchase_type': 'all',
+      'num_per_page': 100,
+      'cursor': cursor,
+      'json': 1
+    }
+
+    const params = Object.keys(request_data)
+      .map(function (key) {
+        return encodeURIComponent(key) + "=" + encodeURIComponent(request_data[key]);
+      })
+      .join("&");
+
+    const request_url = `https://store.steampowered.com/appreviews/${appID}?${params}`;
+    const request_options = {
+      'method': 'POST',
+      'contentType': 'application/json',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+    };
+
+    console.log(`Sending review request to "${request_url}"`);
+
+    const responseText = await helpers.sendMessageAsync({ request: 'makeRequest', url: request_url, params: request_options });
+
+    const responseObj = JSON.parse(responseText);
+
+    if (responseObj.reviews === undefined || responseObj.reviews.length == 0) break;
+
+    cursor = responseObj.cursor;
+
+    for (const review of responseObj.reviews) {
+      if (review !== undefined) reviews.push(review);
+    }
+  }
+
+  console.log(`Steamworks extras: Reviews result`);
+  console.log(reviews);
+
+  return reviews;
+}
+
+helpers.sendMessageAsync = (message) => {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(message, (response) => {
+      if (chrome.runtime.lastError) {
+        reject(chrome.runtime.lastError);
+      } else {
+        console.log('RESPONSE')
+        resolve(response);
+      }
+    });
+  });
 }

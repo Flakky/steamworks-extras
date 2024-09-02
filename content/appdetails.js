@@ -6,6 +6,9 @@ let salesChart = undefined;
 let chartSplit = "Country";
 let chartValueType = "Gross Steam Sales (USD)";
 let chartColors = undefined;
+let reviews = undefined;
+let reviewsChart = undefined;
+let reviewChartSplit = "Vote";
 
 const init = () => {
   console.log("Steamworks extras: Init");
@@ -24,12 +27,14 @@ const init = () => {
     moveSummaryTableToNewBlock();
     createSalesChart();
     moveSalesTableToNewBlock();
+    createReviewsChart();
     moveHeatmapNewBlock();
     moveOldChartToNewBlock();
 
     requestTotalUSRevenue();
     requestUSRevenueForCurrentDateRange();
     requestSales();
+    requestReviews();
 
     updateSummaryRows();
     updateSalesNetRow();
@@ -164,7 +169,7 @@ const updateFinalRevenueRow = (index, calculation) => {
     descElem.appendChild(optionsLink);
 
     optionsLink.addEventListener('click', (event) => {
-      chrome.runtime.sendMessage("showOptions");
+      chrome.runtime.sendMessage({ request: "showOptions" }, res => { });
     });
 
     // Summ element
@@ -453,6 +458,18 @@ const requestSales = () => {
   });
 }
 
+const requestReviews = () => {
+  helpers.requestGameReviews(getAppID()).then((res) => {
+
+    console.log('TEEESDT');
+    console.log(res);
+
+    reviews = res;
+
+    updateReviewsChart();
+  });
+}
+
 const createSalesChart = () => {
   const contentBlock = createFlexContentBlock('Sales chart', 'extra_sales_chart_block');
 
@@ -601,7 +618,7 @@ const updateSalesChart = (split, valueType) => {
 
   // Determine if we only have one day
   const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
-  const oneDay = dateStart.toISOString().split('T')[0] === dateEnd.toISOString().split('T')[0];
+  const oneDay = helpers.dateToString(dateStart) === helpers.dateToString(dateEnd);
 
   // Fill chart data set
   const datasets = [];
@@ -840,6 +857,202 @@ const moveGameTitle = () => {
 const hideOriginalMainBlock = () => {
   const elem = document.getElementsByClassName('ContentWrapper')[0];
   elem.style.display = 'none';
+}
+
+const createReviewsChart = () => {
+  const contentBlock = createFlexContentBlock('Reviews chart', 'extra_reviews_chart_block');
+
+  const chartBlockElem = document.createElement('div');
+  chartBlockElem.id = 'extras_reviews_chart';
+
+  contentBlock.appendChild(chartBlockElem);
+
+  const createChartSelect = (options, name, defaultValue, onSelect) => {
+    const nameElem = document.createElement("b");
+    nameElem.textContent = `${name}: `;
+    nameElem.classList.add('extra_chart_select_name');
+
+    const selectElem = document.createElement("select");
+
+    options.forEach(option => {
+      const optionElement = document.createElement("option");
+      optionElement.value = option;
+      optionElement.textContent = option;
+      selectElem.appendChild(optionElement);
+    });
+
+    selectElem.value = defaultValue;
+
+    selectElem.addEventListener("change", () => { onSelect(selectElem); });
+
+    chartBlockElem.appendChild(nameElem);
+    chartBlockElem.appendChild(selectElem);
+
+    return selectElem;
+  }
+
+  createChartSelect([
+    "Total",
+    "Vote",
+    "Language",
+  ], 'View by', reviewChartSplit, (select) => {
+    console.log(select.value);
+    reviewChartSplit = select.value;
+    updateReviewsChart();
+  });
+
+  const canvas = document.createElement('canvas');
+  canvas.id = 'reviewsChart';
+  canvas.width = 800;
+  canvas.height = 400;
+
+  chartBlockElem.appendChild(canvas);
+
+  const data = {};
+
+  const config = {
+    type: 'line',
+    data: data,
+    options: {
+      plugins: {
+        legend: {
+          position: 'top'
+        }
+      }
+    }
+  };
+
+  reviewsChart = new Chart(canvas, config);
+}
+
+const updateReviewsChart = () => {
+  console.log('update revuews chart');
+
+  if (reviews === undefined) return;
+
+  /* Review format
+  {
+    "recommendationid": "123456789",
+    "author": {
+        "steamid": "12345678913456789",
+        "num_games_owned": 123,
+        "num_reviews": 123,
+        "playtime_forever": 123,
+        "playtime_last_two_weeks": 12,
+        "playtime_at_review": 123,
+        "last_played": 123456789
+    },
+    "language": "english",
+    "review": "Review text",
+    "timestamp_created": 1719304521,
+    "timestamp_updated": 1719326330,
+    "voted_up": true,
+    "votes_up": 0,
+    "votes_funny": 0,
+    "weighted_vote_score": 0,
+    "comment_count": 0,
+    "steam_purchase": true,
+    "received_for_free": false,
+    "written_during_early_access": true,
+    "hidden_in_steam_china": true,
+    "steam_china_location": ""
+  }
+  */
+
+  const chartDays = [];
+
+  const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
+  const oneDay = helpers.dateToString(dateStart) === helpers.dateToString(dateEnd);
+
+  let dayLoop = new Date(dateStart);
+  while (dayLoop <= dateEnd) {
+    const formattedDate = helpers.dateToString(dayLoop);
+    chartDays.push(formattedDate);
+
+    // Move to the next day
+    dayLoop.setDate(dayLoop.getDate() + 1);
+  }
+
+  console.log(chartDays);
+
+  // Fill chart data set
+  const reviewsInfoForChart = {};
+
+  for (const date of chartDays) {
+    reviewsInfoForChart[date] = {};
+  }
+
+  const labels = [];
+
+  reviews.forEach((review, index) => {
+    const reviewDate = new Date(review.timestamp_created * 1000); // Timestamp is in seconds on Steam
+
+    const formattedDate = helpers.dateToString(reviewDate);
+
+    if (!reviewsInfoForChart.hasOwnProperty(formattedDate)) return;
+
+    let fieldName = undefined;
+
+    switch (reviewChartSplit) {
+      case 'Total': fieldName = "Total"; break;
+      case 'Vote': fieldName = review.voted_up ? "Positive" : "Negative"; break;
+      case 'Language': fieldName = review.language; break;
+    }
+
+    if (fieldName === undefined) return;
+
+    if (!labels.includes(fieldName)) labels.push(fieldName);
+
+    reviewsInfoForChart[formattedDate][fieldName] = (reviewsInfoForChart[formattedDate][fieldName] || 0) + 1;
+  });
+
+  console.log(reviewsInfoForChart);
+
+  const dataSetsMap = {};
+  if (reviewChartSplit == 'Vote') { // To display chart bars in correct order
+    dataSetsMap['Negative'] = [];
+    dataSetsMap['Positive'] = [];
+  }
+  else {
+    for (const label of labels) {
+      dataSetsMap[label] = [];
+    }
+  }
+
+  for (const day of chartDays) {
+    for (const label of labels) {
+      dataSetsMap[label].push(reviewsInfoForChart[day][label] || 0);
+    }
+  }
+
+  console.log(dataSetsMap);
+
+  const datasets = [];
+
+  for (const [key, value] of Object.entries(dataSetsMap)) {
+
+    const color = chartColors[key] || `rgb(${55 + Math.round(Math.random() * 200)}, ${55 + Math.round(Math.random() * 200)}, ${55 + Math.round(Math.random() * 200)})`;
+
+    datasets.push({
+      label: key,
+      data: value,
+      fill: false,
+      backgroundColor: color,
+      borderColor: color,
+      tension: 0
+    });
+  }
+
+  reviewsChart.data.labels = chartDays;
+  reviewsChart.data.datasets = datasets;
+
+  reviewsChart.config.type = oneDay || reviewChartSplit == 'Vote' ? 'bar' : 'line';
+
+  reviewsChart.options.scales = { x: { stacked: reviewChartSplit == 'Vote' }, y: { stacked: reviewChartSplit == 'Vote' } }
+
+  reviewsChart.update();
+
+  console.log("Steamworks extras: Reviews chart updated");
 }
 
 init();

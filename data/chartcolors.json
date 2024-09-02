@@ -3,6 +3,8 @@
   "Windows": "#358bff",
   "Linux": "#ff7878",
   "Mac": "#98ff78",
+  "Positive": "#64EA4F",
+  "Negative": "#ED4949",
   "United States": "#FF5733",
   "China": "#33FF57",
   "India": "#3357FF",
