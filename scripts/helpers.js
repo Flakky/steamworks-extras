@@ -60,6 +60,8 @@ helpers.findElementByText = (tag, text, doc = undefined) => {
  * @param {string} tagName - Tag of the element to look for
  * @returns {object} - Returns DOM Element
  *
+ * //// TODO: Replace with closest everywhere in the project
+ *
  * @example
  * // returns table element which contains td cell
  * findParentByTag(myTableTDCellElem, 'table');

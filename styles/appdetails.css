@@ -113,3 +113,11 @@
 .toolbar .dropdown:hover .dropdown-content {
   display: block;
 }
+
+.extra_summary_review_positive {
+  color: #64EA4F;
+}
+
+.extra_summary_review_negative {
+  color: #ED4949;
+}

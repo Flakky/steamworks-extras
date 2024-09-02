@@ -467,6 +467,7 @@ const requestReviews = () => {
     reviews = res;
 
     updateReviewsChart();
+    updateReviewsSummary();
   });
 }
 
@@ -926,8 +927,6 @@ const createReviewsChart = () => {
 }
 
 const updateReviewsChart = () => {
-  console.log('update revuews chart');
-
   if (reviews === undefined) return;
 
   /* Review format
@@ -1046,13 +1045,73 @@ const updateReviewsChart = () => {
   reviewsChart.data.labels = chartDays;
   reviewsChart.data.datasets = datasets;
 
-  reviewsChart.config.type = oneDay || reviewChartSplit == 'Vote' ? 'bar' : 'line';
+  reviewsChart.config.type = 'bar';
 
-  reviewsChart.options.scales = { x: { stacked: reviewChartSplit == 'Vote' }, y: { stacked: reviewChartSplit == 'Vote' } }
+  reviewsChart.options.scales = { x: { stacked: true }, y: { stacked: true } }
 
   reviewsChart.update();
 
   console.log("Steamworks extras: Reviews chart updated");
+}
+
+const updateReviewsSummary = () => {
+  if (reviews === undefined) return;
+
+  let positive = 0;
+  let negative = 0;
+
+  for (const review of reviews) {
+    if (!review.steam_purchase) continue; // Reviews which were not purchased from Steam do not count toward final score
+
+    if (review.voted_up) positive++;
+    else negative++;
+  }
+
+  const lifeTimeUnitsReturnedCell = helpers.findElementByText('td', 'Lifetime units returned');
+
+  const lifetimeUnitsRow = helpers.findParentByTag(lifeTimeUnitsReturnedCell, 'tr');
+
+  const lifetimeUnitsRowIndex = lifetimeUnitsRow.rowIndex;
+
+  const summaryTable = getSummaryTable();
+
+  let newLineSplitter = summaryTable.rows[lifetimeUnitsRowIndex + 1].cloneNode(true);
+
+  summaryTable.children[0].insertBefore(newLineSplitter, summaryTable.rows[lifetimeUnitsRowIndex + 1]);
+
+  const addReviewRow = (title, numHtml, desc) => {
+    row = summaryTable.insertRow(lifetimeUnitsRowIndex + 2); // Insert after net
+    row.classList.add('extra_summary_review_row');
+
+    nameElem = document.createElement('td');
+    nameElem.textContent = title;
+
+    numElem = document.createElement('td');
+    numElem.align = 'right';
+    numElem.innerHTML = numHtml;
+
+    descElem = document.createElement('td');
+    descElem.textContent = desc;
+
+    row.appendChild(nameElem);
+    row.appendChild(numElem);
+    row.appendChild(descElem);
+
+    return row;
+  };
+
+  addReviewRow(
+    'Positive reviews',
+    `${(positive / (positive + negative) * 100).toFixed(1)}%`,
+    ''
+  );
+
+  addReviewRow(
+    'Reviews',
+    `<span>${positive + negative}</span> (<span class="extra_summary_review_positive">${positive}</span> | <span class="extra_summary_review_negative">${negative}</span>)`,
+    'Reviews which are not counted toward review score are not included.'
+  );
+
 }
 
 init();
