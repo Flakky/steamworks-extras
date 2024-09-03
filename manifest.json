@@ -17,6 +17,8 @@
         "scripts/chart.umd.min.js",
         "scripts/helpers.js",
         "data/defaultsettings.js",
+        "content/appdetails_reviews.js",
+        "content/appdetails_saleschart.js",
         "content/appdetails.js"
       ],
       "css": [
