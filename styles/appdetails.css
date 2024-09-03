@@ -113,3 +113,29 @@
 .toolbar .dropdown:hover .dropdown-content {
   display: block;
 }
+
+.extra_summary_review_positive {
+  color: #64EA4F;
+}
+
+.extra_summary_review_negative {
+  color: #ED4949;
+}
+
+#extras_reviews_table {
+  width: 100%;
+}
+
+#extras_reviews_table tr:first-child {
+  font-weight: bold;
+}
+
+#extras_reviews_table td:first-child {
+  text-align: left;
+  font-weight: bold;
+}
+
+#extras_reviews_table td {
+  width: auto;
+  text-align: right;
+}
