@@ -28,6 +28,7 @@ const init = () => {
     createSalesChart();
     moveSalesTableToNewBlock();
     createReviewsChart();
+    createReviewsTable();
     moveHeatmapNewBlock();
     moveOldChartToNewBlock();
 
@@ -468,6 +469,7 @@ const requestReviews = () => {
 
     updateReviewsChart();
     updateReviewsSummary();
+    updateReviewsTable();
   });
 }
 
@@ -1112,6 +1114,64 @@ const updateReviewsSummary = () => {
     'Reviews which are not counted toward review score are not included.'
   );
 
+}
+
+const createReviewsTable = () => {
+  const contentBlock = createFlexContentBlock('Reviews table', 'extra_reviews_table_block');
+
+  const reviesTableElem = document.createElement('table');
+  reviesTableElem.id = 'extras_reviews_table';
+
+  contentBlock.appendChild(reviesTableElem);
+}
+
+const updateReviewsTable = () => {
+  if (reviews == undefined) return;
+
+  const reviesTableElem = document.getElementById('extras_reviews_table');
+
+  const addRowCell = (row, innerHTML) => {
+    const cellElem = document.createElement('td');
+    cellElem.innerHTML = innerHTML;
+
+    row.appendChild(cellElem);
+    return cellElem;
+  }
+
+  // Column name rows
+  const columns = ['Language', 'Total', 'Positive', 'Negative', 'Ratio'];
+
+  const columnNamesRow = reviesTableElem.insertRow(0);
+  for (const column of columns) {
+    addRowCell(columnNamesRow, column);
+  }
+
+  const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
+
+  let languageReviewsStats = {}
+
+  for (const review of reviews) {
+    const reviewDate = new Date(review.timestamp_created * 1000); // Timestamp is in seconds on Steam
+
+    if (reviewDate < dateStart || reviewDate > dateEnd) continue;
+
+    if (!languageReviewsStats[review.language]) languageReviewsStats[review.language] = {
+      "Positive": 0,
+      "Negative": 0
+    }
+    languageReviewsStats[review.language][review.voted_up ? "Positive" : "Negative"] = languageReviewsStats[review.language][review.voted_up ? "Positive" : "Negative"] + 1;
+  }
+
+  for (const [key, value] of Object.entries(languageReviewsStats)) {
+    const row = reviesTableElem.insertRow(reviesTableElem.rows.length);
+    const positive = value['Positive'];
+    const negative = value['Negative'];
+    addRowCell(row, key);
+    addRowCell(row, positive + negative);
+    addRowCell(row, positive);
+    addRowCell(row, negative);
+    addRowCell(row, `${(positive / (positive + negative) * 100).toFixed(1)}%`);
+  }
 }
 
 init();
