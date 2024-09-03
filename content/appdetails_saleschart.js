@@ -98,17 +98,19 @@ const updateSalesChart = (split, valueType) => {
     console.log("Steamworks extras: Sales for Date Rage are not yet ready to be used in sales chart");
   }
 
+  const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
+
   // Fill labels (dates) for chart
   let labels = [];
 
-  salesForDateRange.forEach((element, index) => {
-    const date = element['Date'];
-    if (helpers.isStringEmpty(date)) return;
+  let dayLoop = new Date(dateStart);
+  while (dayLoop <= dateEnd) {
+    const formattedDate = helpers.dateToString(dayLoop);
+    labels.push(formattedDate);
 
-    if (!labels.includes(element['Date'])) {
-      labels.push(element['Date']);
-    }
-  });
+    // Move to the next day
+    dayLoop.setDate(dayLoop.getDate() + 1);
+  }
 
   // Calculate data entries for chart
   const grossByDateAndSplit = {};
@@ -149,7 +151,6 @@ const updateSalesChart = (split, valueType) => {
   }, {});
 
   // Determine if we only have one day
-  const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
   const oneDay = helpers.dateToString(dateStart) === helpers.dateToString(dateEnd);
 
   // Fill chart data set
