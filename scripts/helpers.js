@@ -80,6 +80,18 @@ helpers.findParentByTag = (element, tagName) => {
   return undefined;
 }
 
+helpers.tryConvertStringToNumber = (str) => {
+  // First, attempt to convert to a number
+  const number = Number(str);
+
+  // Check if the conversion resulted in a valid number (not NaN)
+  if (!isNaN(number)) {
+    return number;  // Return the number (int or float)
+  } else {
+    return str;  // If not a valid number, return the original string
+  }
+}
+
 /**
  * Converts a Date object to a readable string with format of YYYY-MM-DD. For example 2020-01-20
  *
@@ -92,6 +104,24 @@ helpers.findParentByTag = (element, tagName) => {
  */
 helpers.dateToString = (date) => {
   return date.toISOString().split('T')[0];
+}
+
+helpers.getDateRangeArray = (dateStart, dateEnd, outputDateStrings) => {
+  const days = [];
+
+  let day = new Date(dateStart);
+  while (day <= dateEnd) {
+    if (outputDateStrings) {
+      const formattedDate = helpers.dateToString(day);
+      days.push(formattedDate);
+    }
+    else days.push(day)
+
+    // Move to the next day
+    day.setDate(day.getDate() + 1);
+  }
+
+  return days;
 }
 
 /**
@@ -153,7 +183,6 @@ helpers.getCountryRevenue = async (appID, country, dateStart, dateEnd) => {
  * await getSaleDataCSV(000000, Date('2020-01-20'), Date('2021-05-20')));
  */
 helpers.getSaleDataCSV = async (pkgID, dateStart, dateEnd) => {
-
   const startDate = dateStart || new Date(2010, 0, 1);
   const endDate = dateEnd || new Date();
 
@@ -285,7 +314,7 @@ helpers.csvTextToArray = (strData, strDelimiter) => {
 
     // Now that we have our value string, let's add
     // it to the data array.
-    arrData[arrData.length - 1].push(strMatchedValue);
+    arrData[arrData.length - 1].push(helpers.tryConvertStringToNumber(strMatchedValue));
   }
 
   // Return the parsed data.

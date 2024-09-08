@@ -6,7 +6,9 @@
     "storage"
   ],
   "host_permissions": [
-    "https://store.steampowered.com/*"
+    "https://store.steampowered.com/*",
+    "https://partner.steampowered.com/",
+    "https://partner.steamgames.com/*"
   ],
   "content_scripts": [
     {
@@ -15,6 +17,7 @@
       ],
       "js": [
         "scripts/chart.umd.min.js",
+        "scripts/gamestatsstorage.js",
         "scripts/helpers.js",
         "data/defaultsettings.js",
         "content/appdetails_reviews.js",
@@ -23,6 +26,18 @@
       ],
       "css": [
         "styles/appdetails.css"
+      ]
+    },
+    {
+      "matches": [
+        "https://partner.steamgames.com/apps/navtrafficstats/*"
+      ],
+      "js": [
+        "scripts/chart.umd.min.js",
+        "scripts/gamestatsstorage.js",
+        "scripts/helpers.js",
+        "data/defaultsettings.js",
+        "content/apptraffic.js"
       ]
     }
   ],

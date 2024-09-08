@@ -37,6 +37,10 @@ const init = () => {
     addRefundDataLink();
 
     hideOriginalMainBlock();
+
+    console.log(getAppID());
+    initGameStatsStorage(getAppID(), 1);
+    requestAllTrafficData(getAppID());
   });
 }
 

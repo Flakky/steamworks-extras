@@ -38,7 +38,7 @@ const showOptions = () => {
 }
 
 const makeRequest = async (url, params) => {
-  console.log(`Make request message`);
+  console.log(`Make request to ${url}`);
 
   const response = await fetch(url, params);
   if (!response.ok) throw new Error('Network response was not ok');

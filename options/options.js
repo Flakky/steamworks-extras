@@ -12,6 +12,7 @@ const initSettings = () => {
   });
 
   document.getElementById('save').addEventListener('click', saveSettings);
+  document.getElementById('clear_cache').addEventListener('click', clearCacheData);
 
   initVersion();
 }
@@ -35,6 +36,10 @@ const saveSettings = () => {
   chrome.storage.local.set(result, () => {
     alert('Settings saved!');
   });
+}
+
+const clearCacheData = () => {
+  clearAllData();
 }
 
 const initVersion = () => {
