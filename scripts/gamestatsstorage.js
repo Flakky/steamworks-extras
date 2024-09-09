@@ -256,9 +256,6 @@ const requestAllTrafficData = async (appID) => {
 const getlTrafficData = async (appID, dateStart, dateEnd) => {
   await waitForDatabaseReady();
 
-  console.log(dateStart);
-  console.log(dateEnd);
-
   // TODO: Optimize reading data only for range from DB
   // TODO: Optimize finding dates with no data
 
@@ -283,12 +280,14 @@ const getlTrafficData = async (appID, dateStart, dateEnd) => {
 
   console.log(records);
 
+  let endDateWithoutOffset = new Date(dateEnd - dateEnd.getTimezoneOffset() * 60000);
+
   const out = records.filter(item => {
     const date = new Date(item['Date']);
 
-    console.log(` ${date} >= ${dateStart} && ${date} <= ${dateEnd} = ${date >= dateStart && date <= dateEnd}`);
+    console.log(` ${date} >= ${dateStart} && ${date} <= ${endDateWithoutOffset} = ${date >= dateStart && date <= endDateWithoutOffset}`);
 
-    return date >= dateStart && date <= dateEnd;
+    return date >= dateStart && date <= endDateWithoutOffset;
   });
 
   console.log(out);
