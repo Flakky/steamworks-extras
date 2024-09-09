@@ -38,6 +38,9 @@
         "scripts/helpers.js",
         "data/defaultsettings.js",
         "content/apptraffic.js"
+      ],
+      "css": [
+        "styles/apptraffic.css"
       ]
     }
   ],

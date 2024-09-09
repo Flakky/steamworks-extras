@@ -122,9 +122,14 @@ const addChartShowCheckboxes = () => {
   firstRowElem.insertBefore(newHeaderCell, firstRowElem.children[0]);
 
   const addCheckbox = (rowElem, id, checkedByDefault) => {
+    const checkboxContainerElem = document.createElement('div');
+    checkboxContainerElem.classList.add('td');
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.classList.add('extra_chart_category_checkbox');
+
+    checkboxContainerElem.appendChild(checkbox);
+
     checkbox.id = id;
     checkbox.checked = checkedByDefault;
 
@@ -154,7 +159,7 @@ const addChartShowCheckboxes = () => {
       updateTrafficChart();
     });
 
-    rowElem.insertBefore(checkbox, rowElem.firstChild);
+    rowElem.insertBefore(checkboxContainerElem, rowElem.firstChild);
   }
 
   let categoryIndex = 0;

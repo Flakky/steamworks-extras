@@ -170,74 +170,6 @@ const clearAllData = () => {
   });
 }
 
-const requestAllSalesData = async (appID) => {
-  await waitForDatabaseReady();
-  await initGameStatsStorage(appID, 1);
-
-  const dataInStorage = await readData(appID, 'Sales');
-  console.log('Data in storage: ');
-  console.log(dataInStorage);
-
-  const startDate = new Date(2010, 0, 1);
-  const endDate = new Date();
-
-  const formattedStartDate = helpers.dateToString(startDate);
-  const formattedEndDate = helpers.dateToString(endDate);
-
-  console.log(`Steamworks extras: Request sales in CSV between ${formattedStartDate} and ${formattedEndDate}`);
-
-  const URL = `https://partner.steampowered.com/report_csv.php`;
-
-  const reqHeaders = {
-    'Content-Type': 'application/x-www-form-urlencoded'
-  };
-
-  const data = new URLSearchParams();
-  data.append('file', 'SalesData');
-  data.append('params', `query=QueryPackageSalesForCSV^pkgID[0]=${appID}^dateStart=${formattedStartDate}^dateEnd=${formattedEndDate}^interpreter=PartnerSalesReportInterpreter`);
-
-  const response = await fetch(URL, { method: 'POST', headers: reqHeaders, body: data.toString() });
-  if (!response.ok) throw new Error('Network response was not ok');
-
-  const htmlText = await response.text();
-  let lines = htmlText.split('\n');
-
-  lines.splice(0, 3); // Remove first 3 rows because they are not informative and break csv format
-
-  // Ensure that we have lines to process
-  if (lines.length === 0) {
-    return [];
-  }
-
-  const csvString = lines.join('\n');
-
-  lines = helpers.csvTextToArray(csvString);
-
-  const headers = lines[0].map(header => header.trim());
-
-  // Map each line to an object using the headers as keys
-  const result = lines.slice(1).map(line => {
-    const object = {};
-
-    line.forEach((element, index) => {
-      object[headers[index]] = element;
-    });
-
-    return object;
-  });
-
-  for (let line in result) {
-    line.id = `${line['Date']}_${line['Product(ID#)']}_${line['Country Code']}}`
-  }
-
-  console.log(`Steamworks extras: Sales result`);
-  console.log(result);
-
-  await writeData(appID, 'Sales', result);
-
-  return result;
-}
-
 const requestAllTrafficData = async (appID) => {
   await waitForDatabaseReady();
   await initGameStatsStorage(appID, 1);
@@ -348,4 +280,59 @@ const requestTrafficData = async (appID, date) => {
   await writeData(appID, 'Traffic', result);
 
   return true;
+}
+
+// Reviews
+const requestAllReviewsData = async (appID) => {
+  // Request documentation: https://partner.steamgames.com/doc/store/getreviews
+
+  let cursor = '*'
+
+  let reviews = [];
+
+  while (true) {
+    const request_data = {
+      'filter': 'recent',
+      'language': 'all',
+      'review_type': 'all',
+      'purchase_type': 'all',
+      'num_per_page': 100,
+      'cursor': cursor,
+      'json': 1
+    }
+
+    const params = Object.keys(request_data)
+      .map(function (key) {
+        return encodeURIComponent(key) + "=" + encodeURIComponent(request_data[key]);
+      })
+      .join("&");
+
+    const request_url = `https://store.steampowered.com/appreviews/${appID}?${params}`;
+    const request_options = {
+      'method': 'POST',
+      'contentType': 'application/json',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+    };
+
+    console.log(`Sending review request to "${request_url}"`);
+
+    const responseText = await helpers.sendMessageAsync({ request: 'makeRequest', url: request_url, params: request_options });
+
+    const responseObj = JSON.parse(responseText);
+
+    if (responseObj.reviews === undefined || responseObj.reviews.length == 0) break;
+
+    cursor = responseObj.cursor;
+
+    for (const review of responseObj.reviews) {
+      if (review !== undefined) reviews.push(review);
+    }
+  }
+
+  console.log(`Steamworks extras: Reviews result`);
+  console.log(reviews);
+
+  return reviews;
 }
