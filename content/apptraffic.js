@@ -246,6 +246,7 @@ const updateTrafficChart = () => {
   const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
 
   const days = helpers.getDateRangeArray(dateStart, dateEnd, true);
+  console.log(days);
 
   const chartData = {};
 
@@ -268,6 +269,10 @@ const updateTrafficChart = () => {
     };
 
     const date = data['Date'];
+
+    if (chartCategories.length === 0 && chartSubcategories.length === 0) {
+      addDataToMap('Total', date, value);
+    }
 
     for (const category of chartCategories) {
       if (data['PageCategory'] !== category) continue;

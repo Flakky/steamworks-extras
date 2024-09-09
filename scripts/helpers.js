@@ -103,7 +103,8 @@ helpers.tryConvertStringToNumber = (str) => {
  * await dateToString(new Date('2020-01-20'));
  */
 helpers.dateToString = (date) => {
-  return date.toISOString().split('T')[0];
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().split('T')[0];
 }
 
 helpers.getDateRangeArray = (dateStart, dateEnd, outputDateStrings) => {
@@ -115,7 +116,7 @@ helpers.getDateRangeArray = (dateStart, dateEnd, outputDateStrings) => {
       const formattedDate = helpers.dateToString(day);
       days.push(formattedDate);
     }
-    else days.push(day)
+    else days.push(new Date(day))
 
     // Move to the next day
     day.setDate(day.getDate() + 1);
