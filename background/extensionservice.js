@@ -1,4 +1,7 @@
 importScripts('../data/defaultsettings.js');
+importScripts('../scripts/helpers.js');
+importScripts('../scripts/gamestatsstorage.js');
+importScripts('statsupdater.js');
 
 chrome.runtime.onInstalled.addListener(async () => {
   chrome.storage.local.get(Object.keys(defaultSettings), (storedSettings) => {
@@ -27,9 +30,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       console.log('RESP')
       sendResponse(response);
     })(); return true;
+
   }
 
   return false;
+});
+
+chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
+  console.log(`Steamworks extras: External message: ${message.request}`)
+
+    (async () => {
+      switch (message.action) {
+        case "requestTrafficData": {
+          const data = await getlTrafficData(message.appId);
+          sendResponse(data);
+        }
+        case "requestSalesData": {
+          const data = await getSalesData(message.appId);
+          sendResponse(data);
+        };
+
+      }
+    })();
 });
 
 const showOptions = () => {
@@ -52,4 +74,11 @@ const makeRequest = async (url, params) => {
   return responseText;
 }
 
-console.log("Steamworks extras: Extension service initiated");
+const init = () => {
+  console.log('Steamworks extras: Init');
+
+  updateStats();
+  console.log("Steamworks extras: Extension service initiated");
+}
+
+init();

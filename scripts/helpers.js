@@ -154,7 +154,8 @@ helpers.getCountryRevenue = async (appID, country, dateStart, dateEnd) => {
 
   const htmlText = await response.text();
 
-  const parser = new DOMParser();
+  const { JSDOM } = require('jsdom');
+  const parser = new JSDOM().window.DOMParser;
   const doc = parser.parseFromString(htmlText, 'text/html');
 
   const element = helpers.findElementByText('a', country, doc);
@@ -202,10 +203,14 @@ helpers.getSaleDataCSV = async (pkgID, dateStart, dateEnd) => {
   data.append('file', 'SalesData');
   data.append('params', `query=QueryPackageSalesForCSV^pkgID[0]=${pkgID}^dateStart=${formattedStartDate}^dateEnd=${formattedEndDate}^interpreter=PartnerSalesReportInterpreter`);
 
+  //  const htmlText = await helpers.sendMessageAsync({ request: 'makeRequest', url: URL, params: { method: 'POST', headers: reqHeaders, body: data.toString() } });
   const response = await fetch(URL, { method: 'POST', headers: reqHeaders, body: data.toString() });
   if (!response.ok) throw new Error('Network response was not ok');
 
   const htmlText = await response.text();
+
+  console.log(htmlText);
+
   let lines = htmlText.split('\n');
 
   lines.splice(0, 3); // Remove first 3 rows because they are not informative and break csv format
@@ -384,6 +389,52 @@ helpers.requestGameReviews = async (appID) => {
   console.log(reviews);
 
   return reviews;
+}
+
+helpers.getPackageIDs = async (appID, useBackgroundScript) => {
+  const url = `https://partner.steamgames.com/apps/landing/${appID}`;
+
+  console.log(`Fetching package IDs from URL: ${url}`);
+
+  let htmlText;
+  if (useBackgroundScript) {
+    htmlText = await helpers.sendMessageAsync({ request: 'makeRequest', url: url });
+  } else {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Network response was not ok');
+    htmlText = await response.text();
+  }
+
+  const packageIDs = await helpers.parseDOM(htmlText, 'parsePackageID');
+
+  return packageIDs;
+}
+
+helpers.parseDOM = async (htmlText, request) => {
+  console.log('Parsing DOM started: ', request);
+  const offscreenUrl = chrome.runtime.getURL('background/offscreen/offscreen.html');
+
+  await chrome.offscreen.createDocument({
+    url: offscreenUrl,
+    reasons: [chrome.offscreen.Reason.DOM_PARSER],
+    justification: 'Parse HTML in background script'
+  });
+
+  await chrome.runtime.sendMessage({
+    action: request,
+    htmlText: htmlText
+  });
+
+  return new Promise((resolve, reject) => {
+    chrome.runtime.onMessage.addListener(function listener(message) {
+      if (message.action === 'parsedDOM') {
+        chrome.runtime.onMessage.removeListener(listener);
+        console.log('Parsing DOM completed', message.result);
+
+        resolve(message.result);
+      }
+    });
+  });
 }
 
 helpers.sendMessageAsync = (message) => {

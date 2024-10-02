@@ -3,14 +3,33 @@
   "name": "Steamworks extra reports",
   "version": "1.9.1",
   "permissions": [
-    "storage"
+    "storage",
+    "offscreen"
   ],
   "host_permissions": [
     "https://store.steampowered.com/*",
-    "https://partner.steampowered.com/",
-    "https://partner.steamgames.com/*"
+    "https://partner.steampowered.com/*",
+    "https://partner.steamgames.com/*",
+    "http://127.0.0.1:3000/*",
+    "http://localhost:3000/*",
+    "https://127.0.0.1:3000/*",
+    "https://localhost:3000/*"
   ],
   "content_scripts": [
+    {
+      "matches": [
+        "http://127.0.0.1:3000/*",
+        "http://localhost:3000/*",
+        "https://127.0.0.1:3000/*",
+        "https://localhost:3000/*"
+      ],
+      "js": [
+        "scripts/gamestatsstorage.js",
+        "scripts/helpers.js",
+        "data/defaultsettings.js",
+        "content/site.js"
+      ]
+    },
     {
       "matches": [
         "https://partner.steampowered.com/app/details/*"
@@ -48,13 +67,18 @@
     {
       "resources": [
         "data/chartcolors.json",
-        "data/defaulsettings.js"
+        "data/defaulsettings.js",
+        "background/offscreen/offscreen.html",
+        "background/offscreen/offscreen.js"
       ],
       "matches": [
         "<all_urls>"
       ]
     }
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' http://localhost:3000; object-src 'self'"
+  },
   "options_page": "options/options.html",
   "background": {
     "service_worker": "background/extensionservice.js"

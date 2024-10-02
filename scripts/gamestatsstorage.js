@@ -34,7 +34,7 @@ const initGameStatsStorage = (appID, index) => {
 
       gameStatsStorage.createObjectStore(`${appID}_Reviews`, { keyPath: "date" });
       gameStatsStorage.createObjectStore(`${appID}_Traffic`, { keyPath: ['Date', 'PageCategory', 'PageFeature'] });
-      gameStatsStorage.createObjectStore(`${appID}_Sales`, { keyPath: "Date" });
+      gameStatsStorage.createObjectStore(`${appID}_Sales`, { keyPath: "key" }); // key is a unique identifier for each row
 
       resolve();
     }
@@ -335,4 +335,103 @@ const requestAllReviewsData = async (appID) => {
   console.log(reviews);
 
   return reviews;
+}
+
+const requestSalesData = async (appID) => {
+  const startDate = new Date(2020, 0, 0);
+  const endDate = new Date();
+
+  const formattedStartDate = helpers.dateToString(startDate);
+  const formattedEndDate = helpers.dateToString(endDate);
+
+  const packageIDs = await helpers.getPackageIDs(appID, false);
+
+  console.log(`Steamworks extras: Request sales in CSV between ${formattedStartDate} and ${formattedEndDate}`);
+
+  const URL = `https://partner.steampowered.com/report_csv.php`;
+
+  const reqHeaders = {
+    'Content-Type': 'application/x-www-form-urlencoded',
+  };
+
+  const data = new URLSearchParams();
+  data.append('file', 'SalesData');
+  let params = `query=QueryPackageSalesForCSV^dateStart=${formattedStartDate}^dateEnd=${formattedEndDate}^interpreter=PartnerSalesReportInterpreter`;
+  packageIDs.forEach((pkgID, index) => {
+    params += `^pkgID[${index}]=${pkgID}`;
+  });
+  data.append('params', params);
+
+  const response = await fetch(URL, { method: 'POST', headers: reqHeaders, body: data.toString(), credentials: 'include' });
+  if (!response.ok) throw new Error('Network response was not ok');
+
+  const htmlText = await response.text();
+  let lines = htmlText.split('\n');
+
+  console.log(htmlText);
+
+  lines.splice(0, 3); // Remove first 3 rows because they are not informative and break csv format
+
+  // Ensure that we have lines to process
+  if (lines.length === 0) {
+    console.log(`Steamworks extras: No sales data found in CSV`);
+    return [];
+  }
+
+  await clearData(appID, 'Sales');
+
+  const csvString = lines.join('\n');
+
+  lines = helpers.csvTextToArray(csvString);
+
+  const headers = lines[0].map(header => header.trim());
+
+  // Map each line to an object using the headers as keys
+  let index = 0;
+  const result = lines.slice(1).map(line => {
+    const object = {};
+
+    line.forEach((element, index) => {
+      object[headers[index]] = element;
+    });
+
+    object.key = index++;
+
+    return object;
+  });
+
+  console.log(`Steamworks extras: Sales CSV result:`, result);
+
+  await writeData(appID, 'Sales', result);
+}
+
+const getAllSalesData = async (appID) => {
+  await waitForDatabaseReady();
+  let records = await readData(appID, 'Sales');
+
+  if (records.length === 0) {
+    console.log(`Steamworks extras: No sales data found in DB. Requesting from server...`);
+    await requestSalesData(appID);
+    records = await readData(appID, 'Sales');
+  }
+
+  return records;
+}
+
+const getSalesData = async (appID, dateStart, dateEnd) => {
+  await waitForDatabaseReady();
+
+  let records = await readData(appID, 'Sales');
+
+  let endDateWithoutOffset = new Date(dateEnd - dateEnd.getTimezoneOffset() * 60000);
+
+  const out = records.filter(item => {
+    const date = new Date(item['Date']);
+
+    return date >= dateStart && date <= endDateWithoutOffset;
+  });
+
+  console.log(out);
+
+  return out;
 }
