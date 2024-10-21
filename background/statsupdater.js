@@ -1,8 +1,12 @@
 const appID = '2004080';
 
 const updateStats = async () => {
-  await initGameStatsStorage(appID, 1);
-  await fetchSalesData();
+  initGameStatsStorage(appID, 1).finally(async () => {
+    await fetchSalesData();
+    await fetchReviewsData();
+    await fetchWishlistsData();
+    await fetchTrafficData();
+  });
 }
 
 const fetchTrafficData = async () => {
@@ -11,4 +15,12 @@ const fetchTrafficData = async () => {
 
 const fetchSalesData = async () => {
   await requestSalesData(appID);
+}
+
+const fetchReviewsData = async () => {
+  await requestAllReviewsData(appID);
+}
+
+const fetchWishlistsData = async () => {
+  await requestAllWishlistData(appID);
 }

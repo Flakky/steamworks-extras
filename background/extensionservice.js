@@ -22,41 +22,67 @@ chrome.runtime.onInstalled.addListener(async () => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log(`Steamworks extras: Background message: ${message.request}`)
-  switch (message.request) {
-    case "showOptions": showOptions(); return true;
-    case "makeRequest": (async () => {
-      const response = await makeRequest(message.url, message.params)
-      console.log('RESP')
-      sendResponse(response);
-    })(); return true;
+  console.log(`Steamworks extras: Background message: `, message);
 
-  }
-
-  return false;
+  (async () => {
+    switch (message.request) {
+      case "showOptions":
+        showOptions();
+        sendResponse();
+        return;
+      case "makeRequest": {
+        const response = await makeRequest(message.url, message.params);
+        console.log('RESP');
+        sendResponse(response);
+        return;
+      }
+      case "getData": {
+        const data = await getDataFromDB(message.type, message.appId, message.dateStart, message.dateEnd);
+        console.log(`Steamworks extras: returning "${message.type}" data from background: `, data);
+        sendResponse(data);
+        return;
+      }
+    }
+  })();
+  return true;
 });
 
 chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
-  console.log(`Steamworks extras: External message: ${message.request}`)
+  console.log(`Steamworks extras: External message: `, message);
 
-    (async () => {
-      switch (message.action) {
-        case "requestTrafficData": {
-          const data = await getlTrafficData(message.appId);
-          sendResponse(data);
-        }
-        case "requestSalesData": {
-          const data = await getSalesData(message.appId);
-          sendResponse(data);
-        };
-
+  (async () => {
+    switch (message.request) {
+      case "getData": {
+        sendResponse(await getDataFromDB(message.type, message.appId, message.dateStart, message.dateEnd));
       }
-    })();
+    }
+  })();
 });
 
 const showOptions = () => {
   console.log('Steamworks extras: Show options')
   chrome.runtime.openOptionsPage();
+}
+
+const getDataFromDB = async (type, appId, dateStart, dateEnd) => {
+
+  const startDate = dateStart ? new Date(dateStart) : undefined;
+  const endDate = dateEnd ? new Date(dateEnd) : undefined;
+
+  switch (type) {
+    case "Traffic": {
+      return await getTrafficData(appId, startDate, endDate);
+    }
+    case "Sales": {
+      return await getSalesData(appId, startDate, endDate);
+    }
+    case "Reviews": {
+      return await getReviewsData(appId, startDate, endDate);
+    }
+    case "Wishlists": {
+      return await getWishlistData(appId, startDate, endDate);
+    }
+  }
 }
 
 const makeRequest = async (url, params) => {
@@ -74,10 +100,10 @@ const makeRequest = async (url, params) => {
   return responseText;
 }
 
-const init = () => {
+const init = async () => {
   console.log('Steamworks extras: Init');
 
-  updateStats();
+  await updateStats();
   console.log("Steamworks extras: Extension service initiated");
 }
 

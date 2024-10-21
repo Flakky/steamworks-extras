@@ -1,9 +1,15 @@
-// Storage tables
-// appID_Reviews
-// appID_Traffic
-// appID_Sales
 
 let gameStatsStorage;
+
+const tables = [
+  { name: 'Reviews', key: 'recommendationid' },
+  { name: 'Wishlists', key: 'key' }, // Key is a combination of date and country
+  { name: 'Refunds', key: 'key' }, // Key is a hash of refund comment
+  { name: 'Traffic', key: ['Date', 'PageCategory', 'PageFeature'] },
+  { name: 'Sales', key: 'key' } // Key is unique identifier
+];
+
+const MAX_RETRY_COUNT = 20;
 
 const initGameStatsStorage = (appID, index) => {
   return new Promise((resolve, reject) => {
@@ -11,18 +17,21 @@ const initGameStatsStorage = (appID, index) => {
 
     const request = indexedDB.open("SteamworksExtras_GameStatsStorage", index);
 
+    let retries = 0;
+
     request.onsuccess = (event) => {
       gameStatsStorage = event.target.result;
 
+      for (const table of tables) {
+        if (!gameStatsStorage.objectStoreNames.contains(`${appID}_${table.name}`)) {
+          gameStatsStorage.close();
+          gameStatsStorage = undefined;
+          initGameStatsStorage(appID, index + 1).then(resolve).catch(reject);
+        }
+      }
+
       console.log(`Steamworks Extras: Database initialized for app ${appID} with index ${index}`);
       console.log(gameStatsStorage.objectStoreNames);
-
-      if (!gameStatsStorage.objectStoreNames.contains(`${appID}_Reviews`)) {
-        gameStatsStorage.close();
-        gameStatsStorage = undefined;
-        initGameStatsStorage(appID, index + 1);
-        return;
-      }
 
       resolve();
     }
@@ -32,19 +41,28 @@ const initGameStatsStorage = (appID, index) => {
 
       console.log(`Steamworks Extras: Database update for app ${appID} with index ${index}`);
 
-      gameStatsStorage.createObjectStore(`${appID}_Reviews`, { keyPath: "date" });
-      gameStatsStorage.createObjectStore(`${appID}_Traffic`, { keyPath: ['Date', 'PageCategory', 'PageFeature'] });
-      gameStatsStorage.createObjectStore(`${appID}_Sales`, { keyPath: "key" }); // key is a unique identifier for each row
+      for (const table of tables) {
+        try {
+          gameStatsStorage.createObjectStore(`${appID}_${table.name}`, { keyPath: table.key });
+        } catch (e) { }
+      }
 
-      resolve();
+      reject();
     }
 
     request.onerror = (event) => {
       gameStatsStorage = undefined;
       const msg = `Failed to open the database: ${event.target.errorCode}`;
       console.error(msg);
-      reject(msg);
-    };
+
+      if (retries++ > MAX_RETRY_COUNT) {
+        reject();
+      }
+      else {
+        console.log(`Steamworks Extras: Retrying to open database for app ${appID} with index ${index}`);
+        return initGameStatsStorage(appID, index + 1).then(resolve).catch(reject);
+      }
+    }
   });
 }
 
@@ -174,9 +192,21 @@ const requestAllTrafficData = async (appID) => {
   await waitForDatabaseReady();
   await initGameStatsStorage(appID, 1);
 
+  let records = await readData(appID, 'Traffic');
+
   let date = new Date();
   date.setDate(date.getDate() - 1);
   while (true) {
+
+    if (date.getDate() < new Date() - 2 // We want to refresh first several days because new data may be available
+      && records.some(record => record['Date'] === helpers.dateToString(date))) {
+
+      console.log(`Steamworks extras: Traffic data for ${helpers.dateToString(date)} already cached`);
+
+      date.setDate(date.getDate() - 1);
+      continue;
+    }
+
     const hasData = await requestTrafficData(appID, date);
 
     if (!hasData) return;
@@ -210,16 +240,10 @@ const getlTrafficData = async (appID, dateStart, dateEnd) => {
     records = await readData(appID, 'Traffic');
   }
 
-  console.log(records);
-
-  let endDateWithoutOffset = new Date(dateEnd - dateEnd.getTimezoneOffset() * 60000);
-
   const out = records.filter(item => {
     const date = new Date(item['Date']);
 
-    console.log(` ${date} >= ${dateStart} && ${date} <= ${endDateWithoutOffset} = ${date >= dateStart && date <= endDateWithoutOffset}`);
-
-    return date >= dateStart && date <= endDateWithoutOffset;
+    return helpers.isDateInRange(date, dateStart, dateEnd);
   });
 
   console.log(out);
@@ -235,7 +259,9 @@ const requestTrafficData = async (appID, date) => {
 
   const URL = `https://partner.steamgames.com/apps/navtrafficstats/${appID}?attribution_filter=all&preset_date_range=custom&start_date=${formattedDate}&end_date=${formattedDate}&format=csv`;
 
-  const responseText = await helpers.sendMessageAsync({ request: 'makeRequest', url: URL, params: {} });
+  const response = await fetch(URL);
+
+  const responseText = await response.text();
 
   let lines = responseText.split('\n');
 
@@ -283,6 +309,27 @@ const requestTrafficData = async (appID, date) => {
 }
 
 // Reviews
+const getReviewsData = async (appID, dateStart, dateEnd) => {
+  await waitForDatabaseReady();
+
+  console.log(`Steamworks extras: Requesting reviews data for app ${appID}`);
+
+  let records = await readData(appID, 'Reviews');
+
+  console.log(`Steamworks extras: Reviews data found in DB:`, records);
+
+  if (dateStart && dateEnd) {
+    return records.filter(item => {
+      const date = new Date(item['timestamp_created'] * 1000);
+      return helpers.isDateInRange(date, dateStart, dateEnd);
+    });
+
+  }
+  else {
+    return records;
+  }
+}
+
 const requestAllReviewsData = async (appID) => {
   // Request documentation: https://partner.steamgames.com/doc/store/getreviews
 
@@ -318,7 +365,9 @@ const requestAllReviewsData = async (appID) => {
 
     console.log(`Sending review request to "${request_url}"`);
 
-    const responseText = await helpers.sendMessageAsync({ request: 'makeRequest', url: request_url, params: request_options });
+    const response = await fetch(request_url, request_options);
+
+    const responseText = await response.text();
 
     const responseObj = JSON.parse(responseText);
 
@@ -334,9 +383,125 @@ const requestAllReviewsData = async (appID) => {
   console.log(`Steamworks extras: Reviews result`);
   console.log(reviews);
 
+  await clearData(appID, 'Reviews');
+
+  await writeData(appID, 'Reviews', reviews);
+
   return reviews;
 }
 
+// Wishlists
+const getWishlistData = async (appID, dateStart, dateEnd) => {
+
+  let records = await readData(appID, 'Wishlists');
+
+  let datesNoData = helpers.getDateRangeArray(dateStart, dateEnd, true);
+
+  for (const record of records) {
+    datesNoData = datesNoData.filter(item => item !== record['Date']);
+  }
+
+  if (datesNoData.length > 0) {
+    console.log(`Steamworks extras: Some dates are not cached. Requesting...`);
+    console.log(datesNoData);
+
+    for (const date of datesNoData) {
+      await requestWishlistData(appID, new Date(date));
+    }
+
+    records = await readData(appID, 'Wishlists');
+  }
+
+  const out = records.filter(item => {
+    const date = new Date(item['Date']);
+    return helpers.isDateInRange(date, dateStart, dateEnd);
+  });
+
+  return out;
+}
+
+const requestAllWishlistData = async (appID) => {
+  console.log(`Steamworks extras: Requesting all wishlist data for app ${appID}`);
+
+  let records = await readData(appID, 'Wishlists');
+
+  console.log(`Steamworks extras: Wishlist data found in DB:`, records);
+
+  let noDataDates = 0;
+
+  let date = new Date();
+  date.setDate(date.getDate() - 1); // Because we do not have wishlists for today.
+
+  const cachedDates = records.map(record => record['Date']);
+  console.log(`Steamworks extras: Cached wishlist dates:`, cachedDates);
+
+  while (true) {
+
+    if (date.getDate() < new Date() - 3 // We want to refresh last several days because new data may be available
+      && cachedDates.includes(helpers.dateToString(date))) {
+
+      date.setDate(date.getDate() - 1);
+
+      continue;
+    }
+
+    const data = await requestWishlistData(appID, date);
+
+    if (!data) {
+      if (noDataDates++ > 5) {
+        console.log(`Steamworks extras: No wishlist data found for last 5 days. Stop receiving wishlist data...`);
+        return;
+      }
+    }
+
+    date.setDate(date.getDate() - 1);
+  }
+}
+
+const requestWishlistData = async (appID, date) => {
+  const formattedDate = helpers.dateToString(date);
+
+  let url = `https://partner.steampowered.com/region/`;
+  const params = {
+    appID: appID,
+    unitType: 'wishlist',
+    dateStart: formattedDate,
+    dateEnd: formattedDate
+  }
+
+  const queryString = new URLSearchParams(params).toString();
+  url += `?${queryString}`;
+
+  console.log(`Sending wishlist request to "${url}"`);
+
+  const response = await fetch(url);
+
+  const htmlText = await response.text();
+
+  const data = await helpers.parseDOM(htmlText, 'parseWishlistData');
+
+  if (typeof data !== 'object' || Object.keys(data).length === 0) {
+    console.log(`Steamworks extras: No wishlist data found for date ${formattedDate}`);
+    return undefined;
+  }
+
+  const formattedData = Object.keys(data).map(wishlist_data => {
+    return {
+      key: `${formattedDate}_${wishlist_data}`,
+      Date: formattedDate,
+      Country: wishlist_data,
+      Wishlists: data[wishlist_data] || 0
+    };
+  });
+
+  await writeData(appID, 'Wishlists', formattedData);
+
+  console.log(`Steamworks extras: Wishlist result for date ${formattedDate}: `, data);
+
+  return data;
+}
+
+// Sales
 const requestSalesData = async (appID) => {
   const startDate = new Date(2020, 0, 0);
   const endDate = new Date();
@@ -344,9 +509,16 @@ const requestSalesData = async (appID) => {
   const formattedStartDate = helpers.dateToString(startDate);
   const formattedEndDate = helpers.dateToString(endDate);
 
+  console.log(`Steamworks extras: Request sales in CSV between ${formattedStartDate} and ${formattedEndDate}`);
+
   const packageIDs = await helpers.getPackageIDs(appID, false);
 
-  console.log(`Steamworks extras: Request sales in CSV between ${formattedStartDate} and ${formattedEndDate}`);
+  console.log(`Steamworks extras: Package IDs found for app ${appID}:`, packageIDs);
+
+  if (!packageIDs || packageIDs.length === 0) {
+    console.error(`Steamworks extras: No package IDs found for app ${appID}`);
+    return;
+  }
 
   const URL = `https://partner.steampowered.com/report_csv.php`;
 
@@ -357,6 +529,7 @@ const requestSalesData = async (appID) => {
   const data = new URLSearchParams();
   data.append('file', 'SalesData');
   let params = `query=QueryPackageSalesForCSV^dateStart=${formattedStartDate}^dateEnd=${formattedEndDate}^interpreter=PartnerSalesReportInterpreter`;
+
   packageIDs.forEach((pkgID, index) => {
     params += `^pkgID[${index}]=${pkgID}`;
   });
@@ -423,15 +596,15 @@ const getSalesData = async (appID, dateStart, dateEnd) => {
 
   let records = await readData(appID, 'Sales');
 
-  let endDateWithoutOffset = new Date(dateEnd - dateEnd.getTimezoneOffset() * 60000);
+  if (dateStart && dateEnd) {
 
-  const out = records.filter(item => {
-    const date = new Date(item['Date']);
+    return records.filter(item => {
+      let date = new Date(item['Date']);
 
-    return date >= dateStart && date <= endDateWithoutOffset;
-  });
-
-  console.log(out);
-
-  return out;
+      return helpers.isDateInRange(date, dateStart, dateEnd);
+    });
+  }
+  else {
+    return records;
+  }
 }

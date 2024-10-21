@@ -37,10 +37,6 @@ const init = () => {
     addRefundDataLink();
 
     hideOriginalMainBlock();
-
-    console.log(getAppID());
-    initGameStatsStorage(getAppID(), 1);
-    requestAllTrafficData(getAppID());
   });
 }
 
@@ -416,7 +412,7 @@ const getDateRangeOfCurrentPage = () => {
   console.log(dateStartString)
   console.log(dateEndString)
 
-  let today = new Date();
+  let today = helpers.getDateNoOffset();
   if (today.getUTCHours() < 7) today.setDate(today.getDate() - 1); // Steam still stands on the previous day until 6am UTC
 
   let dateStart = today;
@@ -448,10 +444,12 @@ const requestTotalUSRevenue = () => {
 
 const requestSales = () => {
   const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
-  const packageId = getPackageId();
 
-  helpers.getSaleDataCSV(packageId, dateStart, dateEnd).then((res) => {
-    salesForDateRange = res;
+  console.log('Requesting sales data between ', dateStart, ' and ', dateEnd);
+
+  helpers.sendMessageAsync({ request: 'getData', type: 'Sales', appId: getAppID(), dateStart: dateStart, dateEnd: dateEnd }).then((response) => {
+    console.log('Sales data received: ', response);
+    salesForDateRange = response;
 
     updateSalesChart(chartSplit, chartValueType);
   });

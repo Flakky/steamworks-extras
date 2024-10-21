@@ -172,75 +172,25 @@ helpers.getCountryRevenue = async (appID, country, dateStart, dateEnd) => {
   return revenue;
 }
 
-/**
- * Asyncroniosly request full sales data for a date range
- *
- * @param {string} appID - AppID of the game
- * @param {string} dateStart - [Optional] Start date. 2010-01-01 if not provided
- * @param {string} dateEnd - [Optional] End date. Today if not provided
- * @returns {Promise<object>} - Promise with revenue (number)
- *
- * @example
- * // returns {...}
- * await getSaleDataCSV(000000, Date('2020-01-20'), Date('2021-05-20')));
- */
-helpers.getSaleDataCSV = async (pkgID, dateStart, dateEnd) => {
-  const startDate = dateStart || new Date(2010, 0, 1);
-  const endDate = dateEnd || new Date();
+helpers.correctDateRange = (startDate, endDate) => {
+  startDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  endDate = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999);
+}
 
-  const formattedStartDate = helpers.dateToString(startDate);
-  const formattedEndDate = helpers.dateToString(endDate);
+helpers.getDateNoOffset = () => {
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60000;
+  return new Date(now.getTime() - offset);
+}
 
-  console.log(`Steamworks extras: Request sales in CSV between ${formattedStartDate} and ${formattedEndDate}`);
+helpers.isDateInRange = (date, startDate, endDate) => {
+  const start = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999);
+  const target = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0); // To be sure the date is inside start and end
 
-  const URL = `https://partner.steampowered.com/report_csv.php`;
+  console.log(`Checking if ${target} is in range ${start} - ${end}`);
 
-  const reqHeaders = {
-    'Content-Type': 'application/x-www-form-urlencoded'
-  };
-
-  const data = new URLSearchParams();
-  data.append('file', 'SalesData');
-  data.append('params', `query=QueryPackageSalesForCSV^pkgID[0]=${pkgID}^dateStart=${formattedStartDate}^dateEnd=${formattedEndDate}^interpreter=PartnerSalesReportInterpreter`);
-
-  //  const htmlText = await helpers.sendMessageAsync({ request: 'makeRequest', url: URL, params: { method: 'POST', headers: reqHeaders, body: data.toString() } });
-  const response = await fetch(URL, { method: 'POST', headers: reqHeaders, body: data.toString() });
-  if (!response.ok) throw new Error('Network response was not ok');
-
-  const htmlText = await response.text();
-
-  console.log(htmlText);
-
-  let lines = htmlText.split('\n');
-
-  lines.splice(0, 3); // Remove first 3 rows because they are not informative and break csv format
-
-  // Ensure that we have lines to process
-  if (lines.length === 0) {
-    return [];
-  }
-
-  const csvString = lines.join('\n');
-
-  lines = helpers.csvTextToArray(csvString);
-
-  const headers = lines[0].map(header => header.trim());
-
-  // Map each line to an object using the headers as keys
-  const result = lines.slice(1).map(line => {
-    const object = {};
-
-    line.forEach((element, index) => {
-      object[headers[index]] = element;
-    });
-
-    return object;
-  });
-
-  console.log(`Steamworks extras: Sales CSV result`);
-  console.log(result);
-
-  return result;
+  return target >= start && target <= end;
 }
 
 helpers.csvTextToArray = (strData, strDelimiter) => {
@@ -391,6 +341,20 @@ helpers.requestGameReviews = async (appID) => {
   return reviews;
 }
 
+helpers.getWishlistData = async (appID, date) => {
+  const url = `https://store.steampowered.com/app/${appID}`;
+
+  console.log(`Fetching wishlist data from URL: ${url}`);
+
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('Network response was not ok');
+  const htmlText = await response.text();
+
+  const wishlistData = await helpers.parseDOM(htmlText, 'parseWishlistData');
+
+  return wishlistData;
+}
+
 helpers.getPackageIDs = async (appID, useBackgroundScript) => {
   const url = `https://partner.steamgames.com/apps/landing/${appID}`;
 
@@ -414,11 +378,13 @@ helpers.parseDOM = async (htmlText, request) => {
   console.log('Parsing DOM started: ', request);
   const offscreenUrl = chrome.runtime.getURL('background/offscreen/offscreen.html');
 
-  await chrome.offscreen.createDocument({
-    url: offscreenUrl,
-    reasons: [chrome.offscreen.Reason.DOM_PARSER],
-    justification: 'Parse HTML in background script'
-  });
+  try {
+    await chrome.offscreen.createDocument({
+      url: offscreenUrl,
+      reasons: [chrome.offscreen.Reason.DOM_PARSER],
+      justification: 'Parse HTML in background script'
+    });
+  } catch (error) { console.error(error); }
 
   await chrome.runtime.sendMessage({
     action: request,
@@ -430,6 +396,8 @@ helpers.parseDOM = async (htmlText, request) => {
       if (message.action === 'parsedDOM') {
         chrome.runtime.onMessage.removeListener(listener);
         console.log('Parsing DOM completed', message.result);
+
+        chrome.offscreen.closeDocument();
 
         resolve(message.result);
       }

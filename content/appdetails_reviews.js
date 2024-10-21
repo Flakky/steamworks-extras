@@ -3,9 +3,11 @@ let reviewsChart = undefined;
 let reviewChartSplit = "Vote";
 
 const requestReviews = () => {
-  helpers.requestGameReviews(getAppID()).then((res) => {
+  console.log("Steamworks extras: Requesting reviews data");
 
-    reviews = res;
+  helpers.sendMessageAsync({ request: 'getData', type: 'Reviews', appId: getAppID() }).then((response) => {
+    reviews = response;
+    console.log("Steamworks extras: Reviews data received: ", reviews);
 
     updateReviewsChart();
     updateReviewsSummary();
@@ -113,7 +115,8 @@ const updateReviewsChart = () => {
 
   const chartDays = [];
 
-  const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
+  let { dateStart, dateEnd } = getDateRangeOfCurrentPage();
+
   const oneDay = helpers.dateToString(dateStart) === helpers.dateToString(dateEnd);
 
   let dayLoop = new Date(dateStart);
@@ -297,7 +300,8 @@ const updateReviewsTable = () => {
     addRowCell(columnNamesRow, column);
   }
 
-  const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
+  let { dateStart, dateEnd } = getDateRangeOfCurrentPage();
+  dateEnd.setDate(dateEnd.getDate() + 1); // Add one day to include the end date
 
   let languageReviewsStats = {}
 
