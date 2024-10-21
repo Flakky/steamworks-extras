@@ -413,13 +413,15 @@ const getDateRangeOfCurrentPage = () => {
   console.log(dateEndString)
 
   let today = helpers.getDateNoOffset();
-  if (today.getUTCHours() < 7) today.setDate(today.getDate() - 1); // Steam still stands on the previous day until 6am UTC
+  if (today.getHours() < 7) today.setDate(today.getDate() - 1); // Steam still stands on the previous day until 6am UTC
 
   let dateStart = today;
   let dateEnd = today;
 
   if (!helpers.isStringEmpty(dateStartString)) dateStart = new Date(dateStartString);
   if (!helpers.isStringEmpty(dateEndString)) dateEnd = new Date(dateEndString);
+
+  helpers.correctDateRange(dateStart, dateEnd);
 
   return { dateStart: dateStart, dateEnd: dateEnd };
 }
