@@ -216,7 +216,7 @@ const requestAllTrafficData = async (appID) => {
   }
 }
 
-const getlTrafficData = async (appID, dateStart, dateEnd) => {
+const getTrafficData = async (appID, dateStart, dateEnd) => {
   await waitForDatabaseReady();
 
   // TODO: Optimize reading data only for range from DB
@@ -232,7 +232,6 @@ const getlTrafficData = async (appID, dateStart, dateEnd) => {
 
   if (datesNoData.length > 0) {
     console.log(`Steamworks extras: Some dates are not cached. Requesting...`);
-    console.log(datesNoData);
 
     for (const date of datesNoData) {
       await requestTrafficData(appID, new Date(date));

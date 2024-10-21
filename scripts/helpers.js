@@ -188,8 +188,6 @@ helpers.isDateInRange = (date, startDate, endDate) => {
   const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999);
   const target = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0); // To be sure the date is inside start and end
 
-  console.log(`Checking if ${target} is in range ${start} - ${end}`);
-
   return target >= start && target <= end;
 }
 

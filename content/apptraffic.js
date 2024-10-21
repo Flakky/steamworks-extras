@@ -75,11 +75,17 @@ const readChartColors = () => {
 }
 
 const initTrafficData = async () => {
-  await initGameStatsStorage(getAppID(), 1);
+  console.log("Steamworks extras: Requesting reviews data");
 
   const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
 
-  const data = await getlTrafficData(getAppID(), dateStart, dateEnd);
+  const data = await helpers.sendMessageAsync({
+    request: 'getData',
+    type: 'Traffic',
+    appId: getAppID(),
+    dateStart: dateStart,
+    dateEnd: dateEnd
+  });
 
   traffic = data;
 
