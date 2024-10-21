@@ -4,8 +4,8 @@ const updateStats = async () => {
   initGameStatsStorage(appID, 1).finally(async () => {
     await fetchSalesData();
     await fetchReviewsData();
-    await fetchWishlistsData();
     await fetchTrafficData();
+    await fetchWishlistsData();
   });
 }
 

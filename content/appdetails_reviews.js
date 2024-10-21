@@ -116,16 +116,22 @@ const updateReviewsChart = () => {
   const chartDays = [];
 
   let { dateStart, dateEnd } = getDateRangeOfCurrentPage();
+  helpers.correctDateRange(dateStart, dateEnd);
 
   const oneDay = helpers.dateToString(dateStart) === helpers.dateToString(dateEnd);
 
-  let dayLoop = new Date(dateStart);
-  while (dayLoop <= dateEnd) {
-    const formattedDate = helpers.dateToString(dayLoop);
-    chartDays.push(formattedDate);
+  if (oneDay) {
+    chartDays.push(helpers.dateToString(dateStart));
+  }
+  else {
+    let dayLoop = new Date(dateStart);
+    while (dayLoop <= dateEnd) {
+      const formattedDate = helpers.dateToString(dayLoop);
+      chartDays.push(formattedDate);
 
-    // Move to the next day
-    dayLoop.setDate(dayLoop.getDate() + 1);
+      // Move to the next day
+      dayLoop.setDate(dayLoop.getDate() + 1);
+    }
   }
 
   console.log(chartDays);
@@ -144,7 +150,7 @@ const updateReviewsChart = () => {
 
     const formattedDate = helpers.dateToString(reviewDate);
 
-    if (!reviewsInfoForChart.hasOwnProperty(formattedDate)) return;
+    if (!helpers.isDateInRange(reviewDate, dateStart, dateEnd)) return;
 
     let fieldName = undefined;
 
@@ -301,14 +307,14 @@ const updateReviewsTable = () => {
   }
 
   let { dateStart, dateEnd } = getDateRangeOfCurrentPage();
-  dateEnd.setDate(dateEnd.getDate() + 1); // Add one day to include the end date
+  helpers.correctDateRange(dateStart, dateEnd);
 
   let languageReviewsStats = {}
 
   for (const review of reviews) {
     const reviewDate = new Date(review.timestamp_created * 1000); // Timestamp is in seconds on Steam
 
-    if (reviewDate < dateStart || reviewDate > dateEnd) continue;
+    if (!helpers.isDateInRange(reviewDate, dateStart, dateEnd)) continue;
 
     if (!languageReviewsStats[review.language]) languageReviewsStats[review.language] = {
       "Positive": 0,

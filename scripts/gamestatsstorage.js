@@ -189,19 +189,20 @@ const clearAllData = () => {
 }
 
 const requestAllTrafficData = async (appID) => {
-  await waitForDatabaseReady();
-  await initGameStatsStorage(appID, 1);
+  console.log(`Steamworks extras: Requesting all traffic data for app ${appID}`);
 
   let records = await readData(appID, 'Traffic');
+
+  const cachedDates = [...new Set(records.map(record => record['Date']))];
+
+  console.log(`Steamworks extras: Cached traffic dates:`, cachedDates)
 
   let date = new Date();
   date.setDate(date.getDate() - 1);
   while (true) {
 
     if (date.getDate() < new Date() - 2 // We want to refresh first several days because new data may be available
-      && records.some(record => record['Date'] === helpers.dateToString(date))) {
-
-      console.log(`Steamworks extras: Traffic data for ${helpers.dateToString(date)} already cached`);
+      && cachedDates.includes(helpers.dateToString(date))) {
 
       date.setDate(date.getDate() - 1);
       continue;
@@ -429,15 +430,16 @@ const requestAllWishlistData = async (appID) => {
 
   let noDataDates = 0;
 
-  let date = new Date();
+  let date = helpers.getDateNoOffset();
   date.setDate(date.getDate() - 1); // Because we do not have wishlists for today.
 
-  const cachedDates = records.map(record => record['Date']);
+  const cachedDates = [...new Set(records.map(record => record['Date']))];
+
   console.log(`Steamworks extras: Cached wishlist dates:`, cachedDates);
 
   while (true) {
 
-    if (date.getDate() < new Date() - 3 // We want to refresh last several days because new data may be available
+    if (date.getDate() < helpers.getDateNoOffset() - 3 // We want to refresh last several days because new data may be available
       && cachedDates.includes(helpers.dateToString(date))) {
 
       date.setDate(date.getDate() - 1);
