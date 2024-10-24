@@ -12,7 +12,7 @@ let helpers = {}
  */
 helpers.numberWithCommas = (x) => {
   // https://stackoverflow.com/questions/2901102/how-to-format-a-number-with-commas-as-thousands-separators
-  return x.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+  return Math.round(x).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
 }
 
 /**
@@ -146,28 +146,18 @@ helpers.getCountryRevenue = async (appID, country, dateStart, dateEnd) => {
   const formattedStartDate = helpers.dateToString(startDate);
   const formattedEndDate = helpers.dateToString(endDate);
 
-  const countryRevenueURL = `https://partner.steampowered.com/region/?dateStart=${formattedStartDate}&dateEnd=${formattedEndDate}&appID=${appID}`;
-  console.log(countryRevenueURL);
+  let result = await helpers.sendMessageAsync({ request: 'getData', type: 'Sales', appId: appID });
 
-  const response = await fetch(countryRevenueURL);
-  if (!response.ok) throw new Error('Network response was not ok');
+  if (result === undefined) throw new Error(`Was not able to get sales data for appID ${appID}`);
 
-  const htmlText = await response.text();
+  result = result.filter(item => item["Country"] === country);
 
-  const { JSDOM } = require('jsdom');
-  const parser = new JSDOM().window.DOMParser;
-  const doc = parser.parseFromString(htmlText, 'text/html');
+  let revenue = 0;
+  result.forEach(item => {
+    revenue += item["Gross Steam Sales (USD)"];
+  });
 
-  const element = helpers.findElementByText('a', country, doc);
-  if (!element) throw new Error(`Was not able to find element for country ${country}`);
-
-  const countryRow = helpers.findParentByTag(element, 'tr');
-
-  let revenue = countryRow.cells[4].textContent;
-  revenue = revenue.replace('$', '');
-  revenue = revenue.replace(',', '');
-
-  console.log(`Steamworks extras: ${country} revenue share in ${formattedStartDate}-${formattedEndDate}: ${revenue}`);
+  console.log(`Steamworks extras: ${country} revenue share between ${formattedStartDate} and ${formattedEndDate}: ${revenue}`);
 
   return revenue;
 }
@@ -273,70 +263,6 @@ helpers.csvTextToArray = (strData, strDelimiter) => {
 
   // Return the parsed data.
   return (arrData);
-}
-
-/**
- * Asyncroniosly request all reviews for the game
- *
- * @param {string} appID - AppID of the game
- * @returns {Promise<object>} - Promise with reviews array
- *
- * @example
- * // returns [...]
- * await RequestGameReviews(000000);
- */
-helpers.requestGameReviews = async (appID) => {
-  // Request documentation: https://partner.steamgames.com/doc/store/getreviews
-
-  let cursor = '*'
-
-  let reviews = [];
-
-  while (true) {
-    const request_data = {
-      'filter': 'recent',
-      'language': 'all',
-      'review_type': 'all',
-      'purchase_type': 'all',
-      'num_per_page': 100,
-      'cursor': cursor,
-      'json': 1
-    }
-
-    const params = Object.keys(request_data)
-      .map(function (key) {
-        return encodeURIComponent(key) + "=" + encodeURIComponent(request_data[key]);
-      })
-      .join("&");
-
-    const request_url = `https://store.steampowered.com/appreviews/${appID}?${params}`;
-    const request_options = {
-      'method': 'POST',
-      'contentType': 'application/json',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-    };
-
-    console.log(`Sending review request to "${request_url}"`);
-
-    const responseText = await helpers.sendMessageAsync({ request: 'makeRequest', url: request_url, params: request_options });
-
-    const responseObj = JSON.parse(responseText);
-
-    if (responseObj.reviews === undefined || responseObj.reviews.length == 0) break;
-
-    cursor = responseObj.cursor;
-
-    for (const review of responseObj.reviews) {
-      if (review !== undefined) reviews.push(review);
-    }
-  }
-
-  console.log(`Steamworks extras: Reviews result`);
-  console.log(reviews);
-
-  return reviews;
 }
 
 helpers.getWishlistData = async (appID, date) => {
