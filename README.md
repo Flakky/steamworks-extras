@@ -1,6 +1,6 @@
 <div align="center">
 
-# Steamworks extra reports
+# Steamworks extras
 
 **This extension shows extra information about your game in Steamworks financial report page.**
 
@@ -21,6 +21,7 @@
 - Final revenue calculation for current date range
 - Better sales chart with different data types and view categories
 - App details page better layout
+- Reviews chart, as well as a table of reviews divided by language
 
 > [!NOTE]
 > The extension does not collect any information about your game. It calculates and inserts new data directly on the page.
