@@ -195,11 +195,18 @@ const requestAllTrafficData = async (appID) => {
 
   const cachedDates = [...new Set(records.map(record => record['Date']))];
 
+  const pageCreationDate = await helpers.requestPageCreationDate(appID);
+
   console.log(`Steamworks extras: Cached traffic dates:`, cachedDates)
 
   let date = new Date();
   date.setDate(date.getDate() - 1);
   while (true) {
+
+    if (date < pageCreationDate) {
+      console.log(`Steamworks extras: Stop receiving traffic data because we reached page creation date`);
+      return;
+    }
 
     if (date.getDate() < new Date() - 2 // We want to refresh first several days because new data may be available
       && cachedDates.includes(helpers.dateToString(date))) {
@@ -429,6 +436,10 @@ const requestAllWishlistData = async (appID) => {
 
   let noDataDates = 0;
 
+  const pageCreationDate = await helpers.requestPageCreationDate(appID);
+
+  console.log(`Steamworks extras: Page creation date:`, pageCreationDate);
+
   let date = helpers.getDateNoOffset();
   date.setDate(date.getDate() - 1); // Because we do not have wishlists for today.
 
@@ -437,6 +448,10 @@ const requestAllWishlistData = async (appID) => {
   console.log(`Steamworks extras: Cached wishlist dates:`, cachedDates);
 
   while (true) {
+    if (date < pageCreationDate) {
+      console.log(`Steamworks extras: Stop receiving wishlist data because we reached page creation date`);
+      return;
+    }
 
     if (date.getDate() < helpers.getDateNoOffset() - 3 // We want to refresh last several days because new data may be available
       && cachedDates.includes(helpers.dateToString(date))) {
@@ -473,13 +488,7 @@ const requestWishlistData = async (appID, date) => {
   const queryString = new URLSearchParams(params).toString();
   url += `?${queryString}`;
 
-  console.log(`Sending wishlist request to "${url}"`);
-
-  const response = await fetch(url);
-
-  const htmlText = await response.text();
-
-  const data = await helpers.parseDOM(htmlText, 'parseWishlistData');
+  const data = await helpers.parseDataFromPage(url, 'parseWishlistData');
 
   if (typeof data !== 'object' || Object.keys(data).length === 0) {
     console.log(`Steamworks extras: No wishlist data found for date ${formattedDate}`);

@@ -372,6 +372,28 @@ helpers.getPackageIDs = async (appID, useBackgroundScript) => {
   return packageIDs;
 }
 
+helpers.requestPageCreationDate = async (appID) => {
+  const url = `https://partner.steampowered.com/app/wishlist/${appID}/`;
+  const pageCreationDate = await helpers.parseDataFromPage(url, 'parsePageCreationDate');
+  return new Date(pageCreationDate);
+}
+
+helpers.parseDataFromPage = async (url, request) => {
+  console.log(`Getting data "${request}" from URL: ${url}`);
+
+  const response = await fetch(url);
+
+  if (!response.ok) throw new Error('Network response was not ok');
+
+  const htmlText = await response.text();
+
+  const parsedData = await helpers.parseDOM(htmlText, request);
+
+  console.log(`Steamworks extras: Data result from parsing for "${request}": `, parsedData);
+
+  return parsedData;
+}
+
 helpers.parseDOM = async (htmlText, request) => {
   console.log('Parsing DOM started: ', request);
   const offscreenUrl = chrome.runtime.getURL('background/offscreen/offscreen.html');

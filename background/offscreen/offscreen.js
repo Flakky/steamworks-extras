@@ -12,6 +12,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       case 'parseWishlistData':
         result = parseWishlistData(doc);
         break;
+      case 'parsePageCreationDate':
+        result = parsePageCreationDate(doc);
+        break;
     }
   }
   catch (error) {
@@ -46,7 +49,24 @@ const parsePackageIDs = (doc) => {
   return packageIDs;
 }
 
+const parsePageCreationDate = (doc) => {
+  const links = doc.getElementsByTagName('a');
+  let startDate = null;
 
+  for (let i = 0; i < links.length; i++) {
+    if (links[i].textContent === 'all history') {
+      const urlParams = new URLSearchParams(links[i].href.split('?')[1]);
+      startDate = urlParams.get('dateStart');
+      break;
+    }
+  }
+
+  if (!startDate) {
+    throw new Error('No valid link with "all history" text found');
+  }
+
+  return new Date(startDate);
+}
 
 const parseWishlistData = (doc) => {
   const table = doc.querySelector('.grouping_table');
