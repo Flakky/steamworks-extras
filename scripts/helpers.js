@@ -298,6 +298,12 @@ helpers.getPackageIDs = async (appID, useBackgroundScript) => {
   return packageIDs;
 }
 
+helpers.selectChartColor = (chartColors, tag) => {
+  if (chartColors && chartColors[tag]) return chartColors[tag];
+
+  return `rgb(${30 + Math.round(Math.random() * 225)}, ${30 + Math.round(Math.random() * 225)}, ${30 + Math.round(Math.random() * 225)})`;
+}
+
 helpers.requestPageCreationDate = async (appID) => {
   const url = `https://partner.steampowered.com/app/wishlist/${appID}/`;
   const pageCreationDate = await helpers.parseDataFromPage(url, 'parsePageCreationDate');

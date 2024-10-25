@@ -1,0 +1,178 @@
+#extra_main_block {
+  justify-content: center;
+}
+
+#extra_main_content_block {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+
+  align-content: flex-start;
+}
+
+#extra_main_content_block .extra_content_block {
+  width: 800px;
+  justify-content: center;
+}
+
+#extra_toolbar_block {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+}
+
+.extra_content_block {
+  width: fit-content;
+  background: #242424;
+  padding: 16px;
+  border-radius: 3px;
+  margin: 10px;
+}
+
+.extra_content_block h2 {
+  width: 100%;
+  text-align: center;
+  margin: 0 0 10px 0;
+}
+
+#extra_sales_heatmap_block {
+  width: 700px;
+}
+
+#extras_sales_chart {
+  width: 100%;
+}
+
+#extras_sales_chart canvas {
+  margin-top: 10px;
+}
+
+.extra_revenue_percentage {
+  color: #8b969c;
+  font-size: 0.7em;
+}
+
+.extra_extend_title {
+  padding-left: 20px;
+}
+
+.extra_chart_select_name {
+  padding: 0 3px 0 7px;
+}
+
+#extra_links_block {
+  width: 1200px;
+}
+
+#extra_period_block {
+  width: 1200px;
+}
+
+.toolbar {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.toolbar .dropdown {
+  position: relative;
+  margin-right: 20px;
+}
+
+.toolbar .dropdown button {
+  background-color: #333;
+  color: white;
+  padding: 10px;
+  border: none;
+  cursor: pointer;
+}
+
+.toolbar .dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #333;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+
+.toolbar .dropdown-content a {
+  color: white;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+}
+
+.toolbar .dropdown-content a:hover {
+  background-color: #ddd;
+  color: #000;
+}
+
+.toolbar .dropdown:hover .dropdown-content {
+  display: block;
+}
+
+.extra_summary_review_positive {
+  color: #64EA4F;
+}
+
+.extra_summary_review_negative {
+  color: #ED4949;
+}
+
+#extra_country_table {
+  width: 40%;
+  float: left;
+}
+
+#extra_country_table td:first-child {
+  text-align: center;
+}
+
+#extra_country_table tr:nth-child(2) {
+  font-weight: bold;
+}
+
+#extra_country_table td:nth-child(2) {
+  text-align: left;
+  font-weight: bold;
+}
+
+#extra_country_table td {
+  width: auto;
+}
+
+#extra_regions_table {
+  margin-right: 10px;
+  width: 40%;
+  float: right;
+}
+
+#extra_country_table_block>div {
+  scrollbar-color: #333 #555;
+  scrollbar-width: thin;
+}
+
+#extra_country_table_block>div::-webkit-scrollbar {
+  width: 12px;
+}
+
+#extra_country_table_block>div::-webkit-scrollbar-track {
+  background: #555;
+}
+
+#extra_country_table_block>div::-webkit-scrollbar-thumb {
+  background-color: #333;
+  border-radius: 10px;
+  border: 3px solid #555;
+}
+
+#extra_conversions_block td:first-child {
+  width: 200px;
+}
+
+#extra_summary_block td:first-child {
+  width: 200px;
+}

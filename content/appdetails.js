@@ -465,8 +465,12 @@ const readChartColors = () => {
   fetch(jsonFilePath).then(response => {
     if (response.ok) {
       response.json().then(json => {
+        console.log('Chart colors loaded: ', json);
         chartColors = json;
       });
+    }
+    else {
+      console.error('Failed to load chart colors');
     }
   });
 }

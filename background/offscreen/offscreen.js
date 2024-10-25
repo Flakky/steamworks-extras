@@ -113,27 +113,6 @@ const parseWishlistData = (doc) => {
     wishlists[country] = wishlistCount;
   });
 
-  // We do not need regional data
-  let wishlistsTagsToRemove = [
-    'World',
-    'Unknown',
-    'Asia',
-    'North America',
-    'Western America',
-    'Latin America',
-    'South East Asia',
-    'Central Asia',
-    'Eastern Europe',
-    'Middle East',
-    'Oceania',
-    'South Asia',
-    'Africa'
-  ];
-
-  wishlistsTagsToRemove.forEach(tag => {
-    delete wishlists[tag];
-  });
-
   return wishlists;
 }
 

@@ -24,7 +24,6 @@
         "https://localhost:3000/*"
       ],
       "js": [
-        "scripts/gamestatsstorage.js",
         "scripts/helpers.js",
         "data/defaultsettings.js",
         "content/site.js"
@@ -36,7 +35,6 @@
       ],
       "js": [
         "scripts/chart.umd.min.js",
-        "scripts/gamestatsstorage.js",
         "scripts/helpers.js",
         "data/defaultsettings.js",
         "content/appdetails_reviews.js",
@@ -53,13 +51,26 @@
       ],
       "js": [
         "scripts/chart.umd.min.js",
-        "scripts/gamestatsstorage.js",
         "scripts/helpers.js",
         "data/defaultsettings.js",
         "content/apptraffic.js"
       ],
       "css": [
         "styles/apptraffic.css"
+      ]
+    },
+    {
+      "matches": [
+        "https://partner.steampowered.com/app/wishlist/*"
+      ],
+      "js": [
+        "scripts/chart.umd.min.js",
+        "scripts/helpers.js",
+        "data/defaultsettings.js",
+        "content/appwishlist.js"
+      ],
+      "css": [
+        "styles/appwishlist.css"
       ]
     }
   ],

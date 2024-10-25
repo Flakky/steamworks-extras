@@ -3,7 +3,7 @@ let gameStatsStorage;
 
 const tables = [
   { name: 'Reviews', key: 'recommendationid' },
-  { name: 'Wishlists', key: 'key' }, // Key is a combination of date and country
+  { name: 'Wishlists', key: 'Date' }, // Key is a combination of date and country
   { name: 'Refunds', key: 'key' }, // Key is a hash of refund comment
   { name: 'Traffic', key: ['Date', 'PageCategory', 'PageFeature'] },
   { name: 'Sales', key: 'key' } // Key is unique identifier
@@ -430,6 +430,65 @@ const getWishlistData = async (appID, dateStart, dateEnd) => {
 const requestAllWishlistData = async (appID) => {
   console.log(`Steamworks extras: Requesting all wishlist data for app ${appID}`);
 
+  const startDate = await helpers.requestPageCreationDate(appID);
+  const endDate = new Date();
+
+  const formattedStartDate = helpers.dateToString(startDate);
+  const formattedEndDate = helpers.dateToString(endDate);
+
+  const URL = `https://partner.steampowered.com/report_csv.php`;
+
+  const reqHeaders = {
+    'Content-Type': 'application/x-www-form-urlencoded',
+  };
+
+  let params = `query=QueryWishlistActionsForCSV^appID=${appID}^dateStart=${formattedStartDate}^dateEnd=${formattedEndDate}^interpreter=WishlistReportInterpreter`;
+
+  const data = new URLSearchParams();
+  data.append('file', 'WishlistData');
+  data.append('params', params);
+
+  const response = await fetch(URL, { method: 'POST', headers: reqHeaders, body: data.toString(), credentials: 'include' });
+  if (!response.ok) throw new Error('Network response was not ok');
+
+  const htmlText = await response.text();
+  let lines = htmlText.split('\n');
+
+  console.log(lines);
+
+  lines.splice(0, 3); // Remove first 3 rows because they are not informative and break csv format
+
+  // Ensure that we have lines to process
+  if (lines.length === 0) {
+    console.log(`Steamworks extras: No wishlists data found in CSV`);
+    return;
+  }
+
+  const csvString = lines.join('\n');
+
+  lines = helpers.csvTextToArray(csvString);
+
+  console.log(lines);
+
+  const headers = lines[0].map(header => header.trim());
+  // Map each line to an object using the headers as keys
+  let wishlistActions = lines.slice(1).reduce((acc, line) => {
+    const object = {};
+
+    object['Date'] = line[headers.indexOf('DateLocal')];
+    object['Adds'] = line[headers.indexOf('Adds')];
+    object['Deletes'] = line[headers.indexOf('Deletes')];
+    object['Gifts'] = line[headers.indexOf('Gifts')];
+    object['Activations'] = line[headers.indexOf('PurchasesAndActivations')];
+
+    const dateLocal = object['Date'];
+    acc[dateLocal] = object;
+
+    return acc;
+  }, {});
+
+  console.log(`Steamworks extras: Wishlist CSV result:`, wishlistActions);
+
   let records = await readData(appID, 'Wishlists');
 
   console.log(`Steamworks extras: Wishlist data found in DB:`, records);
@@ -453,7 +512,7 @@ const requestAllWishlistData = async (appID) => {
       return;
     }
 
-    if (date.getDate() < helpers.getDateNoOffset() - 3 // We want to refresh last several days because new data may be available
+    if (date < new Date(helpers.getDateNoOffset().setDate(helpers.getDateNoOffset().getDate() - 3)) // We want to refresh last several days because new data may be available
       && cachedDates.includes(helpers.dateToString(date))) {
 
       date.setDate(date.getDate() - 1);
@@ -461,13 +520,21 @@ const requestAllWishlistData = async (appID) => {
       continue;
     }
 
-    const data = await requestWishlistData(appID, date);
+    let data = await requestWishlistData(appID, date);
 
-    if (!data) {
-      if (noDataDates++ > 5) {
-        console.log(`Steamworks extras: No wishlist data found for last 5 days. Stop receiving wishlist data...`);
-        return;
+    if (data) {
+      data['Date'] = helpers.dateToString(date);
+
+      if (wishlistActions[helpers.dateToString(date)]) {
+        const existingData = wishlistActions[helpers.dateToString(date)];
+        data = { ...existingData, ...data };
       }
+
+      await writeData(appID, 'Wishlists', data);
+    }
+    else if (noDataDates++ > 5) {
+      console.log(`Steamworks extras: No wishlist data found for last 5 days. Stop receiving wishlist data...`);
+      break;
     }
 
     date.setDate(date.getDate() - 1);
@@ -495,20 +562,14 @@ const requestWishlistData = async (appID, date) => {
     return undefined;
   }
 
-  const formattedData = Object.keys(data).map(wishlist_data => {
-    return {
-      key: `${formattedDate}_${wishlist_data}`,
-      Date: formattedDate,
-      Country: wishlist_data,
-      Wishlists: data[wishlist_data] || 0
-    };
-  });
+  const formattedData = Object.keys(data).reduce((acc, country) => {
+    acc[country] = data[country] || 0;
+    return acc;
+  }, {});
 
-  await writeData(appID, 'Wishlists', formattedData);
+  console.log(`Steamworks extras: Wishlist result for date ${formattedDate}: `, formattedData);
 
-  console.log(`Steamworks extras: Wishlist result for date ${formattedDate}: `, data);
-
-  return data;
+  return formattedData;
 }
 
 // Sales

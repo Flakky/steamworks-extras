@@ -2,9 +2,9 @@ const appID = '2004080';
 
 const updateStats = async () => {
   initGameStatsStorage(appID, 1).finally(async () => {
-    await fetchSalesData();
-    await fetchReviewsData();
-    await fetchTrafficData();
+    //    await fetchSalesData();
+    //    await fetchReviewsData();
+    //    await fetchTrafficData();
     await fetchWishlistsData();
   });
 }
