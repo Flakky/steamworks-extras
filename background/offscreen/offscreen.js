@@ -15,6 +15,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       case 'parsePageCreationDate':
         result = parsePageCreationDate(doc);
         break;
+      case 'parseAppIDs':
+        result = parseAppIDs(doc);
+        break;
     }
   }
   catch (error) {
@@ -116,4 +119,19 @@ const parseWishlistData = (doc) => {
   return wishlists;
 }
 
+const parseAppIDs = (doc) => {
+  const links = doc.querySelectorAll('a[href*="partner.steampowered.com/app/details/"]');
+  const appIDs = [];
 
+  links.forEach(link => {
+    if (!/demo$/i.test(link.textContent.trim())) {
+      const urlParts = link.href.split('/');
+      const appIDIndex = urlParts.indexOf('details') + 1;
+      if (appIDIndex > 0 && appIDIndex < urlParts.length) {
+        appIDs.push(urlParts[appIDIndex]);
+      }
+    }
+  });
+
+  return appIDs;
+}

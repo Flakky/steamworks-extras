@@ -100,10 +100,24 @@ const makeRequest = async (url, params) => {
   return responseText;
 }
 
+const getAppIDs = async () => {
+  const appIDs = await helpers.parseDataFromPage('https://partner.steampowered.com/nav_games.php', 'parseAppIDs');
+
+  console.log('Steamworks extras: AppIDs: ', appIDs);
+
+  return appIDs;
+}
+
 const init = async () => {
   console.log('Steamworks extras: Init');
 
-  await updateStats();
+  const appIDs = await getAppIDs();
+  if (appIDs.length === 0) {
+    console.error('Steamworks extras: No appIDs found');
+    return;
+  }
+
+  await updateStats(appIDs);
   console.log("Steamworks extras: Extension service initiated");
 }
 

@@ -9,7 +9,7 @@ const tables = [
   { name: 'Sales', key: 'key' } // Key is unique identifier
 ];
 
-const MAX_RETRY_COUNT = 20;
+const MAX_RETRY_COUNT = 200;
 
 const initGameStatsStorage = (appID, index) => {
   return new Promise((resolve, reject) => {
@@ -21,6 +21,9 @@ const initGameStatsStorage = (appID, index) => {
 
     request.onsuccess = (event) => {
       gameStatsStorage = event.target.result;
+      if (!gameStatsStorage) {
+
+      }
 
       for (const table of tables) {
         if (!gameStatsStorage.objectStoreNames.contains(`${appID}_${table.name}`)) {
