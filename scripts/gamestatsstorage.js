@@ -226,7 +226,7 @@ const requestAllTrafficData = async (appID) => {
   }
 }
 
-const getTrafficData = async (appID, dateStart, dateEnd) => {
+const getTrafficData = async (appID, dateStart, dateEnd, returnLackData) => {
   await waitForDatabaseReady();
 
   // TODO: Optimize reading data only for range from DB
@@ -244,7 +244,15 @@ const getTrafficData = async (appID, dateStart, dateEnd) => {
     console.log(`Steamworks extras: Some dates are not cached. Requesting...`);
 
     for (const date of datesNoData) {
-      await requestTrafficData(appID, new Date(date));
+      const result = await requestTrafficData(appID, new Date(date));
+
+      const shouldHaveDataForDate =
+        date != helpers.dateToString(helpers.getDateNoOffset()); // Steam does not provide data for today
+
+      if (!result
+        && !returnLackData
+        && shouldHaveDataForDate) // Steam does not provide data for today
+        return null;
     }
 
     records = await readData(appID, 'Traffic');
@@ -319,7 +327,7 @@ const requestTrafficData = async (appID, date) => {
 }
 
 // Reviews
-const getReviewsData = async (appID, dateStart, dateEnd) => {
+const getReviewsData = async (appID, dateStart, dateEnd, returnLackData) => {
   await waitForDatabaseReady();
 
   console.log(`Steamworks extras: Requesting reviews data for app ${appID}`);
@@ -329,13 +337,22 @@ const getReviewsData = async (appID, dateStart, dateEnd) => {
   console.log(`Steamworks extras: Reviews data found in DB:`, records);
 
   if (dateStart && dateEnd) {
-    return records.filter(item => {
+    const filteredRecords = records.filter(item => {
       const date = new Date(item['timestamp_created'] * 1000);
       return helpers.isDateInRange(date, dateStart, dateEnd);
     });
 
-  }
-  else {
+    if (!returnLackData) {
+      const dateRange = helpers.getDateRangeArray(dateStart, dateEnd, true);
+      const datesWithData = [...new Set(filteredRecords.map(record => helpers.dateToString(new Date(record['timestamp_created'] * 1000))))];
+
+      const allDatesHaveData = dateRange.every(date => datesWithData.includes(date));
+
+      return allDatesHaveData ? filteredRecords : null;
+    }
+
+    return filteredRecords;
+  } else {
     return records;
   }
 }
@@ -401,7 +418,7 @@ const requestAllReviewsData = async (appID) => {
 }
 
 // Wishlists
-const getWishlistData = async (appID, dateStart, dateEnd) => {
+const getWishlistData = async (appID, dateStart, dateEnd, returnLackData) => {
 
   let records = await readData(appID, 'Wishlists');
 
@@ -412,11 +429,23 @@ const getWishlistData = async (appID, dateStart, dateEnd) => {
   }
 
   if (datesNoData.length > 0) {
-    console.log(`Steamworks extras: Some dates are not cached. Requesting...`);
+    console.log(`Steamworks extras: Some wishlist dates are not cached. Requesting...`);
     console.log(datesNoData);
 
+    const lastDateWithData = helpers.getDateNoOffset();
+    lastDateWithData.setDate(lastDateWithData.getDate() - 1);
+
+    console.log('Last date for wishlists:', lastDateWithData);
+
     for (const date of datesNoData) {
-      await requestWishlistData(appID, new Date(date));
+      const result = await requestWishlistData(appID, new Date(date));
+
+      const shouldHaveDataForDate = date != helpers.dateToString(lastDateWithData); // Steam does not provide data for today
+
+      if (!result
+        && !returnLackData
+        && shouldHaveDataForDate)
+        return null;
     }
 
     records = await readData(appID, 'Wishlists');
@@ -665,18 +694,27 @@ const getAllSalesData = async (appID) => {
   return records;
 }
 
-const getSalesData = async (appID, dateStart, dateEnd) => {
+const getSalesData = async (appID, dateStart, dateEnd, returnLackData) => {
   await waitForDatabaseReady();
 
   let records = await readData(appID, 'Sales');
 
   if (dateStart && dateEnd) {
-
-    return records.filter(item => {
+    const filteredRecords = records.filter(item => {
       let date = new Date(item['Date']);
-
       return helpers.isDateInRange(date, dateStart, dateEnd);
     });
+
+    if (!returnLackData) {
+      const dateRange = helpers.getDateRangeArray(dateStart, dateEnd, true);
+      const datesWithData = [...new Set(filteredRecords.map(record => record['Date']))];
+
+      const allDatesHaveData = dateRange.every(date => datesWithData.includes(date));
+
+      return allDatesHaveData ? filteredRecords : null;
+    }
+
+    return filteredRecords;
   }
   else {
     return records;

@@ -37,7 +37,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return;
       }
       case "getData": {
-        const data = await getDataFromDB(message.type, message.appId, message.dateStart, message.dateEnd);
+        const data = await getDataFromDB(message.type, message.appId, message.dateStart, message.dateEnd, message.returnLackData);
         console.log(`Steamworks extras: returning "${message.type}" data from background: `, data);
         sendResponse(data);
         return;
@@ -64,23 +64,23 @@ const showOptions = () => {
   chrome.runtime.openOptionsPage();
 }
 
-const getDataFromDB = async (type, appId, dateStart, dateEnd) => {
+const getDataFromDB = async (type, appId, dateStart, dateEnd, returnLackData = true) => {
 
   const startDate = dateStart ? new Date(dateStart) : undefined;
   const endDate = dateEnd ? new Date(dateEnd) : undefined;
 
   switch (type) {
     case "Traffic": {
-      return await getTrafficData(appId, startDate, endDate);
+      return await getTrafficData(appId, startDate, endDate, returnLackData);
     }
     case "Sales": {
-      return await getSalesData(appId, startDate, endDate);
+      return await getSalesData(appId, startDate, endDate, returnLackData);
     }
     case "Reviews": {
-      return await getReviewsData(appId, startDate, endDate);
+      return await getReviewsData(appId, startDate, endDate, returnLackData);
     }
     case "Wishlists": {
-      return await getWishlistData(appId, startDate, endDate);
+      return await getWishlistData(appId, startDate, endDate, returnLackData);
     }
   }
 }

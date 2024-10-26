@@ -45,9 +45,9 @@ const init = () => {
     moveLifetimeChartToNewBlock();
     moveNotificationsToNewBlock();
 
-    requestWishlistsForDateRange();
-
     hideOriginalMainBlock();
+
+    requestWishlistsForDateRange();
   });
 }
 
@@ -168,6 +168,11 @@ const moveLinksToTop = () => {
   const toolbarBlock = getExtraToolbarBlock();
   toolbarBlock.appendChild(newLinksBlockElem);
 
+  const dateUrlParams = new URLSearchParams(window.location.search);
+  const dateStart = dateUrlParams.get('dateStart');
+  const dateEnd = dateUrlParams.get('dateEnd');
+  const dateParamsString = dateStart && dateEnd ? `?dateStart=${dateStart}&dateEnd=${dateEnd}` : '';
+
   const appID = getAppID();
   const toolbarData = [
     {
@@ -175,6 +180,8 @@ const moveLinksToTop = () => {
       links: [
         { text: 'Store page', href: `http://store.steampowered.com/app/${appID}` },
         { text: 'Steamworks page', href: `https://partner.steamgames.com/apps/landing/${appID}` },
+        { text: 'Sales', href: `https://partner.steampowered.com/app/details/${appID}/${dateParamsString}` },
+        { text: 'Wishlists', href: `https://partner.steampowered.com/app/wishlists/${appID}/${dateParamsString}` },
       ]
     },
     {
@@ -285,6 +292,14 @@ const moveLifetimeChartToNewBlock = () => {
   const contentBlock = createFlexContentBlock('Lifetime Wishlist Actions', 'extra_lifetime_chart_block');
 
   contentBlock.appendChild(content);
+}
+
+const moveWishlistChartToNewBlock = () => {
+  let chart = document.getElementById('actions_graph');
+  let newChartBlock = document.getElementById('extra_wishlist_chart_block');
+  if (!chart || !newChartBlock) return;
+
+  newChartBlock.appendChild(chart);
 }
 
 const moveSummaryToNewBlock = () => {
@@ -684,17 +699,44 @@ const updateCountryTable = () => {
   }
 }
 
-const requestWishlistsForDateRange = () => {
+const requestWishlistsForDateRange = async () => {
   const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
 
-  helpers.sendMessageAsync({ request: 'getData', type: 'Wishlists', appId: getAppID(), dateStart: dateStart, dateEnd: dateEnd }).then((response) => {
-    wishlistsForDateRange = response;
+  console.log(`Steamworks extras: Requesting wishlist data for date range: ${dateStart} - ${dateEnd}`);
 
-    console.log(response);
+  const errorAction = (error) => {
+    console.warn(`Steamworks extras: Some wishlist data in current perioud could not be retrieved from cache.`);
 
-    updateWishlistChart();
-    updateCountryTable();
-  });
+    const chartCanvas = document.getElementById('extras_wishlist_chart_canvas');
+    chartCanvas.style.display = 'none';
+
+    moveWishlistChartToNewBlock();
+
+    const message = 'Some wishlist data for the current period could not be retrieved from the cache. Wishlists split by region will not be available. Try to refresh the page in a minute.';
+    const chartWarningBlock = helpers.createMessageText('warning', message);
+    const tableWarningBlock = helpers.createMessageText('warning', message);
+
+    const chartBlock = document.getElementById('extra_wishlist_chart_block');
+    const tableBlock = document.getElementById('extra_country_table_block');
+
+    chartBlock.insertBefore(chartWarningBlock, chartBlock.children[1]);
+    tableBlock.insertBefore(tableWarningBlock, tableBlock.children[1]);
+  }
+
+  helpers.sendMessageAsync({ request: 'getData', type: 'Wishlists', appId: getAppID(), dateStart: dateStart, dateEnd: dateEnd, returnLackData: false })
+    .then(response => {
+      console.log(`Steamworks extras: Received wishlist data for date range: ${dateStart} - ${dateEnd}`, response);
+
+      if (!response) {
+        errorAction();
+        return;
+      }
+
+      wishlistsForDateRange = response;
+
+      updateWishlistChart();
+      updateCountryTable();
+    }).catch(errorAction);
 }
 
 init();

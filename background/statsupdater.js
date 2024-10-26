@@ -1,7 +1,8 @@
 const updateStats = async (appIDs) => {
-  appIDs.forEach(async appID => {
+
+  for (const appID of appIDs) {
     await initGameStatsStorage(appID, 1);
-  });
+  }
 
   appIDs.forEach(appID => {
     fetchAllData(appID);

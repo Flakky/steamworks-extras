@@ -298,6 +298,57 @@ helpers.getPackageIDs = async (appID, useBackgroundScript) => {
   return packageIDs;
 }
 
+helpers.createMessageBlock = (type, text) => {
+  const block = document.createElement('div');
+  const title = document.createElement('b');
+
+  switch (type) {
+    case 'error': {
+      title.textContent = 'Steamworks extras error';
+      block.classList.add('extra_error');
+      break;
+    }
+    case 'warning': {
+      title.textContent = 'Steamworks extras warning';
+      block.classList.add('extra_warning');
+      break;
+    }
+  }
+
+  const textBlock = document.createElement('p');
+  textBlock.textContent = text;
+
+  block.appendChild(title);
+  block.appendChild(textBlock);
+  return block;
+}
+
+helpers.createMessageText = (type, text) => {
+  const block = document.createElement('p');
+  const title = document.createElement('b');
+
+  switch (type) {
+    case 'error': {
+      title.textContent = 'Steamworks extras error: ';
+      block.classList.add('extra_error_text');
+      break;
+    }
+    case 'warning': {
+      title.textContent = 'Steamworks extras warning: ';
+      block.classList.add('extra_warning_text');
+      break;
+    }
+  }
+
+  const textBlock = document.createElement('span');
+  textBlock.textContent = text;
+
+  block.appendChild(title);
+  block.appendChild(textBlock);
+
+  return block;
+}
+
 helpers.selectChartColor = (chartColors, tag) => {
   if (chartColors && chartColors[tag]) return chartColors[tag];
 

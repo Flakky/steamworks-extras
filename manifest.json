@@ -42,6 +42,7 @@
         "content/appdetails.js"
       ],
       "css": [
+        "styles/partner_steampowered_shared.css",
         "styles/appdetails.css"
       ]
     },
@@ -70,6 +71,7 @@
         "content/appwishlist.js"
       ],
       "css": [
+        "styles/partner_steampowered_shared.css",
         "styles/appwishlist.css"
       ]
     }

@@ -66,6 +66,7 @@ const getPackageId = () => {
   const packageRow = rows[2];
 
   const packageLink = packageRow.getElementsByTagName('a')[0];
+  if (!packageLink) return;
 
   const id = packageLink.href.match(/\/package\/details\/(\d+)/)[1];
 
@@ -530,6 +531,11 @@ const moveLinksToTop = () => {
   const toolbarBlock = getExtraToolbarBlock();
   toolbarBlock.appendChild(newLinksBlockElem);
 
+  const dateUrlParams = new URLSearchParams(window.location.search);
+  const dateStart = dateUrlParams.get('dateStart');
+  const dateEnd = dateUrlParams.get('dateEnd');
+  const dateParamsString = dateStart && dateEnd ? `?dateStart=${dateStart}&dateEnd=${dateEnd}` : '';
+
   const appID = getAppID();
   const toolbarData = [
     {
@@ -537,6 +543,8 @@ const moveLinksToTop = () => {
       links: [
         { text: 'Store page', href: `http://store.steampowered.com/app/${appID}` },
         { text: 'Steamworks page', href: `https://partner.steamgames.com/apps/landing/${appID}` },
+        { text: 'Sales', href: `https://partner.steampowered.com/app/details/${appID}/${dateParamsString}` },
+        { text: 'Wishlists', href: `https://partner.steampowered.com/app/wishlists/${appID}/${dateParamsString}` },
       ]
     },
     {
@@ -587,26 +595,30 @@ const moveLinksToTop = () => {
 }
 
 const moveSummaryTableToNewBlock = () => {
-  const contentBlock = createFlexContentBlock('Lifetime summary', 'extra_summary_block');
   const summaryTable = document.querySelector('.lifetimeSummaryCtn table');
+  if (!summaryTable) return;
+
+  const contentBlock = createFlexContentBlock('Lifetime summary', 'extra_summary_block');
 
   contentBlock.appendChild(summaryTable);
 }
 
 const moveOldChartToNewBlock = () => {
-  const contentBlock = createFlexContentBlock('Original chart', 'extra_original_chart_block');
-
   const oldChartControlsElem = document.getElementsByClassName('graphControls')[0];
   const oldChartElem = helpers.findParentByTag(document.getElementById('ChartUnitsHistory'), 'div');
+  if (!oldChartElem || !oldChartControlsElem) return;
+
+  const contentBlock = createFlexContentBlock('Original chart', 'extra_original_chart_block');
 
   contentBlock.appendChild(oldChartControlsElem);
   contentBlock.appendChild(oldChartElem);
 }
 
 const moveHeatmapNewBlock = () => {
-  const contentBlock = createFlexContentBlock('Sales heatmap', 'extra_sales_heatmap_block');
-
   const heatmapElem = document.getElementById('heatmapArea');
+  if (!heatmapElem) return;
+
+  const contentBlock = createFlexContentBlock('Sales heatmap', 'extra_sales_heatmap_block');
 
   contentBlock.appendChild(heatmapElem);
 }

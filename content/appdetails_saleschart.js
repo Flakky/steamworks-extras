@@ -9,6 +9,11 @@ const createSalesChart = () => {
   const oldChartElem = document.getElementById('ChartUnitsHistory');
   const oldChartElemParentDiv = helpers.findParentByTag(oldChartElem, 'div');
   const AllStatsDiv = helpers.findParentByTag(oldChartElemParentDiv, 'div');
+
+  if (!AllStatsDiv) {
+    return;
+  }
+
   const dateWithCSVLinkElem = AllStatsDiv.children[0];
 
   AllStatsDiv.style.display = 'none';
@@ -18,7 +23,6 @@ const createSalesChart = () => {
 
   contentBlock.appendChild(chartBlockElem);
   contentBlock.appendChild(dateWithCSVLinkElem);
-
 
   const createChartSelect = (options, name, defaultValue, onSelect) => {
     const nameElem = document.createElement("b");
@@ -94,6 +98,8 @@ const createSalesChart = () => {
 }
 
 const updateSalesChart = (split, valueType) => {
+  if (!salesChart) return;
+
   if (salesForDateRange === undefined) {
     console.log("Steamworks extras: Sales for Date Rage are not yet ready to be used in sales chart");
   }
