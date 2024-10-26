@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Steamworks extra reports",
-  "version": "1.9.1",
+  "version": "1.10.0",
   "permissions": [
     "storage",
     "offscreen"
