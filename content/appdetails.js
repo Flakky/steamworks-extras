@@ -544,7 +544,7 @@ const moveLinksToTop = () => {
         { text: 'Store page', href: `http://store.steampowered.com/app/${appID}` },
         { text: 'Steamworks page', href: `https://partner.steamgames.com/apps/landing/${appID}` },
         { text: 'Sales', href: `https://partner.steampowered.com/app/details/${appID}/${dateParamsString}` },
-        { text: 'Wishlists', href: `https://partner.steampowered.com/app/wishlists/${appID}/${dateParamsString}` },
+        { text: 'Wishlists', href: `https://partner.steampowered.com/app/wishlist/${appID}/${dateParamsString}` },
       ]
     },
     {

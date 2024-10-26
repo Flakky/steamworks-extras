@@ -22,7 +22,8 @@ const initGameStatsStorage = (appID, index) => {
     request.onsuccess = (event) => {
       gameStatsStorage = event.target.result;
       if (!gameStatsStorage) {
-
+        console.error(`Steamworks Extras: Failed to open database for app ${appID} with index ${index}`);
+        initGameStatsStorage(appID, index).then(resolve).catch(reject);
       }
 
       for (const table of tables) {
