@@ -356,13 +356,13 @@ helpers.selectChartColor = (chartColors, tag) => {
 }
 
 helpers.requestPageCreationDate = async (appID) => {
-  const url = `https://partner.steampowered.com/app/wishlist/${appID}/`;
+  const url = `https://partner.steamgames.com/apps/navtrafficstats/${appID}?attribution_filter=all&preset_date_range=lifetime`;
   const pageCreationDate = await helpers.parseDataFromPage(url, 'parsePageCreationDate');
   return new Date(pageCreationDate);
 }
 
 helpers.parseDataFromPage = async (url, request) => {
-  console.log(`Getting data "${request}" from URL: ${url}`);
+  console.debug(`Getting data "${request}" from URL: ${url}`);
 
   const response = await fetch(url);
 
@@ -372,39 +372,49 @@ helpers.parseDataFromPage = async (url, request) => {
 
   const parsedData = await helpers.parseDOM(htmlText, request);
 
-  console.log(`Steamworks extras: Data result from parsing for "${request}": `, parsedData);
+  console.debug(`Steamworks extras: Data result from parsing for "${request}": `, parsedData);
 
   return parsedData;
 }
 
-helpers.parseDOM = async (htmlText, request) => {
-  console.log('Parsing DOM started: ', request);
-  const offscreenUrl = chrome.runtime.getURL('background/offscreen/offscreen.html');
+helpers.parseDOM = (htmlText, request) => {
+  return new Promise(async (resolve, reject) => {
+    console.debug('Parsing DOM started: ', request);
+    const offscreenUrl = chrome.runtime.getURL('background/offscreen/offscreen.html');
 
-  try {
-    await chrome.offscreen.createDocument({
-      url: offscreenUrl,
-      reasons: [chrome.offscreen.Reason.DOM_PARSER],
-      justification: 'Parse HTML in background script'
-    });
-  } catch (error) { console.error(error); }
+    const attemptParse = async () => {
 
-  await chrome.runtime.sendMessage({
-    action: request,
-    htmlText: htmlText
-  });
-
-  return new Promise((resolve, reject) => {
-    chrome.runtime.onMessage.addListener(function listener(message) {
-      if (message.action === 'parsedDOM') {
-        chrome.runtime.onMessage.removeListener(listener);
-        console.log('Parsing DOM completed', message.result);
-
-        chrome.offscreen.closeDocument();
-
-        resolve(message.result);
+      // Only one offscreen document can be open at a time, so we handle the error and try again
+      try {
+        await chrome.offscreen.createDocument({
+          url: offscreenUrl,
+          reasons: [chrome.offscreen.Reason.DOM_PARSER],
+          justification: 'Parse HTML in background script'
+        });
+      } catch (error) {
+        console.error(error);
+        setTimeout(attemptParse, 1000);
+        return;
       }
-    });
+
+      await chrome.runtime.sendMessage({
+        action: request,
+        htmlText: htmlText
+      });
+
+      chrome.runtime.onMessage.addListener(function listener(message) {
+        if (message.action === 'parsedDOM') {
+          chrome.runtime.onMessage.removeListener(listener);
+          console.debug('Parsing DOM completed', message.result);
+
+          chrome.offscreen.closeDocument();
+
+          resolve(message.result);
+        }
+      });
+    };
+
+    attemptParse();
   });
 }
 
@@ -414,7 +424,6 @@ helpers.sendMessageAsync = (message) => {
       if (chrome.runtime.lastError) {
         reject(chrome.runtime.lastError);
       } else {
-        console.log('RESPONSE')
         resolve(response);
       }
     });

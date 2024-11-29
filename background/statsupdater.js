@@ -34,3 +34,4 @@ const fetchReviewsData = async (appID) => {
 const fetchWishlistsData = async (appID) => {
   await requestAllWishlistData(appID);
 }
+

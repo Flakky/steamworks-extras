@@ -1,6 +1,6 @@
 importScripts('../data/defaultsettings.js');
 importScripts('../scripts/helpers.js');
-importScripts('../scripts/gamestatsstorage.js');
+importScripts('gamestatsstorage.js');
 importScripts('statsupdater.js');
 
 chrome.runtime.onInstalled.addListener(async () => {
@@ -22,7 +22,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log(`Steamworks extras: Background message: `, message);
+  console.debug(`Steamworks extras: Background message: `, message);
 
   (async () => {
     switch (message.request) {
@@ -32,13 +32,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return;
       case "makeRequest": {
         const response = await makeRequest(message.url, message.params);
-        console.log('RESP');
         sendResponse(response);
         return;
       }
       case "getData": {
         const data = await getDataFromDB(message.type, message.appId, message.dateStart, message.dateEnd, message.returnLackData);
-        console.log(`Steamworks extras: returning "${message.type}" data from background: `, data);
+        console.debug(`Steamworks extras: returning "${message.type}" data from background: `, data);
         sendResponse(data);
         return;
       }
@@ -48,7 +47,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
-  console.log(`Steamworks extras: External message: `, message);
+  console.debug(`Steamworks extras: External message: `, message);
 
   (async () => {
     switch (message.request) {
@@ -86,7 +85,7 @@ const getDataFromDB = async (type, appId, dateStart, dateEnd, returnLackData = t
 }
 
 const makeRequest = async (url, params) => {
-  console.log(`Make request to ${url}`);
+  console.debug(`Make request to ${url}`);
 
   const response = await fetch(url, params);
   if (!response.ok) throw new Error('Network response was not ok');

@@ -140,7 +140,7 @@ const writeData = (appID, type, data) => {
     }
 
     transaction.oncomplete = function () {
-      console.log(`Steamworks extras: Data written to storage`);
+      console.debug(`Steamworks extras: Data "${type}"(${appID}) written to storage: `, data);
       resolve();
     };
 
@@ -317,8 +317,7 @@ const requestTrafficData = async (appID, date) => {
       return line['PageCategory'] !== undefined && line['PageFeature'] !== undefined;
     });
 
-  console.log(`Steamworks extras: Traffic results by category`);
-  console.log(result);
+  console.log(`Steamworks extras: Traffic results for ${formattedDate}`, result);
 
   if (result.length === 0) return false;
 
@@ -391,7 +390,7 @@ const requestAllReviewsData = async (appID) => {
       },
     };
 
-    console.log(`Sending review request to "${request_url}"`);
+    console.debug(`Sending review request to "${request_url}"`);
 
     const response = await fetch(request_url, request_options);
 
@@ -408,8 +407,7 @@ const requestAllReviewsData = async (appID) => {
     }
   }
 
-  console.log(`Steamworks extras: Reviews result`);
-  console.log(reviews);
+  console.log(`Steamworks extras: Reviews result: `, reviews);
 
   await clearData(appID, 'Reviews');
 
@@ -436,14 +434,25 @@ const getWishlistData = async (appID, dateStart, dateEnd, returnLackData) => {
     const lastDateWithData = helpers.getDateNoOffset();
     lastDateWithData.setDate(lastDateWithData.getDate() - 1);
 
-    console.log('Last date for wishlists:', lastDateWithData);
+    console.debug('Last date for wishlists:', lastDateWithData);
 
     for (const date of datesNoData) {
-      const result = await requestWishlistData(appID, new Date(date));
+      const data = await requestWishlistData(appID, new Date(date));
+
+      if (data) {
+        data['Date'] = helpers.dateToString(date);
+
+        if (wishlistActions[helpers.dateToString(date)]) {
+          const existingData = wishlistActions[helpers.dateToString(date)];
+          data = { ...existingData, ...data };
+        }
+
+        await writeData(appID, 'Wishlists', data);
+      }
 
       const shouldHaveDataForDate = date != helpers.dateToString(lastDateWithData); // Steam does not provide data for today
 
-      if (!result
+      if (!data
         && !returnLackData
         && shouldHaveDataForDate)
         return null;
@@ -530,8 +539,6 @@ const requestAllWishlistData = async (appID) => {
 
   const pageCreationDate = await helpers.requestPageCreationDate(appID);
 
-  console.log(`Steamworks extras: Page creation date:`, pageCreationDate);
-
   let date = helpers.getDateNoOffset();
   date.setDate(date.getDate() - 1); // Because we do not have wishlists for today.
 
@@ -600,7 +607,7 @@ const requestWishlistData = async (appID, date) => {
     return acc;
   }, {});
 
-  console.log(`Steamworks extras: Wishlist result for date ${formattedDate}: `, formattedData);
+  console.log(`Steamworks extras: Wishlist result for app ${appID} for date ${formattedDate}: `, formattedData);
 
   return formattedData;
 }
