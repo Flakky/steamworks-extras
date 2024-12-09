@@ -381,8 +381,11 @@ helpers.parseDOM = (htmlText, request) => {
   return new Promise(async (resolve, reject) => {
     console.debug('Parsing DOM started: ', request);
     const offscreenUrl = chrome.runtime.getURL('background/offscreen/offscreen.html');
+    const maxRetries = 10;
+    let attemptCount = 0;
 
     const attemptParse = async () => {
+      attemptCount++;
 
       // Only one offscreen document can be open at a time, so we handle the error and try again
       try {
@@ -393,7 +396,11 @@ helpers.parseDOM = (htmlText, request) => {
         });
       } catch (error) {
         console.error(error);
-        setTimeout(attemptParse, 1000);
+        if (attemptCount < maxRetries) {
+          setTimeout(attemptParse, 1000);
+        } else {
+          reject(new Error('Failed to create offscreen document after multiple attempts'));
+        }
         return;
       }
 

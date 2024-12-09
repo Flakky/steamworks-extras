@@ -27,10 +27,12 @@ const initGameStatsStorage = (appID, index) => {
       }
 
       for (const table of tables) {
-        if (!gameStatsStorage.objectStoreNames.contains(`${appID}_${table.name}`)) {
+        const storeName = `${appID}_${table.name}`;
+        if (!isObjectStoreCorrect(gameStatsStorage, storeName, table.key)) {
           gameStatsStorage.close();
           gameStatsStorage = undefined;
           initGameStatsStorage(appID, index + 1).then(resolve).catch(reject);
+          return;
         }
       }
 
@@ -48,7 +50,9 @@ const initGameStatsStorage = (appID, index) => {
       for (const table of tables) {
         try {
           gameStatsStorage.createObjectStore(`${appID}_${table.name}`, { keyPath: table.key });
-        } catch (e) { }
+        } catch (e) {
+          console.log(`Steamworks Extras: Table "${table.name}" already exists for app ${appID}: `, e);
+        }
       }
 
       reject();
@@ -69,6 +73,19 @@ const initGameStatsStorage = (appID, index) => {
     }
   });
 }
+
+const isObjectStoreCorrect = (storage, storeName, expectedKeyPath) => {
+  if (!storage.objectStoreNames.contains(storeName)) return false;
+
+  const objectStore = storage.transaction(storeName, 'readonly').objectStore(storeName);
+
+  // Check key path
+  if (objectStore.keyPath !== expectedKeyPath) {
+    return false;
+  }
+
+  return true;
+};
 
 const waitForDatabaseReady = () => {
   return new Promise((resolve, reject) => {
@@ -130,13 +147,18 @@ const writeData = (appID, type, data) => {
     const transaction = gameStatsStorage.transaction(dbName, "readwrite");
     const objectStore = transaction.objectStore(dbName);
 
-    if (Array.isArray(data)) {
-      for (const row of data) {
-        objectStore.put(row);
+    try {
+      if (Array.isArray(data)) {
+        for (const row of data) {
+          objectStore.put(row);
+        }
+      }
+      else {
+        objectStore.put(data);
       }
     }
-    else {
-      objectStore.put(data);
+    catch (e) {
+      console.error(`Steamworks extras: Failed to write data to storage (${appID})"${type}": `, data, e);
     }
 
     transaction.oncomplete = function () {
@@ -440,7 +462,7 @@ const getWishlistData = async (appID, dateStart, dateEnd, returnLackData) => {
       const data = await requestWishlistData(appID, new Date(date));
 
       if (data) {
-        data['Date'] = helpers.dateToString(date);
+        data['Date'] = date;
 
         if (wishlistActions[helpers.dateToString(date)]) {
           const existingData = wishlistActions[helpers.dateToString(date)];
