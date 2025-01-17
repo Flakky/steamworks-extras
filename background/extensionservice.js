@@ -117,12 +117,7 @@ const init = async () => {
     return;
   }
 
-  try {
-    await updateStats(appIDs);
-  }
-  catch (error) {
-    console.error('Steamworks extras: Error while updating stats: ', error);
-  }
+  startUpdatingStats(appIDs);
 
   console.log("Steamworks extras: Extension service initiated");
 }

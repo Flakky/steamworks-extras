@@ -1,12 +1,25 @@
-const updateStats = async (appIDs) => {
+const startUpdatingStats = (appIDs) => {
+  updateStats(appIDs);
 
-  for (const appID of appIDs) {
-    await initGameStatsStorage(appID, 1);
+  setInterval(() => {
+    updateStats(appIDs);
+  }, 30 * 60 * 1000); // 30 minutes
+}
+
+const updateStats = async (appIDs) => {
+  try {
+    for (const appID of appIDs) {
+      await initGameStatsStorage(appID, 1);
+    }
+
+    appIDs.forEach(appID => {
+      fetchAllData(appID);
+    });
+  }
+  catch (error) {
+    console.error('Steamworks extras: Error while updating stats: ', error);
   }
 
-  appIDs.forEach(appID => {
-    fetchAllData(appID);
-  });
 }
 
 const fetchAllData = async (appID) => {
