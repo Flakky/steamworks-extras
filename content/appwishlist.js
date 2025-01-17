@@ -496,7 +496,7 @@ const updateWishlistChart = () => {
   console.log('Steamworks extras: Updating wishlist chart');
 
   const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
-  const dateRangeArray = helpers.getDateRangeArray(dateStart, dateEnd, true);
+  const dateRangeArray = helpers.getDateRangeArray(dateStart, dateEnd, false, true);
 
   const oneDay = helpers.dateToString(dateStart) === helpers.dateToString(dateEnd);
 
@@ -625,7 +625,7 @@ const updateCountryTable = () => {
   regionTableBody.innerHTML = '';
 
   const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
-  const dateRangeArray = helpers.getDateRangeArray(dateStart, dateEnd, true);
+  const dateRangeArray = helpers.getDateRangeArray(dateStart, dateEnd, false, true);
 
   if (wishlistsForDateRange) {
     const countryData = {};

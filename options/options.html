@@ -7,7 +7,7 @@
 
     <link rel="stylesheet" href="../styles/options.css">
 
-    <script src="../background/gamestatsstorage.js"></script>
+    <script src="../scripts/helpers.js"></script>
     <script src="../data/defaultsettings.js"></script>
     <script src="options.js"></script>
 
@@ -21,6 +21,7 @@
     </div>
     <div id="content">
         <div id="settings_block" class="content_block">
+            <h3>Settings</h3>
             <table id="settings_table">
                 <tr>
                     <td class="table_category_title" colspan="3">Tax and payments setup</td>
@@ -85,17 +86,27 @@
                         For example only 10 top gross countries.</td>
                 </tr>
                 <tr>
-                    <td class="table_label"><button id="clear_cache">Clear cache data</button></td>
                     <td class="table_value"><button id="save">Save</button></td>
                     <td class="description"></td>
                 </tr>
             </table>
         </div>
-        <div id="info" class="content_block">
+        <div id="cache" class="content_block">
+            <h3>Cache & data</h3>
             <table>
                 <tr>
-                    <td class="table_category_title" colspan="2">Extension info and links</td>
+                    <th class="table_label">AppID</th>
+                    <th class="description">Sales</th>
+                    <th class="description">Wishlists</th>
+                    <th class="description">Traffic</th>
+                    <th class="description">Reviews</th>
                 </tr>
+            </table>
+            <button id="clear_cache">Clear cache data</button>
+        </div>
+        <div id="info" class="content_block">
+            <h3>Extension info and links</h3>
+            <table>
                 <tr>
                     <td class="table_label">Version:</td>
                     <td class="description"><b id="ext_version">0.0</b></td>

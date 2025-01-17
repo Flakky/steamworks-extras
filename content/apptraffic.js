@@ -256,7 +256,7 @@ const createChart = () => {
 const updateTrafficChart = () => {
   const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
 
-  const days = helpers.getDateRangeArray(dateStart, dateEnd, true);
+  const days = helpers.getDateRangeArray(dateStart, dateEnd, false, true);
   console.log(days);
 
   const chartData = {};

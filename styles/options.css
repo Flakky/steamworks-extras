@@ -65,10 +65,21 @@ tr {
   border-top: 1px solid #424242;
 }
 
-.table_category_title {
+.content_block>h3 {
   color: #ffffff;
   font-weight: bold;
   font-size: 1.2em;
+  width: 100%;
+  text-align: center;
+  margin: auto;
+  display: block;
+  line-height: 1.8em;
+}
+
+.table_category_title {
+  color: #ffffff;
+  font-weight: bold;
+  font-size: 1em;
   width: 100%;
   text-align: center;
   margin: auto;

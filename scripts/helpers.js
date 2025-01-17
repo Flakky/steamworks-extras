@@ -107,7 +107,7 @@ helpers.dateToString = (date) => {
   return new Date(date.getTime() - offset).toISOString().split('T')[0];
 }
 
-helpers.getDateRangeArray = (dateStart, dateEnd, outputDateStrings) => {
+helpers.getDateRangeArray = (dateStart, dateEnd, reverse, outputDateStrings) => {
   const days = [];
 
   let day = new Date(dateStart);
@@ -121,6 +121,8 @@ helpers.getDateRangeArray = (dateStart, dateEnd, outputDateStrings) => {
     // Move to the next day
     day.setDate(day.getDate() + 1);
   }
+
+  if (reverse) days.reverse();
 
   return days;
 }
@@ -265,6 +267,12 @@ helpers.csvTextToArray = (strData, strDelimiter) => {
   return (arrData);
 }
 
+helpers.getDataFromStorage = async (type, appId, dateStart, dateEnd, returnLackData) => {
+  const result = await helpers.sendMessageAsync({ request: 'getData', type: type, appId: appId, dateStart: dateStart, dateEnd: dateEnd, returnLackData: returnLackData });
+  console.debug(`Steamworks extras: returning "${type}" data from background: `, result);
+  return result;
+}
+
 helpers.getWishlistData = async (appID, date) => {
   const url = `https://store.steampowered.com/app/${appID}`;
 
@@ -381,8 +389,10 @@ helpers.parseDOM = (htmlText, request) => {
   return new Promise(async (resolve, reject) => {
     console.debug('Parsing DOM started: ', request);
     const offscreenUrl = chrome.runtime.getURL('background/offscreen/offscreen.html');
-    const maxRetries = 10;
+    const maxRetries = 20;
     let attemptCount = 0;
+    const timeout = 10 * 1000;
+    let timer;
 
     const attemptParse = async () => {
       attemptCount++;
@@ -394,6 +404,12 @@ helpers.parseDOM = (htmlText, request) => {
           reasons: [chrome.offscreen.Reason.DOM_PARSER],
           justification: 'Parse HTML in background script'
         });
+
+        // Set a timeout to reject the promise if the document creation takes too long
+        timer = setTimeout(() => {
+          chrome.offscreen.closeDocument();
+          reject(new Error(`ParseDOM for "${request}" timed out`));
+        }, timeout);
       } catch (error) {
         console.error(error);
         if (attemptCount < maxRetries) {
@@ -414,6 +430,7 @@ helpers.parseDOM = (htmlText, request) => {
           chrome.runtime.onMessage.removeListener(listener);
           console.debug('Parsing DOM completed', message.result);
 
+          clearTimeout(timer); // Clear the timeout if the document creation is successful
           chrome.offscreen.closeDocument();
 
           resolve(message.result);

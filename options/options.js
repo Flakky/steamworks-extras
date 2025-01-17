@@ -14,6 +14,7 @@ const initSettings = () => {
   document.getElementById('save').addEventListener('click', saveSettings);
   document.getElementById('clear_cache').addEventListener('click', clearCacheData);
 
+  generateCacheTable();
   initVersion();
 }
 
@@ -35,6 +36,76 @@ const saveSettings = () => {
 
   chrome.storage.local.set(result, () => {
     alert('Settings saved!');
+  });
+}
+
+const generateCacheTable = async () => {
+  const data = await chrome.storage.local.get('appIDs');
+  const appIDs = data.appIDs || [];
+  const table = document.querySelector('#cache table tbody');
+
+  const pagesCreationDateResult = await chrome.storage.local.get("pagesCreationDate");
+  const pagesCreationDate = pagesCreationDateResult.pagesCreationDate;
+
+  const createDownloadLink = async (appID, type) => {
+
+    const pageCreationDate = pagesCreationDate[appID] || new Date(2014, 0, 0);
+
+    const startDate = pageCreationDate;
+    const endDate = new Date();
+
+    let result = await helpers.getDataFromStorage(type, appID, startDate, endDate, true);
+
+    const csvContent = Object.keys(result)
+      .map(key => {
+        const value = result[key];
+        if (typeof value === 'object' && value !== null) {
+          return Object.keys(value)
+            .map(subKey => value[subKey])
+            .join(',');
+        } else {
+          return `${key},${value}`;
+        }
+      })
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${appID}-${type}.csv`;
+    a.textContent = "Download";
+    //    URL.revokeObjectURL(url);
+
+    return a;
+  }
+
+  // Remove all rows except the first one (header row)
+  while (table.rows.length > 1) {
+    table.deleteRow(1);
+  }
+
+  appIDs.forEach(async (appID, index) => {
+    const row = document.createElement('tr');
+
+    const cell = document.createElement('td');
+    cell.textContent = appID;
+    cell.classList.add('table_label');
+    row.appendChild(cell);
+
+    const addLinkCell = async (type) => {
+      const cell = document.createElement('td');
+      const link = await createDownloadLink(appID, type);
+      cell.appendChild(link);
+      row.appendChild(cell);
+    }
+
+    addLinkCell("Sales");
+    addLinkCell("Wishlists");
+    addLinkCell("Reviews");
+    addLinkCell("Traffic");
+
+    table.appendChild(row);
   });
 }
 

@@ -1,0 +1,168 @@
+class StorageActionRequestWishlists extends StorageAction {
+  constructor(appID) {
+    super();
+    this.appID = appID;
+  }
+
+  async execute() {
+    await requestAllWishlistData(this.appID);
+  }
+
+  getType() {
+    return 'RequestWishlists';
+  }
+}
+
+class StorageActionRequestRegionalWishlists extends StorageAction {
+  constructor(appID, date) {
+    super();
+    this.appID = appID;
+    this.date = date;
+  }
+
+  async execute() {
+    await requestWishlistRegionalData(this.appID, this.date);
+  }
+
+  getType() {
+    return 'RequestRegionalWishlists';
+  }
+}
+
+class StorageActionGetWishlists extends StorageAction {
+  constructor(appID, dateStart, dateEnd, returnLackData) {
+    super();
+    this.appID = appID;
+    this.dateStart = dateStart;
+    this.dateEnd = dateEnd;
+    this.returnLackData = returnLackData;
+  }
+
+  async execute() {
+    return await getWishlistData(this.appID, this.dateStart, this.dateEnd, this.returnLackData);
+  }
+
+  getType() {
+    return 'GetWishlists';
+  }
+}
+
+const getWishlistData = async (appID, dateStart, dateEnd, returnLackData) => {
+
+  let records = await readData(appID, 'Wishlists');
+
+  if (returnLackData) {
+    let datesNoData = helpers.getDateRangeArray(dateStart, dateEnd, false, true);
+
+    for (const record of records) {
+      datesNoData = datesNoData.filter(item => item !== record['Date']);
+    }
+
+    if (datesNoData.length > 0) return null;
+  }
+
+  const out = records.filter(item => {
+    const date = new Date(item['Date']);
+    return helpers.isDateInRange(date, dateStart, dateEnd);
+  });
+
+  return out;
+}
+
+const requestAllWishlistData = async (appID) => {
+  console.log(`Steamworks extras: Requesting all wishlist data for app ${appID}`);
+
+  const pageCreationDate = await bghelpers.getPageCreationDate(appID);
+
+  const startDate = pageCreationDate;
+  const endDate = new Date();
+
+  const formattedStartDate = helpers.dateToString(startDate);
+  const formattedEndDate = helpers.dateToString(endDate);
+
+  const URL = `https://partner.steampowered.com/report_csv.php`;
+
+  const reqHeaders = {
+    'Content-Type': 'application/x-www-form-urlencoded',
+  };
+
+  let params = `query=QueryWishlistActionsForCSV^appID=${appID}^dateStart=${formattedStartDate}^dateEnd=${formattedEndDate}^interpreter=WishlistReportInterpreter`;
+
+  const data = new URLSearchParams();
+  data.append('file', 'WishlistData');
+  data.append('params', params);
+
+  const response = await fetch(URL, { method: 'POST', headers: reqHeaders, body: data.toString(), credentials: 'include' });
+  if (!response.ok) throw new Error('Network response was not ok');
+
+  const htmlText = await response.text();
+  let lines = htmlText.split('\n');
+
+  lines.splice(0, 3); // Remove first 3 rows because they are not informative and break csv format
+
+  // Ensure that we have lines to process
+  if (lines.length === 0) {
+    console.log(`Steamworks extras: No wishlists data found in CSV`);
+    return;
+  }
+
+  const csvString = lines.join('\n');
+
+  lines = helpers.csvTextToArray(csvString);
+
+  const headers = lines[0].map(header => header.trim());
+
+  // Map each line to an object using the headers as keys
+  let wishlistActions = lines.slice(1).map(line => {
+    return {
+      'Date': line[headers.indexOf('DateLocal')],
+      'Adds': line[headers.indexOf('Adds')],
+      'Deletes': line[headers.indexOf('Deletes')],
+      'Gifts': line[headers.indexOf('Gifts')],
+      'Activations': line[headers.indexOf('PurchasesAndActivations')]
+    };
+  });
+
+  await writeData(appID, 'Wishlists', wishlistActions);
+}
+
+const requestWishlistRegionalData = async (appID, date) => {
+  const pageCreationDate = await bghelpers.getPageCreationDate(appID);
+
+  if (date < pageCreationDate) {
+    console.error(`Steamworks extras: Cannot request wishlist data for date ${date} because it is before page creation date`);
+  }
+
+  const formattedDate = helpers.dateToString(date);
+
+  let url = `https://partner.steampowered.com/region/`;
+  const params = {
+    appID: appID,
+    unitType: 'wishlist',
+    dateStart: formattedDate,
+    dateEnd: formattedDate
+  }
+
+  const queryString = new URLSearchParams(params).toString();
+  url += `?${queryString}`;
+
+  const data = await helpers.parseDataFromPage(url, 'parseWishlistData');
+
+  if (typeof data !== 'object' || Object.keys(data).length === 0) {
+    console.log(`Steamworks extras: No wishlist data found for date ${formattedDate}`);
+    return undefined;
+  }
+
+  const formattedData = Object.keys(data).reduce((acc, country) => {
+    acc[country] = data[country] || 0;
+    return acc;
+  }, {});
+
+  console.log(`Steamworks extras: Wishlist result for app ${appID} for date ${formattedDate}: `, formattedData);
+
+  formattedData['Date'] = helpers.dateToString(date);
+
+  mergeData(appID, 'Wishlists', formattedData['Date'], formattedData);
+
+  return formattedData;
+}
