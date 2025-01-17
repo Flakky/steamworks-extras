@@ -53,15 +53,12 @@ const parsePackageIDs = (doc) => {
 }
 
 const parsePageCreationDate = (doc) => {
-  const links = doc.getElementsByTagName('a');
-  let startDate = null;
+  const startDateElem = doc.getElementById('start_date');
 
-  for (let i = 0; i < links.length; i++) {
-    if (links[i].textContent === 'all history') {
-      const urlParams = new URLSearchParams(links[i].href.split('?')[1]);
-      startDate = urlParams.get('dateStart');
-      break;
-    }
+  const startDate = startDateElem.value;
+
+  if (!startDate) {
+    throw new Error('No "start_date" element found');
   }
 
   if (!startDate) {

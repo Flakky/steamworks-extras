@@ -96,7 +96,9 @@
   "background": {
     "service_worker": "background/extensionservice.js"
   },
-  "action": {},
+  "action": {
+    "default_popup": "popup/popup.html"
+  },
   "icons": {
     "16": "assets/icon-16.png",
     "48": "assets/icon-48.png",

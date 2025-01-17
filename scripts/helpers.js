@@ -107,7 +107,7 @@ helpers.dateToString = (date) => {
   return new Date(date.getTime() - offset).toISOString().split('T')[0];
 }
 
-helpers.getDateRangeArray = (dateStart, dateEnd, outputDateStrings) => {
+helpers.getDateRangeArray = (dateStart, dateEnd, reverse, outputDateStrings) => {
   const days = [];
 
   let day = new Date(dateStart);
@@ -121,6 +121,8 @@ helpers.getDateRangeArray = (dateStart, dateEnd, outputDateStrings) => {
     // Move to the next day
     day.setDate(day.getDate() + 1);
   }
+
+  if (reverse) days.reverse();
 
   return days;
 }
@@ -265,6 +267,12 @@ helpers.csvTextToArray = (strData, strDelimiter) => {
   return (arrData);
 }
 
+helpers.getDataFromStorage = async (type, appId, dateStart, dateEnd, returnLackData) => {
+  const result = await helpers.sendMessageAsync({ request: 'getData', type: type, appId: appId, dateStart: dateStart, dateEnd: dateEnd, returnLackData: returnLackData });
+  console.debug(`Steamworks extras: returning "${type}" data from background: `, result);
+  return result;
+}
+
 helpers.getWishlistData = async (appID, date) => {
   const url = `https://store.steampowered.com/app/${appID}`;
 
@@ -356,13 +364,13 @@ helpers.selectChartColor = (chartColors, tag) => {
 }
 
 helpers.requestPageCreationDate = async (appID) => {
-  const url = `https://partner.steampowered.com/app/wishlist/${appID}/`;
+  const url = `https://partner.steamgames.com/apps/navtrafficstats/${appID}?attribution_filter=all&preset_date_range=lifetime`;
   const pageCreationDate = await helpers.parseDataFromPage(url, 'parsePageCreationDate');
   return new Date(pageCreationDate);
 }
 
 helpers.parseDataFromPage = async (url, request) => {
-  console.log(`Getting data "${request}" from URL: ${url}`);
+  console.debug(`Getting data "${request}" from URL: ${url}`);
 
   const response = await fetch(url);
 
@@ -372,39 +380,65 @@ helpers.parseDataFromPage = async (url, request) => {
 
   const parsedData = await helpers.parseDOM(htmlText, request);
 
-  console.log(`Steamworks extras: Data result from parsing for "${request}": `, parsedData);
+  console.debug(`Steamworks extras: Data result from parsing for "${request}": `, parsedData);
 
   return parsedData;
 }
 
-helpers.parseDOM = async (htmlText, request) => {
-  console.log('Parsing DOM started: ', request);
-  const offscreenUrl = chrome.runtime.getURL('background/offscreen/offscreen.html');
+helpers.parseDOM = (htmlText, request) => {
+  return new Promise(async (resolve, reject) => {
+    console.debug('Parsing DOM started: ', request);
+    const offscreenUrl = chrome.runtime.getURL('background/offscreen/offscreen.html');
+    const maxRetries = 20;
+    let attemptCount = 0;
+    const timeout = 10 * 1000;
+    let timer;
 
-  try {
-    await chrome.offscreen.createDocument({
-      url: offscreenUrl,
-      reasons: [chrome.offscreen.Reason.DOM_PARSER],
-      justification: 'Parse HTML in background script'
-    });
-  } catch (error) { console.error(error); }
+    const attemptParse = async () => {
+      attemptCount++;
 
-  await chrome.runtime.sendMessage({
-    action: request,
-    htmlText: htmlText
-  });
+      // Only one offscreen document can be open at a time, so we handle the error and try again
+      try {
+        await chrome.offscreen.createDocument({
+          url: offscreenUrl,
+          reasons: [chrome.offscreen.Reason.DOM_PARSER],
+          justification: 'Parse HTML in background script'
+        });
 
-  return new Promise((resolve, reject) => {
-    chrome.runtime.onMessage.addListener(function listener(message) {
-      if (message.action === 'parsedDOM') {
-        chrome.runtime.onMessage.removeListener(listener);
-        console.log('Parsing DOM completed', message.result);
-
-        chrome.offscreen.closeDocument();
-
-        resolve(message.result);
+        // Set a timeout to reject the promise if the document creation takes too long
+        timer = setTimeout(() => {
+          chrome.offscreen.closeDocument();
+          reject(new Error(`ParseDOM for "${request}" timed out`));
+        }, timeout);
+      } catch (error) {
+        console.error(error);
+        if (attemptCount < maxRetries) {
+          setTimeout(attemptParse, 1000);
+        } else {
+          reject(new Error('Failed to create offscreen document after multiple attempts'));
+        }
+        return;
       }
-    });
+
+      await chrome.runtime.sendMessage({
+        action: request,
+        htmlText: htmlText
+      });
+
+      chrome.runtime.onMessage.addListener(function listener(message) {
+        if (message.action === 'parsedDOM') {
+          chrome.runtime.onMessage.removeListener(listener);
+          console.debug('Parsing DOM completed', message.result);
+
+          clearTimeout(timer); // Clear the timeout if the document creation is successful
+          chrome.offscreen.closeDocument();
+
+          resolve(message.result);
+        }
+      });
+    };
+
+    attemptParse();
   });
 }
 
@@ -414,7 +448,6 @@ helpers.sendMessageAsync = (message) => {
       if (chrome.runtime.lastError) {
         reject(chrome.runtime.lastError);
       } else {
-        console.log('RESPONSE')
         resolve(response);
       }
     });
