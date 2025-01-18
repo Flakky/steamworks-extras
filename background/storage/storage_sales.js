@@ -4,7 +4,7 @@ class StorageActionRequestSales extends StorageAction {
     this.appID = appID;
   }
 
-  async execute() {
+  async process() {
     await requestSalesData(this.appID);
   }
 
@@ -22,7 +22,7 @@ class StorageActionGetSales extends StorageAction {
     this.returnLackData = returnLackData;
   }
 
-  async execute() {
+  async process() {
     return await getSalesData(this.appID, this.dateStart, this.dateEnd, this.returnLackData);
   }
 
@@ -42,10 +42,11 @@ const requestSalesData = async (appID) => {
 
   console.log(`Steamworks extras: Request sales in CSV between ${formattedStartDate} and ${formattedEndDate}`);
 
-  const PackageIDsResult = await chrome.storage.local.get("packageIDs");
-  const packageIDs = PackageIDsResult.packageIDs[appID];
+  const packageIDs = await bghelpers.getAppPackageIDs(appID);
 
-  if (!packageIDs || packageIDs.length === 0) {
+  console.debug(`Steamworks extras: Package IDs found for app ${appID}:`, packageIDs);
+
+  if (packageIDs === undefined || !Array.isArray(packageIDs) || packageIDs.length === 0) {
     console.error(`Steamworks extras: No package IDs found for app ${appID}`);
     return;
   }

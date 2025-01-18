@@ -4,7 +4,7 @@ class StorageActionRequestWishlists extends StorageAction {
     this.appID = appID;
   }
 
-  async execute() {
+  async process() {
     await requestAllWishlistData(this.appID);
   }
 
@@ -20,7 +20,7 @@ class StorageActionRequestRegionalWishlists extends StorageAction {
     this.date = date;
   }
 
-  async execute() {
+  async process() {
     await requestWishlistRegionalData(this.appID, this.date);
   }
 
@@ -38,7 +38,7 @@ class StorageActionGetWishlists extends StorageAction {
     this.returnLackData = returnLackData;
   }
 
-  async execute() {
+  async process() {
     return await getWishlistData(this.appID, this.dateStart, this.dateEnd, this.returnLackData);
   }
 
@@ -149,8 +149,12 @@ const requestWishlistRegionalData = async (appID, date) => {
   const data = await helpers.parseDataFromPage(url, 'parseWishlistData');
 
   if (typeof data !== 'object' || Object.keys(data).length === 0) {
-    console.log(`Steamworks extras: No wishlist data found for date ${formattedDate}`);
-    return undefined;
+    console.log(`Steamworks extras: No wishlist data found for date ${formattedDate}. Writing empty data`);
+
+    // Make sure empty dates also get saved with 'World' so we do not request it again
+    mergeData(appID, 'Wishlists', formattedDate, { 'Date': formattedDate, 'World': 0 });
+
+    return { 'World': 0 };
   }
 
   const formattedData = Object.keys(data).reduce((acc, country) => {

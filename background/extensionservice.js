@@ -30,42 +30,74 @@ chrome.runtime.onInstalled.addListener(async () => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.debug(`Steamworks extras: Background message: `, message);
 
-  (async () => {
-    switch (message.request) {
-      case "showOptions":
-        showOptions();
-        sendResponse();
-        return;
-      case "makeRequest": {
-        const response = await makeRequest(message.url, message.params);
-        sendResponse(response);
-        return;
-      }
-      case "getAppIDs": {
-        const response = await getAppIDs();
-        sendResponse(response);
-        return;
-      }
-      case "getPackageIDs": {
-        let result = await chrome.storage.local.get("packageIDs");
+  switch (message.request) {
+    case "showOptions":
+      {
+        (async () => {
+          showOptions();
+          sendResponse();
+        })(); break;
+      };
+    case "makeRequest":
+      {
+        (async () => {
+          const response = await makeRequest(message.url, message.params);
+          sendResponse(response);
+        })(); break;
+      };
+    case "getAppIDs":
+      {
+        (async () => {
+          const response = await getAppIDs();
+          sendResponse(response);
+        })(); break;
+      };
+    case "getPackageIDs":
+      {
+        (async () => {
+          let result = await chrome.storage.local.get("packageIDs");
 
-        sendResponse(result.packageIDs);
-        return;
-      }
-      case "getPageCreationDates": {
-        let result = await chrome.storage.local.get("pagesCreationDate");
+          sendResponse(result.packageIDs);
+        })(); break;
+      };
+    case "getPageCreationDates":
+      {
+        (async () => {
+          let result = await chrome.storage.local.get("pagesCreationDate");
 
-        sendResponse(result);
-        return;
+          sendResponse(result);
+        })(); break;
+      };
+    case "getQueueLenght":
+      {
+        (async () => {
+          const length = await getQueueLength();
+          sendResponse(length);
+        })(); break;
+      };
+    case "getStatus":
+      {
+        (async () => {
+          console.log('Steamworks extras: Get status');
+          const status = await getStatus();
+          sendResponse(status);
+        })(); break;
+      };
+    case "getData":
+      {
+        (async () => {
+          const data = await getDataFromDB(message.type, message.appId, message.dateStart, message.dateEnd, message.returnLackData);
+          console.debug(`Steamworks extras: returning "${message.type}" data from background: `, data);
+          sendResponse(data);
+        })(); break;
+      };
+    default:
+      {
+        console.warn(`Steamworks extras: Unknown request "${message.request}" from background`);
+        sendResponse({ error: "Unknown request" });
+        return false;
       }
-      case "getData": {
-        const data = await getDataFromDB(message.type, message.appId, message.dateStart, message.dateEnd, message.returnLackData);
-        console.debug(`Steamworks extras: returning "${message.type}" data from background: `, data);
-        sendResponse(data);
-        return;
-      }
-    }
-  })();
+  }
   return true;
 });
 
@@ -91,6 +123,10 @@ const showOptions = () => {
   chrome.runtime.openOptionsPage();
 }
 
+const getStatus = async () => {
+  74
+}
+
 const getDataFromDB = async (type, appId, dateStart, dateEnd, returnLackData = true) => {
 
   const startDate = dateStart ? new Date(dateStart) : undefined;
@@ -98,16 +134,28 @@ const getDataFromDB = async (type, appId, dateStart, dateEnd, returnLackData = t
 
   switch (type) {
     case "Traffic": {
-      return await getTrafficData(appId, startDate, endDate, returnLackData);
+      const action = new StorageActionGetTraffic(appId, startDate, endDate, returnLackData);
+      const result = await action.addAndWait(true);
+      console.debug(result);
+      return result;
     }
     case "Sales": {
-      return await getSalesData(appId, startDate, endDate, returnLackData);
+      const action = new StorageActionGetSales(appId, startDate, endDate, returnLackData);
+      const result = await action.addAndWait(true);
+      console.debug(result);
+      return result;
     }
     case "Reviews": {
-      return await getReviewsData(appId, startDate, endDate, returnLackData);
+      const action = new StorageActionGetReviews(appId, startDate, endDate, returnLackData);
+      const result = await action.addAndWait(true);
+      console.debug(result);
+      return result;
     }
     case "Wishlists": {
-      return await getWishlistData(appId, startDate, endDate, returnLackData);
+      const action = new StorageActionGetWishlists(appId, startDate, endDate, returnLackData);
+      const result = await action.addAndWait(true);
+      console.debug(result);
+      return result;
     }
   }
 }
@@ -267,6 +315,7 @@ const init = async () => {
   }
 
   for (const appID of appIDs) {
+    console.debug(await bghelpers.getAppPackageIDs(appID));
     await getPageCreationDate(appID);
   }
 

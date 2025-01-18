@@ -1,4 +1,8 @@
-const startUpdatingStats = (appIDs) => {
+const startUpdatingStats = async (appIDs) => {
+  for (const appID of appIDs) {
+    await initGameStatsStorage(appID, 1);
+  }
+
   updateStats(appIDs);
 
   setInterval(() => {
@@ -14,10 +18,6 @@ self.onmessage = (event) => {
 
 const updateStats = async (appIDs) => {
   try {
-    for (const appID of appIDs) {
-      await initGameStatsStorage(appID, 1);
-    }
-
     for (const appID of appIDs) {
       await fetchAllData(appID);
     }
@@ -51,8 +51,19 @@ const fetchTrafficData = async (appID) => {
     missingDates = dates;
   }
   else {
-    missingDates = dates.filter(date => !trafficData.some(data => data['Date'] === helpers.dateToString(date)));
+    missingDates = dates.filter(date => {
+      const dateString = helpers.dateToString(date);
+      const hasData = trafficData.some((data) => {
+        return data['Date'] === dateString;
+      });
+
+      console.debug('Steamworks extras: Checking traffic date:', dateString, hasData);
+
+      return !hasData;
+    });
   }
+
+  console.debug('Steamworks extras: Missing traffic dates:', missingDates);
 
   for (const date of missingDates) {
     addToQueue(new StorageActionRequestTraffic(appID, date));
@@ -80,12 +91,26 @@ const fetchWishlistsData = async (appID) => {
 
   let missingDates = [];
 
-  if (trafficData === undefined || wishlistsData.length == 0) {
+  if (wishlistsData === undefined || wishlistsData.length == 0) {
     missingDates = dates;
   }
   else {
-    missingDates = dates.filter(date => !wishlistsData.some(data => data['Date'] === helpers.dateToString(date)));
+    missingDates = dates.filter(date => {
+      const dateString = helpers.dateToString(date);
+
+      const hasData = wishlistsData.some((data) => {
+        const sameDate = data['Date'] === dateString;
+        const hasWorld = data.hasOwnProperty('World');
+        return sameDate && hasWorld;
+      });
+
+      console.debug('Steamworks extras: Checking wishlist date:', dateString, sameDate, hasWorld);
+
+      return !hasData;
+    });
   }
+
+  console.debug('Steamworks extras: Missing wishlist dates:', missingDates);
 
   for (const date of missingDates) {
     addToQueue(new StorageActionRequestRegionalWishlists(appID, date));

@@ -4,7 +4,7 @@ class StorageActionRequestReviews extends StorageAction {
     this.appID = appID;
   }
 
-  async execute() {
+  async process() {
     await requestAllReviewsData(this.appID);
   }
 
@@ -22,7 +22,7 @@ class StorageActionGetReviews extends StorageAction {
     this.returnLackData = returnLackData;
   }
 
-  async execute() {
+  async process() {
     return await getReviewsData(this.appID, this.dateStart, this.dateEnd, this.returnLackData);
   }
 

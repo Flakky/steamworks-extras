@@ -8,3 +8,10 @@ bghelpers.getPageCreationDate = async (appID, stringify) => {
 
   return pageCreationDate;
 }
+
+bghelpers.getAppPackageIDs = async (appID) => {
+  const PackageIDsResult = await chrome.storage.local.get("packageIDs");
+  const packageIDs = PackageIDsResult.packageIDs[appID] || [];
+
+  return packageIDs;
+}

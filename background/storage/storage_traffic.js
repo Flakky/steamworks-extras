@@ -5,7 +5,7 @@ class StorageActionRequestTraffic extends StorageAction {
     this.date = date;
   }
 
-  async execute() {
+  async process() {
     await requestTrafficData(this.appID, this.date);
   }
 
@@ -23,7 +23,7 @@ class StorageActionGetTraffic extends StorageAction {
     this.returnLackData = returnLackData;
   }
 
-  async execute() {
+  async process() {
     return await getTrafficData(this.appID, this.dateStart, this.dateEnd, this.returnLackData);
   }
 
@@ -75,37 +75,11 @@ const getTrafficData = async (appID, dateStart, dateEnd, returnLackData) => {
 
   let records = await readData(appID, 'Traffic');
 
-  let datesNoData = helpers.getDateRangeArray(dateStart, dateEnd, false, true);
-
-  for (const record of records) {
-    datesNoData = datesNoData.filter(item => item !== record['Date']);
-  }
-
-  if (datesNoData.length > 0) {
-    console.log(`Steamworks extras: Some dates are not cached. Requesting...`);
-
-    for (const date of datesNoData) {
-      const result = await requestTrafficData(appID, new Date(date));
-
-      const shouldHaveDataForDate =
-        date != helpers.dateToString(helpers.getDateNoOffset()); // Steam does not provide data for today
-
-      if (!result
-        && !returnLackData
-        && shouldHaveDataForDate) // Steam does not provide data for today
-        return null;
-    }
-
-    records = await readData(appID, 'Traffic');
-  }
-
   const out = records.filter(item => {
     const date = new Date(item['Date']);
 
     return helpers.isDateInRange(date, dateStart, dateEnd);
   });
-
-  console.log(out);
 
   return out;
 }
@@ -120,13 +94,18 @@ const requestTrafficData = async (appID, date) => {
 
   const formattedDate = helpers.dateToString(date);
 
-  console.log(`Steamworks extras: Request traffic in CSV for ${formattedDate}`);
 
   const URL = `https://partner.steamgames.com/apps/navtrafficstats/${appID}?attribution_filter=all&preset_date_range=custom&start_date=${formattedDate}&end_date=${formattedDate}&format=csv`;
+
+  console.debug(`Steamworks extras: Request traffic in CSV for ${formattedDate}. URL: ${URL}`);
 
   const response = await fetch(URL);
 
   const responseText = await response.text();
+
+  if (responseText === undefined || responseText === '' || responseText.includes('<!DOCTYPE html>')) {
+    return false;
+  }
 
   let lines = responseText.split('\n');
 
@@ -144,9 +123,11 @@ const requestTrafficData = async (appID, date) => {
     return false;
   };
 
-  const headers = lines[0].map(header => header.trim());
+  console.debug(lines);
 
-  console.log(lines);
+  let headers = lines[0]
+    .map(header => header.trim())
+    .map(header => header.replace(' / ', ''));
 
   let result = lines.slice(1)
     .map(line => {
@@ -163,9 +144,17 @@ const requestTrafficData = async (appID, date) => {
       return line['PageCategory'] !== undefined && line['PageFeature'] !== undefined;
     });
 
-  console.log(`Steamworks extras: Traffic results for ${formattedDate}`, result);
+  console.debug(`Steamworks extras: Traffic results for ${formattedDate}`, result);
 
-  if (result.length === 0) return false;
+  // Make sure empty dates also get saved so we do not request it again
+  if (result.length === 0) {
+    result = [{ 'Date': formattedDate }];
+    headers.forEach(header => {
+      result[0][header.replace(' / ', '')] = 0;
+    });
+  }
+
+  console.log(`Steamworks extras: Writing traffic data for ${formattedDate}`, result);
 
   await writeData(appID, 'Traffic', result);
 
