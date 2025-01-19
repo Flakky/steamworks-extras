@@ -2,6 +2,7 @@ class StorageActionRequestReviews extends StorageAction {
   constructor(appID) {
     super();
     this.appID = appID;
+    this.executeTimeout = 30;
   }
 
   async process() {
@@ -20,6 +21,7 @@ class StorageActionGetReviews extends StorageAction {
     this.dateStart = dateStart;
     this.dateEnd = dateEnd;
     this.returnLackData = returnLackData;
+    this.executeTimeout = 10;
   }
 
   async process() {

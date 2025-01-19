@@ -4,30 +4,62 @@ let processingAction = null;
 class StorageAction {
   constructor() {
     this.result = null;
+    this.executeTimeout = 20; // In seconds
+    this.timedout = false;
   }
-  addAndWait(insertFirst = false) {
-    this.promise = new Promise((resolve, reject) => {
-      console.debug(`promise set for action (${this.getType()})`);
-      this.resolve = resolve;
-      this.reject = reject;
-    });
 
+  addAndWait(insertFirst = false) {
+    const promise = this.getPromise();
     if (insertFirst) insertToQueue(this);
     else addToQueue(this);
 
-    return this.promise;
+    return promise;
   }
-  async execute() {
+
+  execute() {
+    const promise = this.getPromise();
+
+    this.timeoutHandle = setTimeout(() => { this.timeout() }, this.executeTimeout * 1000);
+
     try {
-      this.result = await this.process();
-      console.debug(`Steamworks extras: Action executed: `, this);
-      if (this.resolve !== undefined) this.resolve(this.result);
+      this.process()
+        .then(r => {
+          this.result = r;
+          console.debug(`Steamworks extras: Action executed: `, this);
+          if (!this.timedout) this.resolve(r)
+        })
+        .catch(e => {
+          console.error(`Steamworks extras: Error executing action: `, this, e);
+          if (!this.timedout) this.reject(e);
+        })
+        .finally(() => {
+          clearTimeout(this.timeoutHandle);
+        });
     }
     catch (e) {
       if (this.reject !== undefined) this.reject(e);
     }
+
+    return promise;
   }
-  async process() { }
+
+  getPromise() {
+    if (this.promise === undefined) {
+      this.promise = new Promise((resolve, reject) => {
+        this.resolve = resolve;
+        this.reject = reject;
+      });
+    }
+    return this.promise;
+  }
+
+  timeout() {
+    this.timedout = true;
+    this.reject(new Error(`Storage action timed out: `, this));
+  }
+
+  async process() { /* Should be overridden by child classes */ }
+
   async getResult() {
     return this.result;
   }
@@ -59,7 +91,7 @@ const getActionsOfType = (type) => {
   return queue.filter(action => action.getType() === type);
 }
 
-const processNext = async () => {
+const processNext = () => {
   console.debug(`Steamworks extras: Attempting to process next action in queue (${queue.length} left)`);
 
   if (processingAction !== null && processingAction !== undefined) {
@@ -73,17 +105,10 @@ const processNext = async () => {
 
   console.debug(`Steamworks extras: Processing next action (${processingAction.getType()}) in queue:`, processingAction);
 
-  try {
-    await processingAction.execute();
-    console.log(`Steamworks extras: Processed action (${processingAction.getType()}) in queue (${queue.length} left):`, processingAction);
-  }
-  catch (e) {
-    console.error(`Steamworks extras: Error processing action (${processingAction.getType()}) in queue (${queue.length} left):`, processingAction, e);
-  }
-
-  processingAction = null;
-
-  processNext();
+  processingAction.execute().finally(() => {
+    processingAction = null;
+    processNext();
+  });
 }
 
 const clearQueue = () => {
