@@ -18,37 +18,35 @@ const regions = [
   'South Asia'];
 let selectedCountries = [];
 
-const init = () => {
+const init = async () => {
   console.log("Steamworks extras: Init");
 
-  chrome.storage.local.get(defaultSettings, (result) => {
-    settings = result;
+  settings = await chrome.storage.local.get(defaultSettings);
 
-    readChartColors();
+  await readChartColors();
 
-    createCustomContentBlock();
-    moveLinksToTop();
-    moveGameTitle();
-    moveDateRangeSelectionToTop();
+  createCustomContentBlock();
+  moveLinksToTop();
+  moveGameTitle();
+  moveDateRangeSelectionToTop();
 
-    moveTotalTableToNewBlock();
-    fixLifetimeLayout();
+  moveTotalTableToNewBlock();
+  fixLifetimeLayout();
 
-    moveSummaryToNewBlock();
+  moveSummaryToNewBlock();
 
-    createWishlistChart();
-    createCountryTable();
+  createWishlistChart();
+  createCountryTable();
 
-    moveWishlistConversionRateChartToNewBlock();
-    moveConversionsToNewBlock();
+  moveWishlistConversionRateChartToNewBlock();
+  moveConversionsToNewBlock();
 
-    moveLifetimeChartToNewBlock();
-    moveNotificationsToNewBlock();
+  moveLifetimeChartToNewBlock();
+  moveNotificationsToNewBlock();
 
-    hideOriginalMainBlock();
+  hideOriginalMainBlock();
 
-    requestWishlistsForDateRange();
-  });
+  requestWishlistsForDateRange();
 }
 
 const getAppID = () => {
@@ -99,22 +97,12 @@ const moveGameTitle = () => {
   toolbarBlock.insertBefore(titleElem, toolbarBlock.firstChild);
 }
 
-const readChartColors = () => {
+const readChartColors = async () => {
   const jsonFilePath = chrome.runtime.getURL('data/chartcolors.json');
 
-  console.log(jsonFilePath);
+  const response = await fetch(jsonFilePath);
+  chartColors = await response.json();
 
-  fetch(jsonFilePath).then(response => {
-    if (response.ok) {
-      response.json().then(json => {
-        console.log('Chart colors loaded: ', json);
-        chartColors = json;
-      });
-    }
-    else {
-      console.error('Failed to load chart colors');
-    }
-  });
 }
 
 const createCustomContentBlock = () => {

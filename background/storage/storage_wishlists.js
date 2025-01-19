@@ -32,7 +32,7 @@ class StorageActionRequestRegionalWishlists extends StorageAction {
 class StorageActionGetWishlists extends StorageAction {
   constructor(appID, dateStart, dateEnd, returnLackData) {
     super();
-    this.appID = appID; cd
+    this.appID = appID;
     this.dateStart = dateStart;
     this.dateEnd = dateEnd;
     this.returnLackData = returnLackData;

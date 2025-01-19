@@ -57,8 +57,6 @@ const fetchTrafficData = async (appID) => {
         return data['Date'] === dateString;
       });
 
-      console.debug('Steamworks extras: Checking traffic date:', dateString, hasData);
-
       return !hasData;
     });
   }
@@ -104,7 +102,7 @@ const fetchWishlistsData = async (appID) => {
         return sameDate && hasWorld;
       });
 
-      console.debug('Steamworks extras: Checking wishlist date:', dateString, sameDate, hasWorld);
+      console.debug('Steamworks extras: Checking wishlist date:', dateString, hasData);
 
       return !hasData;
     });

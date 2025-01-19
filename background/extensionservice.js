@@ -123,8 +123,14 @@ const showOptions = () => {
   chrome.runtime.openOptionsPage();
 }
 
-const getStatus = async () => {
-  74
+const getStatus = () => {
+  const queueLength = queue.filter(item => item.getType().includes("Request")).length;
+
+  if (queueLength > 0) {
+    return "Updating stats: " + queueLength;
+  }
+
+  return "Ready";
 }
 
 const getDataFromDB = async (type, appId, dateStart, dateEnd, returnLackData = true) => {

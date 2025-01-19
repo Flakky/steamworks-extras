@@ -92,12 +92,7 @@ const getActionsOfType = (type) => {
 }
 
 const processNext = () => {
-  console.debug(`Steamworks extras: Attempting to process next action in queue (${queue.length} left)`);
-
-  if (processingAction !== null && processingAction !== undefined) {
-    console.debug(`Steamworks extras: Already processing action (${processingAction.getType()}), waiting for it to finish.`);
-    return;
-  }
+  if (processingAction !== null && processingAction !== undefined) return;
 
   processingAction = queue.shift();
 
