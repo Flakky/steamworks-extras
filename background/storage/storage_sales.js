@@ -71,9 +71,16 @@ const requestSalesData = async (appID) => {
   if (!response.ok) throw new Error('Network response was not ok');
 
   const htmlText = await response.text();
-  let lines = htmlText.split('\n');
 
-  console.log(htmlText);
+  if (htmlText === undefined || htmlText === '') {
+    throw new Error(`Steamworks extras: Received no response instead of CSV while requesting sales data`);
+  }
+
+  if (htmlText.includes('<html>')) {
+    throw new Error('Steamworks extras: Received HTML response instead of CSV while requesting sales data');
+  }
+
+  let lines = htmlText.split('\n');
 
   lines.splice(0, 3); // Remove first 3 rows because they are not informative and break csv format
 

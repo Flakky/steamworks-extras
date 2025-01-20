@@ -104,8 +104,12 @@ const requestTrafficData = async (appID, date) => {
 
   const responseText = await response.text();
 
-  if (responseText === undefined || responseText === '' || responseText.includes('<!DOCTYPE html>')) {
-    return false;
+  if (responseText === undefined || responseText === '') {
+    throw new Error(`Steamworks extras: Received no response instead of CSV while requesting traffic data for date ${formattedDate}`);
+  }
+
+  if (responseText.includes('<html>')) {
+    throw new Error(`Steamworks extras: Received HTML response instead of CSV while requesting traffic data for date ${formattedDate}`);
   }
 
   let lines = responseText.split('\n');

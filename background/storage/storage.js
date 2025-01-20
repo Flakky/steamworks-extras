@@ -190,23 +190,54 @@ const writeData = (appID, type, data) => {
       console.error(`Steamworks extras: Failed to write data to storage (${appID})"${type}": `, data, e);
     }
 
-    transaction.oncomplete = function () {
+    transaction.oncomplete = () => {
       console.debug(`Steamworks extras: Data "${type}"(${appID}) written to storage: `, data);
       resolve();
-    };
+    }
 
     transaction.onerror = (event) => {
-      reject('Failed to read the database:', event.target.errorCode);
+      reject('Failed to write to the database:', event.target.errorCode);
     };
   });
 }
 
-const mergeData = (appID, type, key, newData) => {
+const mergeData = (appID, type, newData) => {
+  console.debug(`Merging data: `, newData);
+  const tableKey = tables.find(t => t.name === type).key;
+
   return new Promise((resolve, reject) => {
-    readData(appID, type, key).then(existingData => {
-      const mergedData = { ...existingData, ...newData };
-      writeData(appID, type, mergedData).then(resolve).catch(reject);
-    }).catch(reject);
+    if (Array.isArray(newData)) {
+      readData(appID, type).then(existingData => {
+        let mergedData = [];
+
+        for (const data of newData) {
+          const existingRow = existingData.find((d) => {
+            if (Array.isArray(tableKey)) {
+              return tableKey.every(key => d[key] === data[key]);
+            }
+            else {
+              return d[tableKey] === data[tableKey];
+            }
+          });
+
+          if (existingRow !== undefined) {
+            mergedData.push({ ...existingRow, ...data });
+          } else {
+            mergedData.push(data);
+          }
+        }
+        console.debug(`Merged data: `, mergedData);
+        writeData(appID, type, mergedData).then(resolve).catch(reject);
+      }).catch(reject);
+    }
+    else {
+      const keys = Array.isArray(tableKey) ? tableKey : [tableKey];
+      const keyValues = keys.map(key => newData[key]);
+      readData(appID, type, keyValues).then(existingData => {
+        const mergedData = { ...existingData, ...newData };
+        writeData(appID, type, mergedData).then(resolve).catch(reject);
+      });
+    }
   });
 }
 

@@ -77,8 +77,6 @@ const fetchReviewsData = (appID) => {
 }
 
 const fetchWishlistsData = async (appID) => {
-  addToQueue(new StorageActionRequestWishlists(appID));
-
   const pageCreationDate = await bghelpers.getPageCreationDate(appID);
 
   const dates = helpers.getDateRangeArray(pageCreationDate, helpers.getDateNoOffset(), true, false);
@@ -102,11 +100,11 @@ const fetchWishlistsData = async (appID) => {
         return sameDate && hasWorld;
       });
 
-      console.debug('Steamworks extras: Checking wishlist date:', dateString, hasData);
-
       return !hasData;
     });
   }
+
+  addToQueue(new StorageActionRequestWishlists(appID));
 
   console.debug('Steamworks extras: Missing wishlist dates:', missingDates);
 

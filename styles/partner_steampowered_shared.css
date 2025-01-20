@@ -125,3 +125,11 @@
 .extra_error_text {
   color: #eb3d3d;
 }
+
+.extra_info {
+  background-color: #74c6e0;
+  color: #333;
+  padding: 15px;
+  border: 5px solid #2b8cb5;
+  margin: 20px;
+}

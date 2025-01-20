@@ -127,7 +127,7 @@ const getStatus = () => {
   const queueLength = queue.filter(item => item.getType().includes("Request")).length;
 
   if (queueLength > 0) {
-    return "Updating stats: " + queueLength;
+    return `Updating stats (${queueLength})`;
   }
 
   return "Ready";

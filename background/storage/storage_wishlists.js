@@ -97,6 +97,17 @@ const requestAllWishlistData = async (appID) => {
   if (!response.ok) throw new Error('Network response was not ok');
 
   const htmlText = await response.text();
+
+  console.log(htmlText);
+
+  if (htmlText === undefined || htmlText === '') {
+    throw new Error(`Steamworks extras: Received no response instead of CSV while requesting wishlist data`);
+  }
+
+  if (htmlText.includes('<html>')) {
+    throw new Error('Steamworks extras: Received HTML response instead of CSV while requesting wishlist data');
+  }
+
   let lines = htmlText.split('\n');
 
   lines.splice(0, 3); // Remove first 3 rows because they are not informative and break csv format
@@ -113,6 +124,8 @@ const requestAllWishlistData = async (appID) => {
 
   const headers = lines[0].map(header => header.trim());
 
+  console.log(lines);
+
   // Map each line to an object using the headers as keys
   let wishlistActions = lines.slice(1).map(line => {
     return {
@@ -124,7 +137,7 @@ const requestAllWishlistData = async (appID) => {
     };
   });
 
-  await writeData(appID, 'Wishlists', wishlistActions);
+  await mergeData(appID, 'Wishlists', wishlistActions);
 }
 
 const requestWishlistRegionalData = async (appID, date) => {
@@ -153,7 +166,7 @@ const requestWishlistRegionalData = async (appID, date) => {
     console.log(`Steamworks extras: No wishlist data found for date ${formattedDate}. Writing empty data`);
 
     // Make sure empty dates also get saved with 'World' so we do not request it again
-    mergeData(appID, 'Wishlists', formattedDate, { 'Date': formattedDate, 'World': 0 });
+    mergeData(appID, 'Wishlists', { 'Date': formattedDate, 'World': 0 });
 
     return { 'World': 0 };
   }
@@ -167,7 +180,7 @@ const requestWishlistRegionalData = async (appID, date) => {
 
   formattedData['Date'] = helpers.dateToString(date);
 
-  mergeData(appID, 'Wishlists', formattedData['Date'], formattedData);
+  mergeData(appID, 'Wishlists', formattedData);
 
   return formattedData;
 }
