@@ -16,6 +16,7 @@ const initSettings = () => {
 
   generateCacheTable();
   initVersion();
+  startUpdatingStatus();
 }
 
 const clearSettings = () => {
@@ -56,25 +57,31 @@ const generateCacheTable = async () => {
 
     let result = await helpers.getDataFromStorage(type, appID, startDate, endDate, true);
 
-    const csvContent = Object.keys(result)
-      .map(key => {
-        const value = result[key];
-        if (typeof value === 'object' && value !== null) {
-          return Object.keys(value)
-            .map(subKey => value[subKey])
-            .join(',');
-        } else {
-          return `${key},${value}`;
-        }
-      })
-      .join('\n');
+    const keys = new Set();
+    result.forEach(item => {
+      Object.keys(item).forEach(key => keys.add(key));
+    });
+    const headerRow = Array.from(keys).join(',');
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const csvContent = result.map(item => {
+      return Array.from(keys).map(key => {
+        let value = String(item[key] || '');
+        value = value.replace(/\n/g, '\\\\n'); // Escape new lines
+        value = value.replace(/\r/g, '\\\\r'); // Escape carriage returns
+        value = value.replace('"', '""'); // Escape double quotes
+        return value.includes(',') ? `"${value}"` : value;
+      }).join(',');
+    }).join('\n');
+
+    const finalContent = `${headerRow}\n${csvContent}`;
+
+    const blob = new Blob([finalContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `${appID}-${type}.csv`;
     a.textContent = "Download";
+    a.id = `download_${appID}_${type}`;
     //    URL.revokeObjectURL(url);
 
     return a;
@@ -93,17 +100,30 @@ const generateCacheTable = async () => {
     cell.classList.add('table_label');
     row.appendChild(cell);
 
-    const addLinkCell = async (type) => {
+    const addLinkCell = (type) => {
       const cell = document.createElement('td');
-      const link = await createDownloadLink(appID, type);
-      cell.appendChild(link);
+      cell.id = `cache_cell_${appID}_${type}`;
+      cell.classList.add('description');
+      cell.textContent = '...'
       row.appendChild(cell);
+    }
+
+    const downloadAndInsertLink = async (type) => {
+      const link = await createDownloadLink(appID, type);
+      const cell = document.getElementById(`cache_cell_${appID}_${type}`);
+      cell.innerHTML = '';
+      cell.appendChild(link);
     }
 
     addLinkCell("Sales");
     addLinkCell("Wishlists");
     addLinkCell("Reviews");
     addLinkCell("Traffic");
+
+    downloadAndInsertLink("Sales");
+    downloadAndInsertLink("Wishlists");
+    downloadAndInsertLink("Reviews");
+    downloadAndInsertLink("Traffic");
 
     table.appendChild(row);
   });
@@ -117,5 +137,33 @@ const initVersion = () => {
   const version = chrome.runtime.getManifest().version;
   document.getElementById('ext_version').textContent = version;
 }
+
+const startUpdatingStatus = () => {
+  const statusElement = document.getElementById('status');
+  statusElement.style.display = 'none';
+
+  updateStatus();
+  setInterval(() => { updateStatus() }, 3000);
+}
+
+const updateStatus = () => {
+
+  chrome.runtime.sendMessage({ request: "getStatus" }, res => {
+    const statusElement = document.getElementById('status');
+
+    if (res === undefined) {
+      statusElement.innerHTML = `Unknown status of extension backend. Try reopening the browser.`;
+      statusElement.classList.add('extra_error');
+    }
+    if (res.includes('Updating stats')) {
+      statusElement.innerHTML = `<b>Collecting stats about games</b> (${res}). This may take a while.`;
+      statusElement.classList.add('extra_warning');
+    }
+    if (res == 'Ready') {
+      statusElement.display = 'none';
+    }
+  });
+}
+
 
 document.addEventListener('DOMContentLoaded', initSettings);
