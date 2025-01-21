@@ -104,7 +104,7 @@ const requestAllWishlistData = async (appID) => {
     throw new Error(`Steamworks extras: Received no response instead of CSV while requesting wishlist data`);
   }
 
-  if (htmlText.includes('<html>')) {
+  if (htmlText.includes('<html')) {
     throw new Error('Steamworks extras: Received HTML response instead of CSV while requesting wishlist data');
   }
 

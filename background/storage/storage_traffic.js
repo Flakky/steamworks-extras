@@ -108,7 +108,7 @@ const requestTrafficData = async (appID, date) => {
     throw new Error(`Steamworks extras: Received no response instead of CSV while requesting traffic data for date ${formattedDate}`);
   }
 
-  if (responseText.includes('<html>')) {
+  if (responseText.includes('<html')) {
     throw new Error(`Steamworks extras: Received HTML response instead of CSV while requesting traffic data for date ${formattedDate}`);
   }
 
