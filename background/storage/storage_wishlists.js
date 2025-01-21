@@ -71,7 +71,7 @@ const getWishlistData = async (appID, dateStart, dateEnd, returnLackData) => {
 }
 
 const requestAllWishlistData = async (appID) => {
-  console.log(`Steamworks extras: Requesting all wishlist data for app ${appID}`);
+  console.debug(`Steamworks extras: Requesting all wishlist data for app ${appID}`);
 
   const pageCreationDate = await bghelpers.getPageCreationDate(appID);
 
@@ -114,7 +114,7 @@ const requestAllWishlistData = async (appID) => {
 
   // Ensure that we have lines to process
   if (lines.length === 0) {
-    console.log(`Steamworks extras: No wishlists data found in CSV`);
+    console.debug(`Steamworks extras: No wishlists data found in CSV`);
     return;
   }
 
@@ -124,7 +124,7 @@ const requestAllWishlistData = async (appID) => {
 
   const headers = lines[0].map(header => header.trim());
 
-  console.log(lines);
+  console.debug(lines);
 
   // Map each line to an object using the headers as keys
   let wishlistActions = lines.slice(1).map(line => {
@@ -163,24 +163,33 @@ const requestWishlistRegionalData = async (appID, date) => {
   const data = await helpers.parseDataFromPage(url, 'parseWishlistData');
 
   if (typeof data !== 'object' || Object.keys(data).length === 0) {
-    console.log(`Steamworks extras: No wishlist data found for date ${formattedDate}. Writing empty data`);
+    console.debug(`Steamworks extras: No wishlist data found for date ${formattedDate}. Writing empty data`);
 
     // Make sure empty dates also get saved with 'World' so we do not request it again
-    mergeData(appID, 'Wishlists', { 'Date': formattedDate, 'World': 0 });
 
-    return { 'World': 0 };
+    const dataToWrite = { 'Date': formattedDate, 'World': 0 };
+
+    await mergeData(appID, 'Wishlists', dataToWrite);
+
+    return dataToWrite;
   }
 
   const formattedData = Object.keys(data).reduce((acc, country) => {
-    acc[country] = data[country] || 0;
+    let value = data[country];
+    if (typeof value === 'string' && value.startsWith('(') && value.endsWith(')')) {
+      value = -parseInt(value.slice(1, -1));
+    } else {
+      value = parseInt(value) || 0;
+    }
+    acc[country] = value;
     return acc;
   }, {});
 
-  console.log(`Steamworks extras: Wishlist result for app ${appID} for date ${formattedDate}: `, formattedData);
+  console.debug(`Steamworks extras: Wishlist result for app ${appID} for date ${formattedDate}: `, formattedData);
 
   formattedData['Date'] = helpers.dateToString(date);
 
-  mergeData(appID, 'Wishlists', formattedData);
+  await mergeData(appID, 'Wishlists', formattedData);
 
   return formattedData;
 }

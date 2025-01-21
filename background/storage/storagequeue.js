@@ -1,5 +1,6 @@
 let queue = [];
 let processingAction = null;
+let failedActions = [];
 
 class StorageAction {
   constructor() {
@@ -25,11 +26,9 @@ class StorageAction {
       this.process()
         .then(r => {
           this.result = r;
-          console.debug(`Steamworks extras: Action executed: `, this);
           if (!this.timedout) this.resolve(r)
         })
         .catch(e => {
-          console.error(`Steamworks extras: Error executing action: `, this, e);
           if (!this.timedout) this.reject(e);
         })
         .finally(() => {
@@ -91,6 +90,10 @@ const getActionsOfType = (type) => {
   return queue.filter(action => action.getType() === type);
 }
 
+const getFailedActions = () => {
+  return failedActions;
+}
+
 const processNext = () => {
   if (processingAction !== null && processingAction !== undefined) return;
 
@@ -100,10 +103,18 @@ const processNext = () => {
 
   console.debug(`Steamworks extras: Processing next action (${processingAction.getType()}) in queue:`, processingAction);
 
-  processingAction.execute().finally(() => {
-    processingAction = null;
-    processNext();
-  });
+  processingAction.execute()
+    .then(() => {
+      console.log(`Steamworks extras: Action executed (${getQueueLength()} left) `, processingAction);
+    })
+    .catch((e) => {
+      failedActions.push(processingAction);
+      console.warning(`Steamworks extras: Action failed to execute (${getQueueLength()} left) `, processingAction, e);
+    })
+    .finally(() => {
+      processingAction = null;
+      processNext();
+    });
 }
 
 const clearQueue = () => {

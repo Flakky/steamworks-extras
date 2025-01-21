@@ -100,7 +100,13 @@ const parseWishlistData = (doc) => {
 
     cells.forEach((cell, index) => {
       if (cell.textContent.trim() === 'Wishlists') {
-        wishlistCount = parseInt(cells[index + 1].textContent.trim(), 10);
+        wishlistCount = cells[index + 1].textContent.trim();
+
+        if (typeof wishlistCount === 'string' && wishlistCount.startsWith('(') && wishlistCount.endsWith(')')) {
+          wishlistCount = -parseInt(wishlistCount.slice(1, -1));
+        } else {
+          wishlistCount = parseInt(wishlistCount) || 0;
+        }
       }
       if (index === 1) {
         const countryLink = cell.querySelector('a');

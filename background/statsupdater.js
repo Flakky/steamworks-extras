@@ -77,13 +77,14 @@ const fetchReviewsData = (appID) => {
 }
 
 const fetchWishlistsData = async (appID) => {
+  const requestAllWishlists = new StorageActionRequestWishlists(appID);
+  await requestAllWishlists.addAndWait();
+
   const pageCreationDate = await bghelpers.getPageCreationDate(appID);
 
   const dates = helpers.getDateRangeArray(pageCreationDate, helpers.getDateNoOffset(), true, false);
 
   const wishlistsData = await readData(appID, 'Wishlists');
-
-  console.log(wishlistsData);
 
   let missingDates = [];
 
@@ -96,15 +97,23 @@ const fetchWishlistsData = async (appID) => {
 
       const hasData = wishlistsData.some((data) => {
         const sameDate = data['Date'] === dateString;
-        const hasWorld = data.hasOwnProperty('World');
-        return sameDate && hasWorld;
+        if (!sameDate) return false;
+
+        const worldWishlists = data['World'] || 0;
+        const adds = data['Adds'] || 0;
+        const deletes = data['Deletes'] || 0;
+
+        let dataLooksFinal = (adds !== 0 || deletes !== 0) === (worldWishlists !== 0);
+        if (!dataLooksFinal) {
+          dataLooksFinal = (adds - deletes) === worldWishlists; // Sometimes data may look wrong, but world may actually be zero because of adds and deletes
+        }
+
+        return dataLooksFinal;
       });
 
       return !hasData;
     });
   }
-
-  addToQueue(new StorageActionRequestWishlists(appID));
 
   console.debug('Steamworks extras: Missing wishlist dates:', missingDates);
 

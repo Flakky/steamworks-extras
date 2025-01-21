@@ -93,7 +93,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       };
     default:
       {
-        console.warn(`Steamworks extras: Unknown request "${message.request}" from background`);
+        console.debug(`Steamworks extras: Unknown request "${message.request}" from background`);
         sendResponse({ error: "Unknown request" });
         return false;
       }
