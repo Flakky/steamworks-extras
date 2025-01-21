@@ -49,6 +49,7 @@ class StorageActionGetWishlists extends StorageAction {
 }
 
 const getWishlistData = async (appID, dateStart, dateEnd, returnLackData) => {
+  await waitForDatabaseReady();
 
   let records = await readData(appID, 'Wishlists');
 

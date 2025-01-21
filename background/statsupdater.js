@@ -1,6 +1,11 @@
 const startUpdatingStats = async (appIDs) => {
   for (const appID of appIDs) {
-    await initGameStatsStorage(appID, 1);
+    try {
+      await initGameStatsStorage(appID, 1);
+    }
+    catch (e) {
+      console.error(`Steamworks extras: Error while initializing game stats storage for app ${appID}: `, e);
+    }
   }
 
   updateStats(appIDs);
@@ -78,7 +83,7 @@ const fetchReviewsData = (appID) => {
 
 const fetchWishlistsData = async (appID) => {
   const requestAllWishlists = new StorageActionRequestWishlists(appID);
-  await requestAllWishlists.addAndWait();
+  await requestAllWishlists.addAndWait(true);
 
   const pageCreationDate = await bghelpers.getPageCreationDate(appID);
 

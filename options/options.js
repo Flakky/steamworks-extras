@@ -154,13 +154,17 @@ const updateStatus = () => {
     if (res === undefined) {
       statusElement.innerHTML = `Unknown status of extension backend. Try reopening the browser.`;
       statusElement.classList.add('extra_error');
+      statusElement.style.display = '';
     }
     if (res.includes('Updating stats')) {
-      statusElement.innerHTML = `<b>Collecting stats about games</b> (${res}). This may take a while.`;
+      const match = res.match(/\((\d+)\)/);
+      const number = match ? match[1] : 'unknown';
+      statusElement.innerHTML = `<b>Collecting stats about games</b> (${number}). This may take a while.`;
       statusElement.classList.add('extra_warning');
+      statusElement.style.display = '';
     }
     if (res == 'Ready') {
-      statusElement.display = 'none';
+      statusElement.style.display = 'none';
     }
   });
 }

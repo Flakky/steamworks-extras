@@ -109,7 +109,7 @@ const processNext = () => {
     })
     .catch((e) => {
       failedActions.push(processingAction);
-      console.warning(`Steamworks extras: Action failed to execute (${getQueueLength()} left) `, processingAction, e);
+      console.warn(`Steamworks extras: Action failed to execute (${getQueueLength()} left) `, processingAction, e);
     })
     .finally(() => {
       processingAction = null;

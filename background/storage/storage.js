@@ -12,8 +12,15 @@ const tables = [
 const MAX_RETRY_COUNT = 200;
 
 const initGameStatsStorage = (appID, index) => {
+  if (gameStatsStorage) {
+    gameStatsStorage.close();
+    gameStatsStorage = undefined;
+  }
+
   return new Promise((resolve, reject) => {
     console.log(`Steamworks Extras: Init database for app ${appID} with index ${index}`);
+
+    gameStatsStorage = undefined;
 
     if (index > MAX_RETRY_COUNT) {
       console.error(`Steamworks Extras: Max retry count on DB open reached for app ${appID}`);
@@ -21,14 +28,19 @@ const initGameStatsStorage = (appID, index) => {
       return;
     }
 
-    const request = indexedDB.open("SteamworksExtras_GameStatsStorage", index);
+    let request = indexedDB.open("SteamworksExtras_GameStatsStorage", index);
 
     request.onsuccess = (event) => {
+      if (request === undefined) return;
+      request = undefined;
+
+      console.log(`Steamworks Extras: Database opened with index ${index}`);
+
       gameStatsStorage = event.target.result;
 
       if (!gameStatsStorage) {
-        console.error(`Steamworks Extras: Failed to open database for app ${appID} with index ${index}`);
-        initGameStatsStorage(appID, index).then(resolve).catch(reject);
+        console.debug(`Steamworks Extras: Database is not valid for app ${appID} with index ${index}. Trying next index...`);
+        initGameStatsStorage(appID, index + 1).then(resolve).catch(reject);
       }
 
       // Check for storage correct format
@@ -52,6 +64,9 @@ const initGameStatsStorage = (appID, index) => {
     }
 
     request.onupgradeneeded = (event) => {
+      if (request === undefined) return;
+      request = undefined;
+
       gameStatsStorage = event.target.result;
 
       console.log(`Steamworks Extras: Database update for app ${appID} with index ${index}`);
@@ -64,12 +79,24 @@ const initGameStatsStorage = (appID, index) => {
         }
       }
 
-      reject();
+      gameStatsStorage.close();
+      gameStatsStorage = undefined;
+
+      initGameStatsStorage(appID, index).then(resolve).catch(reject);
     }
 
     request.onerror = (event) => {
-      gameStatsStorage = undefined;
-      console.error(`Steamworks Extras: Failed to open the database for app ${appID} with index ${index}: ${event.target.errorCode}`);
+      if (request === undefined) return;
+      request = undefined;
+
+      console.debug(`Steamworks Extras: Failed to open the database for app ${appID} with index ${index}:`, event);
+
+      gameStatsStorage = event.target.result;
+
+      if (gameStatsStorage) {
+        gameStatsStorage.close();
+        gameStatsStorage = undefined;
+      }
 
       return initGameStatsStorage(appID, index + 1).then(resolve).catch(reject);
     }
@@ -117,11 +144,19 @@ const deleteDatabase = async () => {
 };
 
 const waitForDatabaseReady = () => {
-  return new Promise((resolve, reject) => {
+  const wait = (resolve) => {
     setTimeout(() => {
-      if (gameStatsStorage !== undefined && gameStatsStorage !== null && !gameStatsStorage.onversionchange) resolve();
+      if (gameStatsStorage !== undefined && gameStatsStorage !== null && !gameStatsStorage.onversionchange) {
+        resolve();
+        return;
+      }
       else console.log(`Database is not ready, waiting...`);
-    }, 0.5);
+      wait(resolve);
+    }, 1000);
+  }
+
+  return new Promise((resolve, reject) => {
+    wait(resolve);
   });
 }
 
