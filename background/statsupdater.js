@@ -58,15 +58,22 @@ const fetchTrafficData = async (appID) => {
   else {
     missingDates = dates.filter(date => {
       const dateString = helpers.dateToString(date);
+
       const hasData = trafficData.some((data) => {
-        return data['Date'] === dateString;
+        const sameDate = data['Date'] === dateString;
+        if (!sameDate) return false;
+
+        const pageCategory = data['PageCategory'] || 0;
+        const PageFeature = data['PageFeature'] || 0;
+
+        return pageCategory !== 0 && PageFeature !== 0;
       });
 
       return !hasData;
     });
   }
 
-  console.debug('Steamworks extras: Missing traffic dates:', missingDates);
+  console.debug(`Steamworks extras: Missing traffic dates for app ${appID}:`, missingDates);
 
   for (const date of missingDates) {
     addToQueue(new StorageActionRequestTraffic(appID, date));
