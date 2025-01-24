@@ -17,6 +17,7 @@ const init = () => {
 
     hideOldElements();
     createChart();
+    addStatusBlock();
 
     addChartShowCheckboxes();
 
@@ -114,6 +115,13 @@ const updateSelectedChartCategories = () => {
       chartSubcategories.push({ category: checkboxIDSplit[0], subCategory: checkboxIDSplit[1] });
     }
   }
+}
+
+const addStatusBlock = () => {
+  const statusBlock = createStatusBlock();
+
+  const pageContentElem = getPageContentElem();
+  pageContentElem.insertBefore(statusBlock, pageContentElem.children[18]);
 }
 
 const addChartShowCheckboxes = () => {

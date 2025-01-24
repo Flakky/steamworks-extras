@@ -35,6 +35,7 @@
       ],
       "js": [
         "scripts/chart.umd.min.js",
+        "content/statusblock.js",
         "scripts/helpers.js",
         "data/defaultsettings.js",
         "content/appdetails_reviews.js",
@@ -52,11 +53,13 @@
       ],
       "js": [
         "scripts/chart.umd.min.js",
+        "content/statusblock.js",
         "scripts/helpers.js",
         "data/defaultsettings.js",
         "content/apptraffic.js"
       ],
       "css": [
+        "styles/partner_steampowered_shared.css",
         "styles/apptraffic.css"
       ]
     },
@@ -66,6 +69,7 @@
       ],
       "js": [
         "scripts/chart.umd.min.js",
+        "content/statusblock.js",
         "scripts/helpers.js",
         "data/defaultsettings.js",
         "content/appwishlist.js"

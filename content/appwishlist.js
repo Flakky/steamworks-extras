@@ -29,6 +29,7 @@ const init = async () => {
   moveLinksToTop();
   moveGameTitle();
   moveDateRangeSelectionToTop();
+  addStatusBlock();
 
   moveTotalTableToNewBlock();
   fixLifetimeLayout();
@@ -242,6 +243,13 @@ const moveTotalTableToNewBlock = () => {
   contentBlock.appendChild(content);
 
   // contentBlock.appendChild(content);
+}
+
+const addStatusBlock = () => {
+  const statusBlock = createStatusBlock();
+
+  const toolbarBlock = getExtraToolbarBlock();
+  toolbarBlock.appendChild(statusBlock);
 }
 
 const fixLifetimeLayout = () => {

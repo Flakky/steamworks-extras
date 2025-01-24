@@ -17,6 +17,7 @@ const init = () => {
     moveGameTitle();
     moveLinksToTop();
     moveDateRangeSelectionToTop();
+    addStatusBlock();
 
     moveSummaryTableToNewBlock();
     createSalesChart();
@@ -636,6 +637,13 @@ const moveDateRangeSelectionToTop = () => {
   newDateRangeContainerElem.appendChild(periodSelectWholeBlock);
 
   toolbarBlock.appendChild(newDateRangeContainerElem);
+}
+
+const addStatusBlock = () => {
+  const statusBlock = createStatusBlock();
+
+  const toolbarBlock = getExtraToolbarBlock();
+  toolbarBlock.appendChild(statusBlock);
 }
 
 const moveSalesTableToNewBlock = () => {
