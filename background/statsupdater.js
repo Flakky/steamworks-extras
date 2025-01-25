@@ -57,16 +57,17 @@ const fetchTrafficData = async (appID) => {
   }
   else {
     missingDates = dates.filter(date => {
+      const alwaysUpdateDate = new Date();
+      alwaysUpdateDate.setDate(alwaysUpdateDate.getDate() - 3);
+      if (date > alwaysUpdateDate) {
+        return true;
+      }
+
       const dateString = helpers.dateToString(date);
 
       const hasData = trafficData.some((data) => {
         const sameDate = data['Date'] === dateString;
-        if (!sameDate) return false;
-
-        const pageCategory = data['PageCategory'] || 0;
-        const PageFeature = data['PageFeature'] || 0;
-
-        return pageCategory !== 0 && PageFeature !== 0;
+        return sameDate;
       });
 
       return !hasData;
@@ -81,10 +82,13 @@ const fetchTrafficData = async (appID) => {
 }
 
 const fetchSalesData = (appID) => {
+  // We do not check for missing dates because we can request all sales data at once
   addToQueue(new StorageActionRequestSales(appID));
 }
 
 const fetchReviewsData = (appID) => {
+  // We do not check for missing dates because reviews cannot be requested for certain dates.
+  // We can request all reviews with couple requests in a single action
   addToQueue(new StorageActionRequestReviews(appID));
 }
 
@@ -111,13 +115,22 @@ const fetchWishlistsData = async (appID) => {
         const sameDate = data['Date'] === dateString;
         if (!sameDate) return false;
 
-        const worldWishlists = data['World'] || 0;
-        const adds = data['Adds'] || 0;
-        const deletes = data['Deletes'] || 0;
+        if (data['World'] === undefined
+          || data['Adds'] === undefined
+          || data['Deletes'] === undefined
+        ) {
+          return false;
+        }
+
+        const worldWishlists = data['World'];
+        const adds = data['Adds'];
+        const deletes = data['Deletes'];
 
         let dataLooksFinal = (adds !== 0 || deletes !== 0) === (worldWishlists !== 0);
+
+        // Sometimes data may look wrong, but world may actually be zero because of deletes are equal to adds wich makes world zero.
         if (!dataLooksFinal) {
-          dataLooksFinal = (adds - deletes) === worldWishlists; // Sometimes data may look wrong, but world may actually be zero because of adds and deletes
+          dataLooksFinal = Math.abs((adds - deletes) - worldWishlists) < 3; // 3 is a threshold. Sometimes adds - deletes are not equal to world.
         }
 
         return dataLooksFinal;
@@ -127,7 +140,7 @@ const fetchWishlistsData = async (appID) => {
     });
   }
 
-  console.debug('Steamworks extras: Missing wishlist dates:', missingDates);
+  console.debug(`Steamworks extras: Missing wishlist dates for app ${appID}:`, missingDates);
 
   for (const date of missingDates) {
     addToQueue(new StorageActionRequestRegionalWishlists(appID, date));

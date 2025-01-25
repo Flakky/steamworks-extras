@@ -226,11 +226,35 @@ const parseAppIDs = async () => {
 
   const appIDs = await helpers.parseDataFromPage('https://partner.steampowered.com/nav_games.php', 'parseAppIDs');
 
-  await chrome.storage.local.set({ appIDs: appIDs });
+  const nonRedirectedAppIDs = [];
 
-  console.log('Steamworks extras: AppIDs: ', appIDs);
+  for (const appID of appIDs) {
+    try {
+      const response = await fetch(`https://store.steampowered.com/app/${appID}`, { redirect: 'manual' });
 
-  return appIDs;
+      console.log(`Steamworks extras: Checking appID ${appID} for redirection: `, response.status);
+
+      if (response.status === 200) {
+        nonRedirectedAppIDs.push(appID);
+      }
+    } catch (error) {
+      console.error(`Error fetching appID ${appID}:`, error);
+    }
+  }
+
+  console.debug('Non-redirected AppIDs:', nonRedirectedAppIDs);
+
+  let currentAppIDs = await chrome.storage.local.get("appIDs");
+
+  currentAppIDs = currentAppIDs.appIDs || [];
+  const mergedAppIDs = [...new Set([...currentAppIDs, ...nonRedirectedAppIDs])];
+
+
+  await chrome.storage.local.set({ appIDs: mergedAppIDs });
+
+  console.log('Steamworks extras: AppIDs: ', mergedAppIDs);
+
+  return mergedAppIDs;
 }
 
 const getAppIDs = async () => {
@@ -293,8 +317,8 @@ const getPageCreationDate = async (appID) => {
 const initIDs = async () => {
   console.log('Steamworks extras: Init AppIDs and PackageIDs');
 
-  const appIDs = await getAppIDs();
-  if (appIDs === undefined) {
+  const appIDs = await parseAppIDs();
+  if (!Array.isArray(appIDs) || appIDs.length === 0) {
     console.error('Steamworks extras: No appIDs found');
     return;
   }
@@ -316,12 +340,11 @@ const init = async () => {
 
   const appIDs = await getAppIDs();
   if (appIDs.length === 0) {
-    console.error('Steamworks extras: No appIDs found');
+    console.error('Steamworks extras: No appIDs found. Make sure you are logged in to Steamworks and have access to games data.');
     return;
   }
 
   for (const appID of appIDs) {
-    console.debug(await bghelpers.getAppPackageIDs(appID));
     await getPageCreationDate(appID);
   }
 

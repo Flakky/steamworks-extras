@@ -94,6 +94,10 @@ const getFailedActions = () => {
   return failedActions;
 }
 
+const removeActionsByTag = (tag) => {
+  queue = queue.filter(action => !action.getType().includes(tag));
+}
+
 const processNext = () => {
   if (processingAction !== null && processingAction !== undefined) return;
 
