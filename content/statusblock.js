@@ -21,7 +21,7 @@ const updateStatus = () => {
     if (res.includes('Updating stats')) {
       const match = res.match(/\((\d+)\)/);
       const number = match ? match[1] : 'unknown';
-      statusElement.innerHTML = `<b>Collecting stats about games</b> (${number}). Try to refresh the page in a few minutes.`;
+      statusElement.innerHTML = `<b>Collecting stats about games</b> (${number}).<br>Some data may not be available. Try to refresh the page in a few minutes.`;
       statusElement.classList.add('extra_warning');
       statusElement.style.display = '';
     }

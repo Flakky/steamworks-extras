@@ -10,9 +10,13 @@ const startUpdatingStats = async (appIDs) => {
 
   updateStats(appIDs);
 
+  const updateIntervalObject = await chrome.storage.local.get(`statsUpdateInterval`);
+  const updateInterval = updateIntervalObject.statsUpdateInterval || 60;
+  console.debug(`Steamworks extras: Stats update interval:`, updateInterval);
+
   setInterval(() => {
     updateStats(appIDs);
-  }, 30 * 60 * 1000); // 30 minutes
+  }, updateInterval * 60 * 1000);
 }
 
 self.onmessage = (event) => {

@@ -7,5 +7,6 @@ const defaultSettings = {
   "royaltiesAfterTax": 0,
   "showZeroRevenues": false,
   "showPercentages": false,
-  "chartMaxBreakdown": 10
+  "chartMaxBreakdown": 10,
+  "statsUpdateInterval": 60
 }
