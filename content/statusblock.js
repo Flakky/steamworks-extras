@@ -1,6 +1,7 @@
 const createStatusBlock = () => {
   const statusBlock = document.createElement('p');
   statusBlock.id = 'extra_status';
+  statusBlock.classList.add('extra_floating_notification');
   statusBlock.style.display = 'none';
 
   updateStatus();

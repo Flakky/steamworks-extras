@@ -93,15 +93,19 @@
   display: block;
 }
 
-#extra_status {
+.extra_floating_notification {
   position: fixed;
-  bottom: 0;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
+  z-index: 1000;
+}
+
+#extra_status {
   max-width: 300px;
   padding: 10px;
-  z-index: 1000;
   border-radius: 5px;
+  margin: 0px;
 }
 
 .extra_warning {

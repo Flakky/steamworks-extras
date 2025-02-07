@@ -1,16 +1,28 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const exampleButton = document.getElementById('optionsButton');
-  exampleButton.addEventListener('click', () => {
+  bindButton('optionsButton', () => {
     chrome.runtime.sendMessage({ request: "showOptions" }, res => { });
   });
+
+  bindButton('discordButton', () => {
+    openLink('https://discord.gg/k8BA8YSHQ6');
+  });
+  bindButton('gitButton', () => {
+    openLink('https://github.com/Flakky/steamworks-extras');
+  });
+
 
   updateStatus();
   setInterval(() => { updateStatus() }, 3000);
 });
 
+const bindButton = (id, func) => {
+  const button = document.getElementById(id);
+  button.addEventListener('click', func);
+}
+
 const updateStatus = () => {
   chrome.runtime.sendMessage({ request: "getStatus" }, res => {
-    const statusElement = document.getElementById('status');
+    const statusElement = document.getElementById('extra_status');
 
     if (res === undefined) {
       statusElement.innerHTML = `<b>Status:</b> Unknown`;
@@ -25,4 +37,9 @@ const updateStatus = () => {
       statusElement.classList.add('extra_info');
     }
   });
+}
+
+const openLink = (link) => {
+  console.log('Opening link:', link);
+  chrome.tabs.create({ url: link, active: true });
 }
