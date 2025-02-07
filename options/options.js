@@ -106,7 +106,7 @@ const generateCacheTable = async () => {
       const cell = document.createElement('td');
       cell.id = `cache_cell_${appID}_${type}`;
       cell.classList.add('description');
-      cell.textContent = '...'
+      cell.innerHTML = '<div class="loader"></div>';
       row.appendChild(cell);
     }
 
