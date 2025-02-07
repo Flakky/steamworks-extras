@@ -141,7 +141,7 @@ const initVersion = () => {
 }
 
 const startUpdatingStatus = () => {
-  const statusElement = document.getElementById('status');
+  const statusElement = document.getElementById('extra_status');
   statusElement.style.display = 'none';
 
   updateStatus();
@@ -151,7 +151,7 @@ const startUpdatingStatus = () => {
 const updateStatus = () => {
 
   chrome.runtime.sendMessage({ request: "getStatus" }, res => {
-    const statusElement = document.getElementById('status');
+    const statusElement = document.getElementById('extra_status');
 
     if (res === undefined) {
       statusElement.innerHTML = `Unknown status of extension backend. Try reopening the browser.`;

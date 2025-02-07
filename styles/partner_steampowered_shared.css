@@ -93,6 +93,17 @@
   display: block;
 }
 
+#extra_status {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 300px;
+  padding: 10px;
+  z-index: 1000;
+  border-radius: 5px;
+}
+
 .extra_warning {
   background-color: #ebb43d;
   color: #333;
