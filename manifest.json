@@ -101,6 +101,7 @@
     "scripts": [
       "data/defaultsettings.js",
       "scripts/helpers.js",
+      "scripts/parser.js",
       "background/bghelpers.js",
       "background/storage/storage.js",
       "background/storage/storagequeue.js",

@@ -4,6 +4,7 @@ if (typeof browser == "undefined") {
 
   importScripts('../data/defaultsettings.js');
   importScripts('../scripts/helpers.js');
+  importScripts('../scripts/parser.js');
   importScripts('bghelpers.js');
   importScripts('storage/storage.js');
   importScripts('storage/storagequeue.js');

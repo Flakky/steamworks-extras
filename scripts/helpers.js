@@ -398,6 +398,15 @@ helpers.parseDataFromPage = async (url, request) => {
 helpers.parseDOM = (htmlText, request) => {
   return new Promise(async (resolve, reject) => {
     console.debug('Parsing DOM started: ', request);
+
+    // DOM parser is available in some browsers, so we use it if possible.
+    // Firefox +, Chrome -
+    if (globalThis.DOMParser) {
+      const result = parser.parseDocument(htmlText, request);
+      resolve(result);
+      return;
+    }
+
     const offscreenUrl = getBrowser().runtime.getURL('background/offscreen/offscreen.html');
     const maxRetries = 20;
     let attemptCount = 0;
@@ -409,6 +418,7 @@ helpers.parseDOM = (htmlText, request) => {
 
       // Only one offscreen document can be open at a time, so we handle the error and try again
       try {
+
         await getBrowser().offscreen.createDocument({
           url: offscreenUrl,
           reasons: [getBrowser().offscreen.Reason.DOM_PARSER],
