@@ -1,4 +1,14 @@
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+const getBrowser = () => {
+  if (typeof browser !== 'undefined') {
+    return browser;
+  } else if (typeof chrome !== 'undefined') {
+    return chrome;
+  } else {
+    throw new Error('No browser API found');
+  }
+}
+
+getBrowser().runtime.onMessage.addListener((message, sender, sendResponse) => {
   let result = undefined;
 
   try {
@@ -24,7 +34,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     result = error.toString();
   }
 
-  chrome.runtime.sendMessage({ action: 'parsedDOM', result: result });
+  getBrowser().runtime.sendMessage({ action: 'parsedDOM', result: result });
 });
 
 const parsePackageIDs = (doc) => {

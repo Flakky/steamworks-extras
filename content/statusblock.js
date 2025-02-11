@@ -11,7 +11,7 @@ const createStatusBlock = () => {
 }
 
 const updateStatus = () => {
-  chrome.runtime.sendMessage({ request: "getStatus" }, res => {
+  getBrowser().runtime.sendMessage({ request: "getStatus" }, res => {
     const statusElement = document.getElementById('extra_status');
 
     if (res === undefined) {

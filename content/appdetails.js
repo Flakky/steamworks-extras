@@ -7,7 +7,7 @@ let chartColors = undefined;
 const init = () => {
   console.log("Steamworks extras: Init");
 
-  chrome.storage.local.get(defaultSettings, (result) => {
+  getBrowser().storage.local.get(defaultSettings, (result) => {
     settings = result;
 
     readChartColors();
@@ -166,7 +166,7 @@ const updateFinalRevenueRow = (index, calculation) => {
     descElem.appendChild(optionsLink);
 
     optionsLink.addEventListener('click', (event) => {
-      chrome.runtime.sendMessage({ request: "showOptions" }, res => { });
+      getBrowser().runtime.sendMessage({ request: "showOptions" }, res => { });
     });
 
     // Summ element
@@ -460,7 +460,7 @@ const requestSales = () => {
 }
 
 const readChartColors = () => {
-  const jsonFilePath = chrome.runtime.getURL('data/chartcolors.json');
+  const jsonFilePath = getBrowser().runtime.getURL('data/chartcolors.json');
 
   console.log(jsonFilePath);
 

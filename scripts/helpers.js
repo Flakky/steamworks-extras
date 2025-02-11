@@ -1,5 +1,15 @@
 let helpers = {}
 
+const getBrowser = () => {
+  if (typeof browser !== 'undefined') {
+    return browser;
+  } else if (typeof chrome !== 'undefined') {
+    return chrome;
+  } else {
+    throw new Error('No browser API found');
+  }
+}
+
 /**
  * Returns number splitted with commas as thousands separators
  *
@@ -388,7 +398,7 @@ helpers.parseDataFromPage = async (url, request) => {
 helpers.parseDOM = (htmlText, request) => {
   return new Promise(async (resolve, reject) => {
     console.debug('Parsing DOM started: ', request);
-    const offscreenUrl = chrome.runtime.getURL('background/offscreen/offscreen.html');
+    const offscreenUrl = getBrowser().runtime.getURL('background/offscreen/offscreen.html');
     const maxRetries = 20;
     let attemptCount = 0;
     const timeout = 10 * 1000;
@@ -399,15 +409,15 @@ helpers.parseDOM = (htmlText, request) => {
 
       // Only one offscreen document can be open at a time, so we handle the error and try again
       try {
-        await chrome.offscreen.createDocument({
+        await getBrowser().offscreen.createDocument({
           url: offscreenUrl,
-          reasons: [chrome.offscreen.Reason.DOM_PARSER],
+          reasons: [getBrowser().offscreen.Reason.DOM_PARSER],
           justification: 'Parse HTML in background script'
         });
 
         // Set a timeout to reject the promise if the document creation takes too long
         timer = setTimeout(() => {
-          chrome.offscreen.closeDocument();
+          getBrowser().offscreen.closeDocument();
           reject(new Error(`ParseDOM for "${request}" timed out`));
         }, timeout);
       } catch (error) {
@@ -420,18 +430,18 @@ helpers.parseDOM = (htmlText, request) => {
         return;
       }
 
-      await chrome.runtime.sendMessage({
+      await getBrowser().runtime.sendMessage({
         action: request,
         htmlText: htmlText
       });
 
-      chrome.runtime.onMessage.addListener(function listener(message) {
+      getBrowser().runtime.onMessage.addListener(function listener(message) {
         if (message.action === 'parsedDOM') {
-          chrome.runtime.onMessage.removeListener(listener);
+          getBrowser().runtime.onMessage.removeListener(listener);
           console.debug('Parsing DOM completed', message.result);
 
           clearTimeout(timer); // Clear the timeout if the document creation is successful
-          chrome.offscreen.closeDocument();
+          getBrowser().offscreen.closeDocument();
 
           resolve(message.result);
         }
@@ -444,9 +454,9 @@ helpers.parseDOM = (htmlText, request) => {
 
 helpers.sendMessageAsync = (message) => {
   return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage(message, (response) => {
-      if (chrome.runtime.lastError) {
-        reject(chrome.runtime.lastError);
+    getBrowser().runtime.sendMessage(message, (response) => {
+      if (getBrowser().runtime.lastError) {
+        reject(getBrowser().runtime.lastError);
       } else {
         resolve(response);
       }

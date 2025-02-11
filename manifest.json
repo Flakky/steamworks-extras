@@ -98,6 +98,19 @@
   },
   "options_page": "options/options.html",
   "background": {
+    "scripts": [
+      "data/defaultsettings.js",
+      "scripts/helpers.js",
+      "background/bghelpers.js",
+      "background/storage/storage.js",
+      "background/storage/storagequeue.js",
+      "background/storage/storage_reviews.js",
+      "background/storage/storage_sales.js",
+      "background/storage/storage_traffic.js",
+      "background/storage/storage_wishlists.js",
+      "background/statsupdater.js",
+      "background/extensionservice.js"
+    ],
     "service_worker": "background/extensionservice.js"
   },
   "action": {

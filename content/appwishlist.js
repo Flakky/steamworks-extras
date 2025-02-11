@@ -21,7 +21,7 @@ let selectedCountries = [];
 const init = async () => {
   console.log("Steamworks extras: Init");
 
-  settings = await chrome.storage.local.get(defaultSettings);
+  settings = await getBrowser().storage.local.get(defaultSettings);
 
   await readChartColors();
 
@@ -99,7 +99,7 @@ const moveGameTitle = () => {
 }
 
 const readChartColors = async () => {
-  const jsonFilePath = chrome.runtime.getURL('data/chartcolors.json');
+  const jsonFilePath = getBrowser().runtime.getURL('data/chartcolors.json');
 
   const response = await fetch(jsonFilePath);
   chartColors = await response.json();

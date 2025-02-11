@@ -10,7 +10,7 @@ let chartSubcategories = [];
 const init = () => {
   console.log("Steamworks extras: Init");
 
-  chrome.storage.local.get(defaultSettings, (result) => {
+  getBrowser().storage.local.get(defaultSettings, (result) => {
     settings = result;
 
     readChartColors();
@@ -62,7 +62,7 @@ const hideOldElements = () => {
 }
 
 const readChartColors = () => {
-  const jsonFilePath = chrome.runtime.getURL('data/chartcolors.json');
+  const jsonFilePath = getBrowser().runtime.getURL('data/chartcolors.json');
 
   console.log(jsonFilePath);
 

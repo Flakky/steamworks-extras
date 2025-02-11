@@ -1,5 +1,5 @@
 const initSettings = () => {
-  chrome.storage.local.get(Object.keys(defaultSettings), (result) => {
+  getBrowser().storage.local.get(Object.keys(defaultSettings), (result) => {
     document.getElementById('us_sales_tax').value = result.usSalesTax || defaultSettings.usSalesTax;
     document.getElementById('gross_royalties').value = result.grossRoyalties || defaultSettings.grossRoyalties;
     document.getElementById('net_royalties').value = result.netRoyalties || defaultSettings.netRoyalties;
@@ -21,7 +21,7 @@ const initSettings = () => {
 }
 
 const clearSettings = () => {
-  chrome.storage.local.clear();
+  getBrowser().storage.local.clear();
 }
 
 const saveSettings = () => {
@@ -37,17 +37,17 @@ const saveSettings = () => {
   result.chartMaxBreakdown = document.getElementById('chart_max_breakdown').valueAsNumber;
   result.statsUpdateInterval = document.getElementById('update_period').valueAsNumber;
 
-  chrome.storage.local.set(result, () => {
+  getBrowser().storage.local.set(result, () => {
     alert('Settings saved!');
   });
 }
 
 const generateCacheTable = async () => {
-  const data = await chrome.storage.local.get('appIDs');
+  const data = await getBrowser().storage.local.get('appIDs');
   const appIDs = data.appIDs || [];
   const table = document.querySelector('#cache table tbody');
 
-  const pagesCreationDateResult = await chrome.storage.local.get("pagesCreationDate");
+  const pagesCreationDateResult = await getBrowser().storage.local.get("pagesCreationDate");
   const pagesCreationDate = pagesCreationDateResult.pagesCreationDate;
 
   const createDownloadLink = async (appID, type) => {
@@ -136,7 +136,7 @@ const clearCacheData = () => {
 }
 
 const initVersion = () => {
-  const version = chrome.runtime.getManifest().version;
+  const version = getBrowser().runtime.getManifest().version;
   document.getElementById('ext_version').textContent = version;
 }
 
@@ -150,23 +150,28 @@ const startUpdatingStatus = () => {
 
 const updateStatus = () => {
 
-  chrome.runtime.sendMessage({ request: "getStatus" }, res => {
+  getBrowser().runtime.sendMessage({ request: "getStatus" }, res => {
     const statusElement = document.getElementById('extra_status');
 
     if (res === undefined) {
-      statusElement.innerHTML = `Unknown status of extension backend. Try reopening the browser.`;
+      statusElement.innerHTML = `Unknown status of extension backend. Try reopening the getBrowser().`;
       statusElement.classList.add('extra_error');
       statusElement.style.display = '';
+      return;
     }
+
     if (res.includes('Updating stats')) {
       const match = res.match(/\((\d+)\)/);
       const number = match ? match[1] : 'unknown';
       statusElement.innerHTML = `<b>Collecting stats about games</b> (${number}). This may take a while.`;
       statusElement.classList.add('extra_warning');
       statusElement.style.display = '';
+      return;
     }
+
     if (res == 'Ready') {
       statusElement.style.display = 'none';
+      return;
     }
   });
 }

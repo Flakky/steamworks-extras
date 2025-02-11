@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   bindButton('optionsButton', () => {
-    chrome.runtime.sendMessage({ request: "showOptions" }, res => { });
+    getBrowser().runtime.sendMessage({ request: "showOptions" }, res => { });
   });
 
   bindButton('discordButton', () => {
@@ -21,7 +21,7 @@ const bindButton = (id, func) => {
 }
 
 const updateStatus = () => {
-  chrome.runtime.sendMessage({ request: "getStatus" }, res => {
+  getBrowser().runtime.sendMessage({ request: "getStatus" }, res => {
     const statusElement = document.getElementById('extra_status');
 
     if (res === undefined) {
@@ -41,5 +41,5 @@ const updateStatus = () => {
 
 const openLink = (link) => {
   console.log('Opening link:', link);
-  chrome.tabs.create({ url: link, active: true });
+  getBrowser().tabs.create({ url: link, active: true });
 }

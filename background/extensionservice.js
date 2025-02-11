@@ -1,16 +1,21 @@
-importScripts('../data/defaultsettings.js');
-importScripts('../scripts/helpers.js');
-importScripts('bghelpers.js');
-importScripts('storage/storage.js');
-importScripts('storage/storagequeue.js');
-importScripts('storage/storage_reviews.js');
-importScripts('storage/storage_sales.js');
-importScripts('storage/storage_traffic.js');
-importScripts('storage/storage_wishlists.js');
-importScripts('statsupdater.js');
+if (typeof browser == "undefined") {
+  // Chrome does not support the browser namespace yet.
+  globalThis.browser = chrome;
 
-chrome.runtime.onInstalled.addListener(async () => {
-  chrome.storage.local.get(Object.keys(defaultSettings), (storedSettings) => {
+  importScripts('../data/defaultsettings.js');
+  importScripts('../scripts/helpers.js');
+  importScripts('bghelpers.js');
+  importScripts('storage/storage.js');
+  importScripts('storage/storagequeue.js');
+  importScripts('storage/storage_reviews.js');
+  importScripts('storage/storage_sales.js');
+  importScripts('storage/storage_traffic.js');
+  importScripts('storage/storage_wishlists.js');
+  importScripts('statsupdater.js');
+}
+
+getBrowser().runtime.onInstalled.addListener(async () => {
+  getBrowser().storage.local.get(Object.keys(defaultSettings), (storedSettings) => {
     const settingsToStore = {};
 
     for (const key in defaultSettings) {
@@ -20,14 +25,14 @@ chrome.runtime.onInstalled.addListener(async () => {
     }
 
     if (Object.keys(settingsToStore).length > 0) {
-      chrome.storage.local.set(settingsToStore, () => {
+      getBrowser().storage.local.set(settingsToStore, () => {
         console.log('Steamworks extras: Default settings have been initialized.');
       });
     }
   });
 });
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+getBrowser().runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.debug(`Steamworks extras: Background message: `, message);
 
   switch (message.request) {
@@ -55,7 +60,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "getPackageIDs":
       {
         (async () => {
-          let result = await chrome.storage.local.get("packageIDs");
+          let result = await getBrowser().storage.local.get("packageIDs");
 
           sendResponse(result.packageIDs);
         })(); break;
@@ -63,7 +68,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "getPageCreationDates":
       {
         (async () => {
-          let result = await chrome.storage.local.get("pagesCreationDate");
+          let result = await getBrowser().storage.local.get("pagesCreationDate");
 
           sendResponse(result);
         })(); break;
@@ -101,7 +106,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return true;
 });
 
-chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
+getBrowser().runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
   if (!sender.url.includes("localhost") && !sender.url.includes("127.0.0.1")) {
     sendResponse({ error: "Unauthorized external message request" });
     return;
@@ -120,7 +125,7 @@ chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => 
 
 const showOptions = () => {
   console.log('Steamworks extras: Show options')
-  chrome.runtime.openOptionsPage();
+  getBrowser().runtime.openOptionsPage();
 }
 
 const getStatus = () => {
@@ -184,7 +189,7 @@ const makeRequest = async (url, params) => {
 const parsePackageIDs = async (appID) => {
   console.log('Steamworks extras: Parsing PackageIDs for appID: ', appID);
 
-  let result = await chrome.storage.local.get("packageIDs");
+  let result = await getBrowser().storage.local.get("packageIDs");
 
   let packageIDs = result.packageIDs === undefined ? {} : result.packageIDs;
 
@@ -198,7 +203,7 @@ const parsePackageIDs = async (appID) => {
 
   packageIDs[appID] = IDs;
 
-  await chrome.storage.local.set({ packageIDs: packageIDs });
+  await getBrowser().storage.local.set({ packageIDs: packageIDs });
 
   console.log(`Steamworks extras: Package IDs have been updated for app ${appID}: `, packageIDs);
 
@@ -206,7 +211,7 @@ const parsePackageIDs = async (appID) => {
 }
 
 const getPackageIDs = async (appID) => {
-  let result = await chrome.storage.local.get("packageIDs");
+  let result = await getBrowser().storage.local.get("packageIDs");
 
   let packageIDs = undefined;
   if (result === undefined
@@ -244,13 +249,13 @@ const parseAppIDs = async () => {
 
   console.debug('Non-redirected AppIDs:', nonRedirectedAppIDs);
 
-  let currentAppIDs = await chrome.storage.local.get("appIDs");
+  let currentAppIDs = await getBrowser().storage.local.get("appIDs");
 
   currentAppIDs = currentAppIDs.appIDs || [];
   const mergedAppIDs = [...new Set([...currentAppIDs, ...nonRedirectedAppIDs])];
 
 
-  await chrome.storage.local.set({ appIDs: mergedAppIDs });
+  await getBrowser().storage.local.set({ appIDs: mergedAppIDs });
 
   console.log('Steamworks extras: AppIDs: ', mergedAppIDs);
 
@@ -258,7 +263,7 @@ const parseAppIDs = async () => {
 }
 
 const getAppIDs = async () => {
-  let result = await chrome.storage.local.get("appIDs");
+  let result = await getBrowser().storage.local.get("appIDs");
 
   console.log(result);
 
@@ -279,7 +284,7 @@ const getAppIDs = async () => {
 const parsePageCreationDate = async (appID) => {
   console.log('Steamworks extras: Parsing page creation date for appID: ', appID);
 
-  let result = await chrome.storage.local.get("pagesCreationDate");
+  let result = await getBrowser().storage.local.get("pagesCreationDate");
   let pagesCreationDate = result.pagesCreationDate || {};
 
   const date = await helpers.requestPageCreationDate(appID);
@@ -288,7 +293,7 @@ const parsePageCreationDate = async (appID) => {
 
   pagesCreationDate[appID] = date.toISOString();
 
-  await chrome.storage.local.set({ 'pagesCreationDate': pagesCreationDate });
+  await getBrowser().storage.local.set({ 'pagesCreationDate': pagesCreationDate });
 
   console.log(`Steamworks extras: Page creation date for ${appID}: `, date);
 
@@ -296,7 +301,7 @@ const parsePageCreationDate = async (appID) => {
 }
 
 const getPageCreationDate = async (appID) => {
-  let result = await chrome.storage.local.get("pagesCreationDate");
+  let result = await getBrowser().storage.local.get("pagesCreationDate");
 
   console.log(result);
 
