@@ -9,6 +9,8 @@ importScripts('storage/storage_traffic.js');
 importScripts('storage/storage_wishlists.js');
 importScripts('statsupdater.js');
 
+let extensionStatus = { status: "", error: false };
+
 chrome.runtime.onInstalled.addListener(async () => {
   chrome.storage.local.get(Object.keys(defaultSettings), (storedSettings) => {
     const settingsToStore = {};
@@ -124,13 +126,17 @@ const showOptions = () => {
 }
 
 const getStatus = () => {
+  if (extensionStatus.error) {
+    return extensionStatus;
+  }
+
   const queueLength = queue.filter(item => item.getType().includes("Request")).length;
 
   if (queueLength > 0) {
-    return `Updating stats (${queueLength})`;
+    return { status: `Updating stats (${queueLength})`, error: false };
   }
 
-  return "Ready";
+  return extensionStatus;
 }
 
 const getDataFromDB = async (type, appId, dateStart, dateEnd, returnLackData = true) => {
@@ -336,6 +342,8 @@ const initIDs = async () => {
 const init = async () => {
   console.log('Steamworks extras: Init');
 
+  extensionStatus = { status: "Initializing...", error: false };
+
   await initIDs();
 
   const appIDs = await getAppIDs();
@@ -348,9 +356,16 @@ const init = async () => {
     await getPageCreationDate(appID);
   }
 
+  extensionStatus = { status: "Ready", error: false };
+
   startUpdatingStats(appIDs);
 
   console.log("Steamworks extras: Extension service initiated");
 }
 
-init();
+try {
+  init();
+} catch (error) {
+  console.error('Steamworks extras: Error while initializing extension service: ', error);
+  extensionStatus = { status: error.message, error: true };
+}

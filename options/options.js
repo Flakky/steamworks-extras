@@ -17,7 +17,8 @@ const initSettings = () => {
 
   generateCacheTable();
   initVersion();
-  startUpdatingStatus();
+
+  createStatusBlock();
 }
 
 const clearSettings = () => {
@@ -139,37 +140,5 @@ const initVersion = () => {
   const version = chrome.runtime.getManifest().version;
   document.getElementById('ext_version').textContent = version;
 }
-
-const startUpdatingStatus = () => {
-  const statusElement = document.getElementById('extra_status');
-  statusElement.style.display = 'none';
-
-  updateStatus();
-  setInterval(() => { updateStatus() }, 3000);
-}
-
-const updateStatus = () => {
-
-  chrome.runtime.sendMessage({ request: "getStatus" }, res => {
-    const statusElement = document.getElementById('extra_status');
-
-    if (res === undefined) {
-      statusElement.innerHTML = `Unknown status of extension backend. Try reopening the browser.`;
-      statusElement.classList.add('extra_error');
-      statusElement.style.display = '';
-    }
-    if (res.includes('Updating stats')) {
-      const match = res.match(/\((\d+)\)/);
-      const number = match ? match[1] : 'unknown';
-      statusElement.innerHTML = `<b>Collecting stats about games</b> (${number}). This may take a while.`;
-      statusElement.classList.add('extra_warning');
-      statusElement.style.display = '';
-    }
-    if (res == 'Ready') {
-      statusElement.style.display = 'none';
-    }
-  });
-}
-
 
 document.addEventListener('DOMContentLoaded', initSettings);

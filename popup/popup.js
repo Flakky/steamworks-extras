@@ -10,33 +10,12 @@ document.addEventListener('DOMContentLoaded', () => {
     openLink('https://github.com/Flakky/steamworks-extras');
   });
 
-
-  updateStatus();
-  setInterval(() => { updateStatus() }, 3000);
+  startUpdateStatus();
 });
 
 const bindButton = (id, func) => {
   const button = document.getElementById(id);
   button.addEventListener('click', func);
-}
-
-const updateStatus = () => {
-  chrome.runtime.sendMessage({ request: "getStatus" }, res => {
-    const statusElement = document.getElementById('extra_status');
-
-    if (res === undefined) {
-      statusElement.innerHTML = `<b>Status:</b> Unknown`;
-      statusElement.classList.add('extra_error');
-    }
-    if (res.includes('Updating stats')) {
-      statusElement.innerHTML = `<b>Status:</b> ${res}`;
-      statusElement.classList.add('extra_warning');
-    }
-    if (res == 'Ready') {
-      statusElement.innerHTML = `<b>Status:</b> Ready`;
-      statusElement.classList.add('extra_info');
-    }
-  });
 }
 
 const openLink = (link) => {
