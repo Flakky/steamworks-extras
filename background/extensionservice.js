@@ -1,6 +1,7 @@
 importScripts('../data/defaultsettings.js');
 importScripts('../scripts/helpers.js');
 importScripts('bghelpers.js');
+importScripts('status.js');
 importScripts('storage/storage.js');
 importScripts('storage/storagequeue.js');
 importScripts('storage/storage_reviews.js');
@@ -8,8 +9,6 @@ importScripts('storage/storage_sales.js');
 importScripts('storage/storage_traffic.js');
 importScripts('storage/storage_wishlists.js');
 importScripts('statsupdater.js');
-
-let extensionStatus = { status: "", error: false };
 
 chrome.runtime.onInstalled.addListener(async () => {
   chrome.storage.local.get(Object.keys(defaultSettings), (storedSettings) => {
@@ -326,7 +325,7 @@ const initIDs = async () => {
   const appIDs = await parseAppIDs();
   if (!Array.isArray(appIDs) || appIDs.length === 0) {
     console.error('Steamworks extras: No appIDs found');
-    return;
+    return false;
   }
 
   let packageIDs = {};
@@ -337,6 +336,19 @@ const initIDs = async () => {
   }
 
   console.log('Steamworks extras: AppIDs and PackageIDs have been initialized.', appIDs, packageIDs);
+  return true;
+}
+
+const initIDsWithRetry = async (interval = 5) => {
+  let success = false;
+  while (!success) {
+    success = await initIDs();
+    if (!success) {
+      console.log(`Steamworks extras: Retry initializing in ${interval} seconds...`);
+      setExtentionStatus("error", "Could not initialize AppIDs and PackageIDs. Make sure you logged in to Steamworks and have access to games data.");
+      await new Promise(resolve => setTimeout(resolve, interval));
+    }
+  }
 }
 
 const init = async () => {
@@ -344,11 +356,11 @@ const init = async () => {
 
   extensionStatus = { status: "Initializing...", error: false };
 
-  await initIDs();
+  await initIDsWithRetry();
 
   const appIDs = await getAppIDs();
   if (appIDs.length === 0) {
-    console.error('Steamworks extras: No appIDs found. Make sure you are logged in to Steamworks and have access to games data.');
+    console.error('Steamworks extras: No appIDs found.');
     return;
   }
 
@@ -367,5 +379,5 @@ try {
   init();
 } catch (error) {
   console.error('Steamworks extras: Error while initializing extension service: ', error);
-  extensionStatus = { status: error.message, error: true };
+  setExtentionStatus("error", "Error while initializing extension service", { error: error });
 }
