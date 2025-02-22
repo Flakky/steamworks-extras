@@ -641,9 +641,7 @@ const moveDateRangeSelectionToTop = () => {
 
 const addStatusBlock = () => {
   const statusBlock = createStatusBlock();
-
-  const toolbarBlock = getExtraToolbarBlock();
-  toolbarBlock.appendChild(statusBlock);
+  startUpdateStatus();
 }
 
 const moveSalesTableToNewBlock = () => {

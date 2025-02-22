@@ -119,9 +119,7 @@ const updateSelectedChartCategories = () => {
 
 const addStatusBlock = () => {
   const statusBlock = createStatusBlock();
-
-  const pageContentElem = getPageContentElem();
-  pageContentElem.insertBefore(statusBlock, pageContentElem.children[18]);
+  startUpdateStatus();
 }
 
 const addChartShowCheckboxes = () => {

@@ -1,13 +1,4 @@
 const startUpdatingStats = async (appIDs) => {
-  for (const appID of appIDs) {
-    try {
-      await initGameStatsStorage(appID, 1);
-    }
-    catch (e) {
-      console.error(`Steamworks extras: Error while initializing game stats storage for app ${appID}: `, e);
-    }
-  }
-
   updateStats(appIDs);
 
   const updateIntervalObject = await chrome.storage.local.get(`statsUpdateInterval`);
@@ -17,6 +8,11 @@ const startUpdatingStats = async (appIDs) => {
   setInterval(() => {
     updateStats(appIDs);
   }, updateInterval * 60 * 1000);
+
+  updateStatsStatus();
+  setInterval(() => {
+    updateStatsStatus();
+  }, 3 * 1000);
 }
 
 self.onmessage = (event) => {
@@ -26,6 +22,7 @@ self.onmessage = (event) => {
 }
 
 const updateStats = async (appIDs) => {
+
   try {
     for (const appID of appIDs) {
       await fetchAllData(appID);
@@ -34,7 +31,6 @@ const updateStats = async (appIDs) => {
   catch (error) {
     console.error('Steamworks extras: Error while updating stats: ', error);
   }
-
 }
 
 const fetchAllData = async (appID) => {
@@ -151,3 +147,13 @@ const fetchWishlistsData = async (appID) => {
   }
 }
 
+const updateStatsStatus = () => {
+  const queueLength = queue.filter(item => item.getType().includes("Request")).length;
+  console.debug(`Steamworks extras: Queue length:`, queueLength);
+  if (queueLength > 0) {
+    setExtentionStatus(11, { queueLength: queueLength });
+  }
+  else {
+    setExtentionStatus(0);
+  }
+}

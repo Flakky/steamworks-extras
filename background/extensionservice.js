@@ -125,16 +125,6 @@ const showOptions = () => {
 }
 
 const getStatus = () => {
-  if (extensionStatus.error) {
-    return extensionStatus;
-  }
-
-  const queueLength = queue.filter(item => item.getType().includes("Request")).length;
-
-  if (queueLength > 0) {
-    return { status: `Updating stats (${queueLength})`, error: false };
-  }
-
   return extensionStatus;
 }
 
@@ -345,7 +335,7 @@ const initIDsWithRetry = async (interval = 5) => {
     success = await initIDs();
     if (!success) {
       console.log(`Steamworks extras: Retry initializing in ${interval} seconds...`);
-      setExtentionStatus("error", "Could not initialize AppIDs and PackageIDs. Make sure you logged in to Steamworks and have access to games data.");
+      setExtentionStatus(101);
       await new Promise(resolve => setTimeout(resolve, interval));
     }
   }
@@ -354,7 +344,7 @@ const initIDsWithRetry = async (interval = 5) => {
 const init = async () => {
   console.log('Steamworks extras: Init');
 
-  extensionStatus = { status: "Initializing...", error: false };
+  setExtentionStatus(10);
 
   await initIDsWithRetry();
 
@@ -368,7 +358,7 @@ const init = async () => {
     await getPageCreationDate(appID);
   }
 
-  extensionStatus = { status: "Ready", error: false };
+  await initStorageForAppIDs(appIDs);
 
   startUpdatingStats(appIDs);
 
@@ -379,5 +369,5 @@ try {
   init();
 } catch (error) {
   console.error('Steamworks extras: Error while initializing extension service: ', error);
-  setExtentionStatus("error", "Error while initializing extension service", { error: error });
+  setExtentionStatus(100, { error: error });
 }

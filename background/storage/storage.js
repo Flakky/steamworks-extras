@@ -11,6 +11,18 @@ const tables = [
 
 const MAX_RETRY_COUNT = 200;
 
+const initStorageForAppIDs = async (appIDs) => {
+  for (const appID of appIDs) {
+    try {
+      await initGameStatsStorage(appID, 1);
+    }
+    catch (e) {
+      console.error(`Steamworks extras: Error while initializing game stats storage for app ${appID}: `, e);
+      setExtensionStatus(103, { error: e });
+    }
+  }
+}
+
 const initGameStatsStorage = (appID, index) => {
   if (gameStatsStorage) {
     gameStatsStorage.close();

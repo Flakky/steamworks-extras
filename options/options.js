@@ -19,6 +19,7 @@ const initSettings = () => {
   initVersion();
 
   createStatusBlock();
+  startUpdateStatus();
 }
 
 const clearSettings = () => {
