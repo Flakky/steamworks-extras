@@ -10,6 +10,9 @@ document.addEventListener('DOMContentLoaded', () => {
     openLink('https://github.com/Flakky/steamworks-extras');
   });
 
+  const statusBlock = createStatusBlockElement();
+  document.body.appendChild(statusBlock);
+
   startUpdateStatus();
 });
 

@@ -87,7 +87,10 @@
         "data/extensionstatuses.json",
         "data/defaulsettings.js",
         "background/offscreen/offscreen.html",
-        "background/offscreen/offscreen.js"
+        "background/offscreen/offscreen.js",
+        "assets/status_info.png",
+        "assets/status_warning.png",
+        "assets/status_error.png"
       ],
       "matches": [
         "<all_urls>"

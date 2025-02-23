@@ -106,6 +106,7 @@
   padding: 10px;
   border-radius: 5px;
   margin: 0px;
+  vertical-align: middle;
 }
 
 .extra_warning {
@@ -147,6 +148,22 @@
   padding: 15px;
   border: 5px solid #2b8cb5;
   margin: 20px;
+}
+
+#extra_status_icon {
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  vertical-align: middle;
+}
+
+#extra_status_message {
+  font-size: 1.2em;
+  font-weight: bold;
+  padding: 0 0 0 10px;
+  vertical-align: middle;
+  line-height: 20px;
+  /* Adjust this value to match the height of the status icon */
 }
 
 .loader {

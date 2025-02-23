@@ -255,8 +255,6 @@ const parseAppIDs = async () => {
 const getAppIDs = async () => {
   let result = await chrome.storage.local.get("appIDs");
 
-  console.log(result);
-
   let appIDs = undefined;
 
   if (result === undefined
@@ -281,6 +279,8 @@ const parsePageCreationDate = async (appID) => {
 
   if (date === undefined || !(date instanceof Date)) return undefined;
 
+  console.log(`Steamworks extras: Page creation date for ${appID}: `, date);
+
   pagesCreationDate[appID] = date.toISOString();
 
   await chrome.storage.local.set({ 'pagesCreationDate': pagesCreationDate });
@@ -292,8 +292,6 @@ const parsePageCreationDate = async (appID) => {
 
 const getPageCreationDate = async (appID) => {
   let result = await chrome.storage.local.get("pagesCreationDate");
-
-  console.log(result);
 
   let creationDate = undefined;
 
@@ -332,11 +330,45 @@ const initIDs = async () => {
 const initIDsWithRetry = async (interval = 5) => {
   let success = false;
   while (!success) {
-    success = await initIDs();
+    try {
+      success = await initIDs();
+    } catch (error) {
+      console.error('Steamworks extras: Error during initIDs:', error);
+    }
     if (!success) {
       console.log(`Steamworks extras: Retry initializing in ${interval} seconds...`);
       setExtentionStatus(101);
-      await new Promise(resolve => setTimeout(resolve, interval));
+      await new Promise(resolve => setTimeout(resolve, interval * 1000));
+    }
+  }
+}
+
+const initPageCreationDates = async () => {
+  console.log('Steamworks extras: Init PageCreationDates');
+
+  const appIDs = await getAppIDs();
+  if (appIDs.length === 0) {
+    console.error('Steamworks extras: No appIDs found.');
+    return;
+  }
+
+  for (const appID of appIDs) {
+    await getPageCreationDate(appID);
+  }
+
+  console.log('Steamworks extras: PageCreationDates have been initialized.');
+}
+
+const initPageCreationDatesWithRetry = async (interval = 5) => {
+  let success = false;
+  while (!success) {
+    try {
+      await initPageCreationDates();
+      success = true;
+    } catch (error) {
+      console.error('Steamworks extras: Error during initPageCreationDates:', error);
+      setExtentionStatus(102, { error: error.message });
+      await new Promise(resolve => setTimeout(resolve, interval * 1000));
     }
   }
 }
@@ -354,9 +386,7 @@ const init = async () => {
     return;
   }
 
-  for (const appID of appIDs) {
-    await getPageCreationDate(appID);
-  }
+  await initPageCreationDatesWithRetry();
 
   await initStorageForAppIDs(appIDs);
 
@@ -365,9 +395,7 @@ const init = async () => {
   console.log("Steamworks extras: Extension service initiated");
 }
 
-try {
-  init();
-} catch (error) {
+init().catch(error => {
   console.error('Steamworks extras: Error while initializing extension service: ', error);
-  setExtentionStatus(100, { error: error });
-}
+  setExtentionStatus(100, { error: error.message });
+});

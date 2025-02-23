@@ -11,21 +11,26 @@
   "11": {
     "status": "warning",
     "message": "Gathering data of the apps...",
-    "extramessage": "Gathering data of the apps (${queueLength}). Some data may not be available. Try to refresh the page in a few minutes."
+    "extramessage": "Gathering data of the apps (${queueLength} left). Some data may not be available. Try to refresh the page in a few minutes."
   },
   "100": {
     "status": "error",
-    "message": "Internal extension error. ",
-    "extramessage": "Please, see logs for more information."
+    "message": "Internal extension error",
+    "extramessage": "${error}"
   },
   "101": {
     "status": "error",
     "message": "Initialation error",
-    "extramessage": "Could not initialize AppIDs and/or PackageIDs. Retrying in a few seconds. Make sure you logged in to Steamworks and have access to games data."
+    "extramessage": "Could not initialize AppIDs and/or PackageIDs. Retrying in a few seconds. Make sure you logged in to partner.steampowered.com and partner.steamgames.com and have access to games data."
   },
   "102": {
     "status": "error",
-    "message": "Stats storage initialization error",
+    "message": "Initialation error",
+    "extramessage": "Could not parse page creation dates. Retrying in a few seconds. Make sure you logged in to partner.steampowered.com and partner.steamgames.com and have access to games data.<br>Error: ${error}"
+  },
+  "103": {
+    "status": "error",
+    "message": "Storage initialization error",
     "extramessage": "Error while initializing game stats storage for app ${appID}. Error: ${error}"
   }
 }

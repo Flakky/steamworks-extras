@@ -18,7 +18,7 @@ const initStorageForAppIDs = async (appIDs) => {
     }
     catch (e) {
       console.error(`Steamworks extras: Error while initializing game stats storage for app ${appID}: `, e);
-      setExtensionStatus(103, { error: e });
+      setExtensionStatus(103, { error: e.message });
     }
   }
 }

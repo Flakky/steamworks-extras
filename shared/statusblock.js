@@ -10,9 +10,26 @@ const createStatusBlock = () => {
 
 const createStatusBlockElement = () => {
   console.log('Creating status block...');
-  const statusBlock = document.createElement('p');
+
+  const statusBlock = document.createElement('div');
   statusBlock.style.display = 'none';
   statusBlock.id = 'extra_status';
+
+  const icon = document.createElement('img');
+  icon.id = 'extra_status_icon';
+  icon.src = chrome.runtime.getURL('assets/status_info.png');
+
+  const statusText = document.createElement('span');
+  statusText.id = 'extra_status_message';
+  statusText.textContent = '';
+
+  const extraText = document.createElement('p');
+  extraText.id = 'extra_status_extramessage';
+  extraText.textContent = '';
+
+  statusBlock.appendChild(icon);
+  statusBlock.appendChild(statusText);
+  statusBlock.appendChild(extraText);
 
   return statusBlock;
 }
@@ -36,27 +53,31 @@ const updateStatus = () => {
     }
 
     const statusElement = document.getElementById('extra_status');
+    const statusImage = document.getElementById('extra_status_icon');
+    const statusText = document.getElementById('extra_status_message');
+    const statusExtraText = document.getElementById('extra_status_extramessage');
 
     const statusInfo = extensionStatuses[`${status.code}`];
-
-    console.debug('Status info:', statusInfo);
 
     if (status.code === 0) {
       statusElement.classList.add('extra_info');
       statusElement.style.display = 'none';
+      statusImage.src = chrome.runtime.getURL('assets/status_info.png');
     }
     if (status.code >= 10 && status.code < 100) {
       statusElement.classList.add('extra_warning');
       statusElement.style.display = '';
+      statusImage.src = chrome.runtime.getURL('assets/status_warning.png');
 
     }
     if (status.code >= 100) {
       statusElement.classList.add('extra_error');
       statusElement.style.display = '';
+      statusImage.src = chrome.runtime.getURL('assets/status_error.png');
     }
 
-    const extramessage = statusInfo.extramessage ? statusInfo.extramessage.replace(/\${(.*?)}/g, (match, p1) => status.extraData[p1] || '') : '';
-    statusElement.innerHTML = `<b>${statusInfo.message}</b>${extramessage !== '' ? `<br>${extramessage}` : ''}`;
+    statusText.innerHTML = statusInfo.message;
+    statusExtraText.innerHTML = statusInfo.extramessage ? statusInfo.extramessage.replace(/\${(.*?)}/g, (match, p1) => status.extraData[p1] || '') : '';
   });
 }
 
