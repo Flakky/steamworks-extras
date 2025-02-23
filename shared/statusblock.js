@@ -59,6 +59,8 @@ const updateStatus = () => {
 
     const statusInfo = extensionStatuses[`${status.code}`];
 
+    statusElement.classList = []
+
     if (status.code === 0) {
       statusElement.classList.add('extra_info');
       statusElement.style.display = 'none';
