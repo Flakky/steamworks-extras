@@ -59,7 +59,7 @@ const updateStatus = () => {
 
     const statusInfo = extensionStatuses[`${status.code}`];
 
-    statusElement.classList = []
+    statusElement.classList.remove('extra_info', 'extra_warning', 'extra_error');
 
     if (status.code === 0) {
       statusElement.classList.add('extra_info');
