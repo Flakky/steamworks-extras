@@ -1,30 +1,32 @@
 <div align="center">
 
 # Steamworks extras
-
-**This extension shows extra information about your game in Steamworks financial report page.**
-
 [![GitHub Release][github_release_badge]][github_release_link]
 [![GitHub License][github_license_badge]][github_license_link]
---
+
 [![][chrome_ext_badge]][chrome_ext_link]
 [![][chrome_store_rating_badge]][chrome_ext_link]
 [![][chrome_store_users_badge]][chrome_ext_link]
+
+**This extension shows additional information about your games in Steamworks report pages.**
+
+[How to install](https://github.com/Flakky/steamworks-extras/wiki/How-to-install) | [Discord](https://discord.gg/zmpUPnP4BM) | [FAQ](https://github.com/Flakky/steamworks-extras/wiki/FAQ) | [Report an issue](https://github.com/Flakky/steamworks-extras/issues)
 
 ![Steamworks extra reports](assets/AppDetailsScreenshot.jpg)
 </div>
 
 ## Features
-
+- Improved sales chart with different data types and view categories
+- Enhanced wishlists chart with splits by countries and regions, including an extra table with regional wishlist information
+- Reviews chart, along with a table of reviews divided by language
+- Enhanced traffic chart with the ability to see any categories by impressions, visits, and even click-through rate
 - Lifetime developer revenue calculation
 - Full revenue flow visualization with configurable taxes and royalties
-- Final revenue calculation for current date range
-- Better sales chart with different data types and view categories
-- App details page better layout
-- Reviews chart, as well as a table of reviews divided by language
+- Final revenue calculation for the current date range
+- Improved layout for sales and wishlist report pages
 
 > [!NOTE]
-> The extension does not collect any information about your game. It calculates and inserts new data directly on the page.
+> The extension collects information about your game and stores it locally. The extension does not send your data anywhere outside your browser.
 
 ## Install
 
