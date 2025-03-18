@@ -7,24 +7,24 @@ let chartColors = undefined;
 let chartCategories = [];
 let chartSubcategories = [];
 
-const init = () => {
+const init = async () => {
   console.log("Steamworks extras: Init");
 
-  chrome.storage.local.get(defaultSettings, (result) => {
-    settings = result;
+  settings = await chrome.storage.local.get(defaultSettings);
 
-    readChartColors();
+  readChartColors();
 
-    hideOldElements();
-    createChart();
-    addStatusBlock();
+  hideOldElements();
+  createChart();
+  addStatusBlock();
 
-    addChartShowCheckboxes();
+  addChartShowCheckboxes();
 
-    console.log(getDateRangeOfCurrentPage());
+  console.log(getDateRangeOfCurrentPage());
 
-    initTrafficData();
-  });
+  await initTrafficData();
+
+  createCheckPresets();
 }
 
 const getAppID = () => {
@@ -338,6 +338,96 @@ const updateTrafficChart = () => {
   trafficChart.data.datasets = datasets;
 
   trafficChart.update();
+}
+
+const getTopCategories = (limit) => {
+  const categoryCounts = {};
+
+  const table = document.querySelector('.breakdownTable');
+  for (const elem of table.children) {
+    const nameElem = elem.querySelector('strong');
+    if (nameElem === undefined || nameElem === null) continue;
+    const name = nameElem.textContent;
+
+    if (elem.classList.contains('page_stats')) {
+      if (!categoryCounts[name]) {
+        categoryCounts[name] = 0;
+      }
+      categoryCounts[name]++;
+    }
+  }
+
+  const sortedCategories = Object.entries(categoryCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(entry => entry[0]);
+
+  return sortedCategories;
+}
+
+const getExternalWebsiteSubcategories = () => {
+  const subcategories = [];
+  const table = document.querySelector('.breakdownTable');
+  let isExternalWebsite = false;
+
+  for (const elem of table.children) {
+    const nameElem = elem.querySelector('strong');
+    if (nameElem === undefined || nameElem === null) continue;
+    const name = nameElem.textContent;
+
+    if (elem.classList.contains('page_stats')) {
+      isExternalWebsite = name === 'External Website';
+    } else if (isExternalWebsite && elem.classList.contains('feature_stats')) {
+      subcategories.push(`External Website__${name}`);
+    } else if (elem.classList.contains('page_stats')) {
+      isExternalWebsite = false;
+    }
+  }
+
+  return subcategories;
+}
+
+const createCheckPresets = () => {
+  const chartBlockElem = document.getElementById('extras_chart');
+
+  const presetsDiv = document.createElement('div');
+  presetsDiv.id = 'chart_presets';
+
+  const selectCategories = (categories) => {
+    const checkboxes = document.querySelectorAll('.extra_chart_category_checkbox');
+    checkboxes.forEach(checkbox => {
+      checkbox.checked = categories.includes(checkbox.id);
+    });
+    updateSelectedChartCategories();
+    updateTrafficChart();
+  }
+
+  const createButton = (text, categories) => {
+    const button = document.createElement('button');
+    button.textContent = text;
+    button.addEventListener('click', () => selectCategories(categories));
+    return button;
+  }
+
+  const top5Categories = getTopCategories(5);
+  const top10Categories = getTopCategories(10);
+  const externalCategories = getExternalWebsiteSubcategories();
+
+  console.log(top5Categories);
+  console.log(top10Categories);
+  console.log(externalCategories);
+
+  const clearButton = createButton('Clear (Total)', []);
+  const top5Button = createButton('Top5', top5Categories);
+  const top10Button = createButton('Top10', top10Categories);
+  const externalSourcesButton = createButton('External websites', externalCategories);
+
+  presetsDiv.appendChild(clearButton);
+  presetsDiv.appendChild(top5Button);
+  presetsDiv.appendChild(top10Button);
+  presetsDiv.appendChild(externalSourcesButton);
+
+  chartBlockElem.appendChild(presetsDiv);
 }
 
 init();
