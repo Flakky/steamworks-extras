@@ -6,3 +6,7 @@
 #extra_trafficChart {
   margin-top: 10px;
 }
+
+#chart_presets button {
+  margin: 0 5px 0 0;
+}
