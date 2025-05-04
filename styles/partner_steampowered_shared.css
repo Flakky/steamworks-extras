@@ -163,7 +163,16 @@
   padding: 0 0 0 10px;
   vertical-align: middle;
   line-height: 20px;
-  /* Adjust this value to match the height of the status icon */
+}
+
+#extra_status_extramessage {
+  font-size: 12px;
+  line-height: 16px;
+  margin: 5px auto;
+}
+
+#extra_status_extramessage a {
+  color: rgb(34, 43, 77);
 }
 
 .loader {

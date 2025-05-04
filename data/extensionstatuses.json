@@ -11,7 +11,7 @@
   "11": {
     "status": "warning",
     "message": "Gathering data of the apps...",
-    "extramessage": "Gathering data of the apps (${queueLength} left). Some data may not be available. Try to refresh the page in a few minutes."
+    "extramessage": "Gathering data of your apps (<i>${queueLength} requests left</i>).<br>Some data may not be available. Try to refresh the page in a few minutes."
   },
   "100": {
     "status": "error",
@@ -21,16 +21,16 @@
   "101": {
     "status": "error",
     "message": "Initialation error",
-    "extramessage": "Could not initialize AppIDs and/or PackageIDs. Retrying in a few seconds. Make sure you logged in to partner.steampowered.com and partner.steamgames.com and have access to games data."
+    "extramessage": "Could not initialize AppIDs and/or PackageIDs. Retrying in a few seconds.<br>Make sure you logged in to <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://partner.steampowered.com\">partner.steampowered.com</a> and <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://partner.steamgames.com/dashboard\">partner.steamgames.com</a> to have access to games data."
   },
   "102": {
     "status": "error",
     "message": "Initialation error",
-    "extramessage": "Could not parse page creation dates. Retrying in a few seconds. Make sure you logged in to partner.steampowered.com and partner.steamgames.com and have access to games data.<br>Error: ${error}"
+    "extramessage": "Could not parse page creation dates. Retrying in a few seconds.<br>Make sure you logged in to <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://partner.steampowered.com\">partner.steampowered.com</a> and <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://partner.steamgames.com/dashboard\">partner.steamgames.com</a> and have access to games data.<br>Error: ${error}"
   },
   "103": {
     "status": "error",
     "message": "Storage initialization error",
-    "extramessage": "Error while initializing game stats storage for app ${appID}. Error: ${error}"
+    "extramessage": "Error while initializing game stats storage for app ${appID}.<br>Error: ${error}"
   }
 }
