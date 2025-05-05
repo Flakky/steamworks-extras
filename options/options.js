@@ -17,7 +17,9 @@ const initSettings = () => {
 
   generateCacheTable();
   initVersion();
-  startUpdatingStatus();
+
+  createStatusBlock();
+  startUpdateStatus();
 }
 
 const clearSettings = () => {
@@ -154,12 +156,11 @@ const updateStatus = () => {
     const statusElement = document.getElementById('extra_status');
 
     if (res === undefined) {
-      statusElement.innerHTML = `Unknown status of extension backend. Try reopening the getBrowser().`;
+      statusElement.innerHTML = `Unknown status of extension backend. Try reopening the browser.`;
       statusElement.classList.add('extra_error');
       statusElement.style.display = '';
       return;
     }
-
     if (res.includes('Updating stats')) {
       const match = res.match(/\((\d+)\)/);
       const number = match ? match[1] : 'unknown';
@@ -168,7 +169,6 @@ const updateStatus = () => {
       statusElement.style.display = '';
       return;
     }
-
     if (res == 'Ready') {
       statusElement.style.display = 'none';
       return;

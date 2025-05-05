@@ -10,9 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
     openLink('https://github.com/Flakky/steamworks-extras');
   });
 
+  const statusBlock = createStatusBlockElement();
+  document.body.appendChild(statusBlock);
 
-  updateStatus();
-  setInterval(() => { updateStatus() }, 3000);
+  startUpdateStatus();
 });
 
 const bindButton = (id, func) => {

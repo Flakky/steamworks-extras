@@ -6,6 +6,7 @@ if (typeof browser == "undefined") {
   importScripts('../scripts/helpers.js');
   importScripts('../scripts/parser.js');
   importScripts('bghelpers.js');
+  importScripts('status.js');
   importScripts('storage/storage.js');
   importScripts('storage/storagequeue.js');
   importScripts('storage/storage_reviews.js');
@@ -130,13 +131,7 @@ const showOptions = () => {
 }
 
 const getStatus = () => {
-  const queueLength = queue.filter(item => item.getType().includes("Request")).length;
-
-  if (queueLength > 0) {
-    return `Updating stats (${queueLength})`;
-  }
-
-  return "Ready";
+  return extensionStatus;
 }
 
 const getDataFromDB = async (type, appId, dateStart, dateEnd, returnLackData = true) => {
@@ -292,6 +287,8 @@ const parsePageCreationDate = async (appID) => {
 
   if (date === undefined || !(date instanceof Date)) return undefined;
 
+  console.log(`Steamworks extras: Page creation date for ${appID}: `, date);
+
   pagesCreationDate[appID] = date.toISOString();
 
   await getBrowser().storage.local.set({ 'pagesCreationDate': pagesCreationDate });
@@ -326,7 +323,7 @@ const initIDs = async () => {
   const appIDs = await parseAppIDs();
   if (!Array.isArray(appIDs) || appIDs.length === 0) {
     console.error('Steamworks extras: No appIDs found');
-    return;
+    return false;
   }
 
   let packageIDs = {};
@@ -337,16 +334,31 @@ const initIDs = async () => {
   }
 
   console.log('Steamworks extras: AppIDs and PackageIDs have been initialized.', appIDs, packageIDs);
+  return true;
 }
 
-const init = async () => {
-  console.log('Steamworks extras: Init');
+const initIDsWithRetry = async (interval = 5) => {
+  let success = false;
+  while (!success) {
+    try {
+      success = await initIDs();
+    } catch (error) {
+      console.error('Steamworks extras: Error during initIDs:', error);
+    }
+    if (!success) {
+      console.log(`Steamworks extras: Retry initializing in ${interval} seconds...`);
+      setExtentionStatus(101);
+      await new Promise(resolve => setTimeout(resolve, interval * 1000));
+    }
+  }
+}
 
-  await initIDs();
+const initPageCreationDates = async () => {
+  console.log('Steamworks extras: Init PageCreationDates');
 
   const appIDs = await getAppIDs();
   if (appIDs.length === 0) {
-    console.error('Steamworks extras: No appIDs found. Make sure you are logged in to Steamworks and have access to games data.');
+    console.error('Steamworks extras: No appIDs found.');
     return;
   }
 
@@ -354,9 +366,46 @@ const init = async () => {
     await getPageCreationDate(appID);
   }
 
+  console.log('Steamworks extras: PageCreationDates have been initialized.');
+}
+
+const initPageCreationDatesWithRetry = async (interval = 5) => {
+  let success = false;
+  while (!success) {
+    try {
+      await initPageCreationDates();
+      success = true;
+    } catch (error) {
+      console.error('Steamworks extras: Error during initPageCreationDates:', error);
+      setExtentionStatus(102, { error: error.message });
+      await new Promise(resolve => setTimeout(resolve, interval * 1000));
+    }
+  }
+}
+
+const init = async () => {
+  console.log('Steamworks extras: Init');
+
+  setExtentionStatus(10);
+
+  await initIDsWithRetry();
+
+  const appIDs = await getAppIDs();
+  if (appIDs.length === 0) {
+    console.error('Steamworks extras: No appIDs found.');
+    return;
+  }
+
+  await initPageCreationDatesWithRetry();
+
+  await initStorageForAppIDs(appIDs);
+
   startUpdatingStats(appIDs);
 
   console.log("Steamworks extras: Extension service initiated");
 }
 
-init();
+init().catch(error => {
+  console.error('Steamworks extras: Error while initializing extension service: ', error);
+  setExtentionStatus(100, { error: error.message });
+});

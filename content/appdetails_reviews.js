@@ -331,6 +331,22 @@ const updateReviewsTable = () => {
     addRowCell(row, positive + negative);
     addRowCell(row, positive);
     addRowCell(row, negative);
-    addRowCell(row, `${(positive / (positive + negative) * 100).toFixed(1)}%`);
+
+    const percentage = (positive / (positive + negative) * 100);
+    const percentageText = `${percentage.toFixed(1)} %`;
+
+    const startColor = { r: 220, g: 0, b: 0 };
+    const endColor = { r: 0, g: 220, b: 0 };
+
+    const factor = Math.min(1, Math.max(0, (percentage - 40) / 60));
+
+    const result = {
+      r: Math.round(startColor.r + factor * (endColor.r - startColor.r)),
+      g: Math.round(startColor.g + factor * (endColor.g - startColor.g)),
+      b: Math.round(startColor.b + factor * (endColor.b - startColor.b))
+    };
+
+    const percentageCell = addRowCell(row, percentageText);
+    percentageCell.style.color = `rgba(${result.r}, ${result.g}, ${result.b}, 1)`;
   }
 }

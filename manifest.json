@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Steamworks extra reports",
-  "version": "2.0.4",
+  "version": "2.1.0",
   "permissions": [
     "storage",
     "offscreen"
@@ -35,7 +35,7 @@
       ],
       "js": [
         "scripts/chart.umd.min.js",
-        "content/statusblock.js",
+        "shared/statusblock.js",
         "scripts/helpers.js",
         "data/defaultsettings.js",
         "content/appdetails_reviews.js",
@@ -53,7 +53,7 @@
       ],
       "js": [
         "scripts/chart.umd.min.js",
-        "content/statusblock.js",
+        "shared/statusblock.js",
         "scripts/helpers.js",
         "data/defaultsettings.js",
         "content/apptraffic.js"
@@ -69,7 +69,7 @@
       ],
       "js": [
         "scripts/chart.umd.min.js",
-        "content/statusblock.js",
+        "shared/statusblock.js",
         "scripts/helpers.js",
         "data/defaultsettings.js",
         "content/appwishlist.js"
@@ -84,9 +84,13 @@
     {
       "resources": [
         "data/chartcolors.json",
+        "data/extensionstatuses.json",
         "data/defaulsettings.js",
         "background/offscreen/offscreen.html",
-        "background/offscreen/offscreen.js"
+        "background/offscreen/offscreen.js",
+        "assets/status_info.png",
+        "assets/status_warning.png",
+        "assets/status_error.png"
       ],
       "matches": [
         "<all_urls>"
