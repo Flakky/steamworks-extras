@@ -107,6 +107,7 @@
       "scripts/helpers.js",
       "scripts/parser.js",
       "background/bghelpers.js",
+      "background/status.js",
       "background/storage/storage.js",
       "background/storage/storagequeue.js",
       "background/storage/storage_reviews.js",
