@@ -1,5 +1,6 @@
 importScripts('../data/defaultsettings.js');
 importScripts('../scripts/helpers.js');
+importScripts('offscreen/offscreenmanager.js');
 importScripts('bghelpers.js');
 importScripts('status.js');
 importScripts('storage/storage.js');
@@ -95,11 +96,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "parseDOM":
       {
         (async () => {
-          const data = await helpers.parseDataFromPage(message.url, message.type);
+          const data = await bghelpers.parseDataFromPage(message.url, message.type);
           console.debug(`Steamworks extras: returning DOM parsed "${message.type}" data from background: `, data);
           sendResponse(data);
         })(); break;
       };
+      case "parsedDOM":
+        {
+          processParsedDOM(message);
+          break;
+        }
     default:
       {
         console.debug(`Steamworks extras: Unknown request "${message.request}" from background`);
@@ -191,7 +197,7 @@ const parsePackageIDs = async (appID) => {
 
   let packageIDs = result.packageIDs === undefined ? {} : result.packageIDs;
 
-  const IDs = await helpers.getPackageIDs(appID, false);
+  const IDs = await bghelpers.getPackageIDs(appID, false);
   console.debug('Steamworks extras: Package IDs for app ', appID, ': ', IDs);
 
   if (IDs === undefined || !Array.isArray(IDs)) {
@@ -227,7 +233,7 @@ const getPackageIDs = async (appID) => {
 const parseAppIDs = async () => {
   console.log('Steamworks extras: Parsing AppIDs');
 
-  const appIDs = await helpers.parseDataFromPage('https://partner.steampowered.com/nav_games.php', 'parseAppIDs');
+  const appIDs = await bghelpers.parseDataFromPage('https://partner.steampowered.com/nav_games.php', 'parseAppIDs');
 
   const nonRedirectedAppIDs = [];
 
@@ -283,7 +289,9 @@ const parsePageCreationDate = async (appID) => {
   let result = await chrome.storage.local.get("pagesCreationDate");
   let pagesCreationDate = result.pagesCreationDate || {};
 
-  const date = await helpers.requestPageCreationDate(appID);
+  const url = `https://partner.steamgames.com/apps/navtrafficstats/${appID}?attribution_filter=all&preset_date_range=lifetime`;
+  const pageCreationDate = await bghelpers.parseDataFromPage(url, 'parsePageCreationDate');
+  const date = new Date(pageCreationDate);
 
   if (date === undefined || !(date instanceof Date)) return undefined;
 
@@ -385,6 +393,8 @@ const init = async () => {
   console.log('Steamworks extras: Init');
 
   setExtentionStatus(10);
+
+  await initOffscreen();
 
   await initIDsWithRetry();
 

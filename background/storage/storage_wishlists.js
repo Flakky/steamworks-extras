@@ -161,7 +161,7 @@ const requestWishlistRegionalData = async (appID, date) => {
   const queryString = new URLSearchParams(params).toString();
   url += `?${queryString}`;
 
-  const data = await helpers.parseDataFromPage(url, 'parseWishlistData');
+  const data = await bghelpers.parseDataFromPage(url, 'parseWishlistData');
 
   if (typeof data !== 'object' || Object.keys(data).length === 0) {
     console.debug(`Steamworks extras: No wishlist data found for date ${formattedDate}. Writing empty data`);

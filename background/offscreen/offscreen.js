@@ -1,5 +1,8 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if(message.parseDOMId  === undefined) return;
+
   let result = undefined;
+  let success = true;
 
   try {
     const parser = new DOMParser();
@@ -24,10 +27,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   }
   catch (error) {
+    success = false;
     result = error.toString();
   }
 
-  chrome.runtime.sendMessage({ action: 'parsedDOM', result: result });
+  chrome.runtime.sendMessage({ request: 'parsedDOM', id: message.parseDOMId, success: success, result: result });
 });
 
 const parsePackageIDs = (doc) => {

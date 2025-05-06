@@ -273,39 +273,6 @@ helpers.getDataFromStorage = async (type, appId, dateStart, dateEnd, returnLackD
   return result;
 }
 
-helpers.getWishlistData = async (appID, date) => {
-  const url = `https://store.steampowered.com/app/${appID}`;
-
-  console.log(`Fetching wishlist data from URL: ${url}`);
-
-  const response = await fetch(url);
-  if (!response.ok) throw new Error('Network response was not ok');
-  const htmlText = await response.text();
-
-  const wishlistData = await helpers.parseDOM(htmlText, 'parseWishlistData');
-
-  return wishlistData;
-}
-
-helpers.getPackageIDs = async (appID, useBackgroundScript) => {
-  const url = `https://partner.steamgames.com/apps/landing/${appID}`;
-
-  console.log(`Fetching package IDs from URL: ${url}`);
-
-  let htmlText;
-  if (useBackgroundScript) {
-    htmlText = await helpers.sendMessageAsync({ request: 'makeRequest', url: url });
-  } else {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('Network response was not ok');
-    htmlText = await response.text();
-  }
-
-  const packageIDs = await helpers.parseDOM(htmlText, 'parsePackageID');
-
-  return packageIDs;
-}
-
 helpers.createMessageBlock = (type, text) => {
   const block = document.createElement('div');
   const title = document.createElement('b');
@@ -361,85 +328,6 @@ helpers.selectChartColor = (chartColors, tag) => {
   if (chartColors && chartColors[tag]) return chartColors[tag];
 
   return `rgb(${30 + Math.round(Math.random() * 225)}, ${30 + Math.round(Math.random() * 225)}, ${30 + Math.round(Math.random() * 225)})`;
-}
-
-helpers.requestPageCreationDate = async (appID) => {
-  const url = `https://partner.steamgames.com/apps/navtrafficstats/${appID}?attribution_filter=all&preset_date_range=lifetime`;
-  const pageCreationDate = await helpers.parseDataFromPage(url, 'parsePageCreationDate');
-  return new Date(pageCreationDate);
-}
-
-helpers.parseDataFromPage = async (url, request) => {
-  console.debug(`Getting data "${request}" from URL: ${url}`);
-
-  const response = await fetch(url);
-
-  if (!response.ok) throw new Error('Network response was not ok');
-
-  const htmlText = await response.text();
-
-  const parsedData = await helpers.parseDOM(htmlText, request);
-
-  console.debug(`Steamworks extras: Data result from parsing for "${request}": `, parsedData);
-
-  return parsedData;
-}
-
-helpers.parseDOM = (htmlText, request) => {
-  return new Promise(async (resolve, reject) => {
-    console.debug('Parsing DOM started: ', request);
-    const offscreenUrl = chrome.runtime.getURL('background/offscreen/offscreen.html');
-    const maxRetries = 20;
-    let attemptCount = 0;
-    const timeout = 10 * 1000;
-    let timer;
-
-    const attemptParse = async () => {
-      attemptCount++;
-
-      // Only one offscreen document can be open at a time, so we handle the error and try again
-      try {
-        await chrome.offscreen.createDocument({
-          url: offscreenUrl,
-          reasons: [chrome.offscreen.Reason.DOM_PARSER],
-          justification: 'Parse HTML in background script'
-        });
-
-        // Set a timeout to reject the promise if the document creation takes too long
-        timer = setTimeout(() => {
-          chrome.offscreen.closeDocument();
-          reject(new Error(`ParseDOM for "${request}" timed out`));
-        }, timeout);
-      } catch (error) {
-        console.error(error);
-        if (attemptCount < maxRetries) {
-          setTimeout(attemptParse, 1000);
-        } else {
-          reject(new Error('Failed to create offscreen document after multiple attempts'));
-        }
-        return;
-      }
-
-      await chrome.runtime.sendMessage({
-        action: request,
-        htmlText: htmlText
-      });
-
-      chrome.runtime.onMessage.addListener(function listener(message) {
-        if (message.action === 'parsedDOM') {
-          chrome.runtime.onMessage.removeListener(listener);
-          console.debug('Parsing DOM completed', message.result);
-
-          clearTimeout(timer); // Clear the timeout if the document creation is successful
-          chrome.offscreen.closeDocument();
-
-          resolve(message.result);
-        }
-      });
-    };
-
-    attemptParse();
-  });
 }
 
 helpers.getDOMLocal = async (url) => {
