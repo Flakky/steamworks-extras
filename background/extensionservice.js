@@ -9,6 +9,7 @@ importScripts('storage/storage_reviews.js');
 importScripts('storage/storage_sales.js');
 importScripts('storage/storage_traffic.js');
 importScripts('storage/storage_wishlists.js');
+importScripts('storage/storage_wishlistconversions.js');
 importScripts('statsupdater.js');
 
 chrome.runtime.onInstalled.addListener(async () => {
@@ -168,6 +169,12 @@ const getDataFromDB = async (type, appId, dateStart, dateEnd, returnLackData = t
     }
     case "Wishlists": {
       const action = new StorageActionGetWishlists(appId, startDate, endDate, returnLackData);
+      const result = await action.addAndWait(true);
+      console.debug(result);
+      return result;
+    }
+    case "WishlistConversions": {
+      const action = new StorageActionGetWishlistConversions(appId, startDate, endDate, returnLackData);
       const result = await action.addAndWait(true);
       console.debug(result);
       return result;

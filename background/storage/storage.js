@@ -4,6 +4,7 @@ let gameStatsStorage;
 const tables = [
   { name: 'Reviews', key: 'recommendationid' },
   { name: 'Wishlists', key: 'Date' }, // Key is a combination of date and country
+  { name: 'WishlistConversions', key: ['Date', 'MonthCohort'] },
   { name: 'Refunds', key: 'key' }, // Key is a hash of refund comment
   { name: 'Traffic', key: ['Date', 'PageCategory', 'PageFeature'] },
   { name: 'Sales', key: 'key' } // Key is unique identifier
