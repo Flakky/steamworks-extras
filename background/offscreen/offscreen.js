@@ -18,6 +18,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       case 'parseAppIDs':
         result = parseAppIDs(doc);
         break;
+      case 'followers':
+        result = parseFollowers(doc);
+        break;
     }
   }
   catch (error) {
@@ -137,4 +140,23 @@ const parseAppIDs = (doc) => {
   });
 
   return appIDs;
+}
+
+const parseFollowers = (doc) => {
+  const groupPagingElement = doc.querySelector('.group_paging');
+  if (!groupPagingElement) {
+    throw new Error('No element with class "group_paging" found');
+  }
+
+  const text = groupPagingElement.textContent;
+  const match = text.match(/of\s+([\d,]+)\s+Members/);
+
+  if (match) {
+    const membersStr = match[1];
+    const followers = parseInt(membersStr.replace(/,/g, ''));
+    console.log(followers);
+    return followers;
+  } else {
+    console.log("No followers match found");
+  }
 }

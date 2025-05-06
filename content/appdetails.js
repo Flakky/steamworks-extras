@@ -38,6 +38,8 @@ const init = () => {
     addRefundDataLink();
 
     hideOriginalMainBlock();
+
+    addFollowers();
   });
 }
 
@@ -388,6 +390,48 @@ const updateSalesNetRow = () => {
   sumElem.innerHTML = `<b>$${devRevenueString}</b>`;
 
   console.log("Steamworks extras: Added sales for date range net");
+}
+
+const addFollowers = async () => {
+  const url = `https://steamcommunity.com/games/${getAppID()}/membersManage`;
+  console.log(`Requesting followers from `, url);
+  const followers = await helpers.sendMessageAsync({ request: 'parseDOM', url: url, type: 'followers' });
+
+  console.log(`Followers:`, followers);
+
+  const summaryTable = getSummaryTable();
+  if (!summaryTable) return;
+
+  const lifeTimeUnitsReturnedCell = helpers.findElementByText('td', 'Wishlists');
+
+  const lifetimeUnitsRow = helpers.findParentByTag(lifeTimeUnitsReturnedCell, 'tr');
+
+  const lifetimeUnitsRowIndex = lifetimeUnitsRow.rowIndex;
+
+  let newRow = summaryTable.insertRow(lifetimeUnitsRowIndex + 3); // Insert after wishlists (including extended wishlists rows)
+
+  let followersTitleCell = document.createElement('td');
+  followersTitleCell.textContent = 'Followers';
+  newRow.appendChild(followersTitleCell);
+
+  let followersValueCell = document.createElement('td');
+  followersValueCell.setAttribute('align', 'right')
+  newRow.appendChild(followersValueCell);
+
+  let followersDescriptionCell = document.createElement('td');
+  newRow.appendChild(followersDescriptionCell);
+
+  if (isNaN(followers) || followers < 0) {
+    console.error('Invalid followers count:', followers);
+
+    followersValueCell.textContent = `Error`;
+    followersDescriptionCell.innerHTML = `Failed to get followers. <a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/games/${getAppID()}/membersManage">Make sure you have access.</a>`;
+    return;
+  }
+
+  followersValueCell.textContent = followers;
+  followersDescriptionCell.innerHTML = `<a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/games/${getAppID()}/membersManage">(View & manage followers)</a>`;
+
 }
 
 const addRefundDataLink = () => {

@@ -442,6 +442,19 @@ helpers.parseDOM = (htmlText, request) => {
   });
 }
 
+helpers.getDOMLocal = async (url) => {
+  const response = await fetch(url);
+
+  if (!response.ok) throw new Error('Network response was not ok', url);
+
+  const htmlText = await response.text();
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(htmlText, 'text/html');
+
+  return doc;
+}
+
 helpers.sendMessageAsync = (message) => {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage(message, (response) => {

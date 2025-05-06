@@ -92,6 +92,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse(data);
         })(); break;
       };
+    case "parseDOM":
+      {
+        (async () => {
+          const data = await helpers.parseDataFromPage(message.url, message.type);
+          console.debug(`Steamworks extras: returning DOM parsed "${message.type}" data from background: `, data);
+          sendResponse(data);
+        })(); break;
+      };
     default:
       {
         console.debug(`Steamworks extras: Unknown request "${message.request}" from background`);
