@@ -1,8 +1,17 @@
-let offscreenDocument = null;
 let parsingQueue = []; // {id, resolve, reject}
 
 const initOffscreen = async () => {
   const offscreenUrl = chrome.runtime.getURL('background/offscreen/offscreen.html');
+
+  const existingOffscreen = await chrome.runtime.getContexts({
+    contextTypes: ['OFFSCREEN_DOCUMENT'],
+    documentUrls: [offscreenUrl]
+  });
+
+  if (existingOffscreen.length > 0) {
+    console.warn('Offscreen document already exists, reusing it');
+    return;
+  }
 
   await chrome.offscreen.createDocument({
     url: offscreenUrl,
