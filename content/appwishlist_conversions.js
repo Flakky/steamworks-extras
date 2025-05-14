@@ -117,7 +117,10 @@ const getConversionRates = (labels) => {
         const wishlistDate = new Date(wishlist["Date"]);
         return wishlistDate >= monthStart && wishlistDate < monthEnd;
       })
-      .reduce((sum, wishlist) => sum + wishlist["Adds"], 0);
+      .reduce((sum, wishlist) => {
+        console.log(wishlist["Adds"]);
+        return sum + (wishlist["Adds"] || 0);
+      }, 0);
 
     const conversionsForMonth = wishlistConversions
       .filter(conversion => {
@@ -126,6 +129,8 @@ const getConversionRates = (labels) => {
       .reduce((sum, conversion) => sum + conversion["TotalConversions"], 0);
 
     const conversionRate = conversionsForMonth / addsForMonth;
+
+    console.log("Steamworks extras: Conversion rate for month", label, ":", conversionRate, "(", conversionsForMonth, "/", addsForMonth, ")");
 
     return conversionRate * 100; // percentage
   });
