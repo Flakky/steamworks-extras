@@ -40,6 +40,7 @@ const init = async () => {
   createCountryTable();
 
   moveWishlistConversionRateChartToNewBlock();
+  initConversionsChart();
   moveConversionsToNewBlock();
 
   moveLifetimeChartToNewBlock();

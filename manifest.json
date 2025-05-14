@@ -73,6 +73,7 @@
         "shared/statusblock.js",
         "scripts/helpers.js",
         "data/defaultsettings.js",
+        "content/appwishlist_conversions.js",
         "content/appwishlist.js"
       ],
       "css": [

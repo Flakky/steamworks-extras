@@ -53,7 +53,7 @@ const getWishlistData = async (appID, dateStart, dateEnd, returnLackData) => {
 
   let records = await readData(appID, 'Wishlists');
 
-  if (returnLackData) {
+  if (!returnLackData) {
     let datesNoData = helpers.getDateRangeArray(dateStart, dateEnd, false, true);
 
     for (const record of records) {
