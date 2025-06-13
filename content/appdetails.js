@@ -4,43 +4,42 @@ let usRevenueForDateRange = -1; // -1 means did not receive US share or got an e
 let salesForDateRange = undefined;
 let chartColors = undefined;
 
-const init = () => {
+const init = async () => {
   console.log("Steamworks extras: Init");
 
-  chrome.storage.local.get(defaultSettings, (result) => {
-    settings = result;
+  settings = await chrome.storage.local.get(defaultSettings);
 
-    readChartColors();
+  await requestTotalUSRevenue();
+  await requestUSRevenueForCurrentDateRange();
 
-    createCustomContentBlock();
+  readChartColors();
 
-    moveGameTitle();
-    moveLinksToTop();
-    moveDateRangeSelectionToTop();
-    addStatusBlock();
+  createCustomContentBlock();
 
-    moveSummaryTableToNewBlock();
-    createSalesChart();
-    moveSalesTableToNewBlock();
-    createReviewsChart();
-    createReviewsTable();
-    moveHeatmapNewBlock();
-    moveOldChartToNewBlock();
+  moveGameTitle();
+  moveLinksToTop();
+  moveDateRangeSelectionToTop();
+  addStatusBlock();
 
-    requestTotalUSRevenue();
-    requestUSRevenueForCurrentDateRange();
-    requestSales();
-    requestReviews();
+  moveSummaryTableToNewBlock();
+  createSalesChart();
+  moveSalesTableToNewBlock();
+  createReviewsChart();
+  createReviewsTable();
+  moveHeatmapNewBlock();
+  moveOldChartToNewBlock();
 
-    updateSummaryRows();
-    updateSalesNetRow();
+  requestSales();
+  requestReviews();
 
-    addRefundDataLink();
+  updateSummaryRows();
+  updateSalesNetRow();
 
-    hideOriginalMainBlock();
+  addRefundDataLink();
 
-    addFollowers();
-  });
+  hideOriginalMainBlock();
+
+  addFollowers();
 }
 
 const getSummaryTable = () => {
@@ -84,10 +83,13 @@ const getTotalRevenue = (gross) => {
   const revenueCell = rows[gross ? 0 : 1].cells[1];
 
   let revenue = revenueCell.textContent.split(' ')[0]; // Remove percentage if shown by settings
-  revenue = revenue.replace('$', '');
-  revenue = revenue.replace(',', '');
 
-  return Math.floor(revenue);
+  revenue = revenue.replace('$', '');
+  revenue = revenue.replace(/,/g, '');
+
+  const revenueNumber = parseInt(revenue);
+
+  return revenueNumber;
 }
 
 const updateSummaryRowUnderExtend = (index, title, description, calculation) => {
@@ -352,7 +354,13 @@ const updateSalesNetRow = () => {
   revenue = revenue.replace('$', '');
   revenue = revenue.replace(',', '');
 
-  const grossNetRatio = getTotalRevenue(false) / getTotalRevenue(true);
+  console.log('Reading total revenue');
+
+  const totalGrossRevenue = getTotalRevenue(true);
+  const totalNetRevenue = getTotalRevenue(false);
+  const grossNetRatio = totalNetRevenue / totalGrossRevenue;
+
+  console.log(grossNetRatio);
 
   const { finalRevenue } = getRevenueMap(revenue, revenue * grossNetRatio, usRevenueForDateRange);
 
@@ -452,42 +460,37 @@ const getDateRangeOfCurrentPage = () => {
   // https://partner.steampowered.com/app/details/AppID/?dateStart=2024-08-21&dateEnd=2024-08-27
   const urlObj = new URL(window.location.href);
 
-  const dateStartString = urlObj.searchParams.get('dateStart');
-  const dateEndString = urlObj.searchParams.get('dateEnd');
-
-  console.log(dateStartString)
-  console.log(dateEndString)
-
   let today = helpers.getDateNoOffset();
   if (today.getHours() < 7) today.setDate(today.getDate() - 1); // Steam still stands on the previous day until 6am UTC
 
   let dateStart = today;
   let dateEnd = today;
 
-  if (!helpers.isStringEmpty(dateStartString)) dateStart = new Date(dateStartString);
-  if (!helpers.isStringEmpty(dateEndString)) dateEnd = new Date(dateEndString);
+  const isToday = urlObj.searchParams.get('specialPeriod') === 'today';
+
+  if(!isToday){
+    const dateStartString = urlObj.searchParams.get('dateStart');
+    const dateEndString = urlObj.searchParams.get('dateEnd');
+
+    console.log(dateStartString)
+    console.log(dateEndString)
+
+    if (!helpers.isStringEmpty(dateStartString)) dateStart = new Date(dateStartString);
+    if (!helpers.isStringEmpty(dateEndString)) dateEnd = new Date(dateEndString);
+  }
 
   helpers.correctDateRange(dateStart, dateEnd);
 
   return { dateStart: dateStart, dateEnd: dateEnd };
 }
 
-const requestUSRevenueForCurrentDateRange = () => {
+const requestUSRevenueForCurrentDateRange = async () => {
   const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
-
-  helpers.getCountryRevenue(getAppID(), 'United States', dateStart, dateEnd).then((revenue) => {
-    usRevenueForDateRange = revenue;
-
-    updateSalesNetRow();
-  });
+  usRevenueForDateRange = await helpers.getCountryRevenue(getAppID(), 'United States', dateStart, dateEnd);
 }
 
-const requestTotalUSRevenue = () => {
-  helpers.getCountryRevenue(getAppID(), 'United States').then((revenue) => {
-    usRevenue = revenue;
-
-    updateSummaryRows();
-  });
+const requestTotalUSRevenue = async () => {
+  usRevenue = await helpers.getCountryRevenue(getAppID(), 'United States');
 }
 
 const requestSales = () => {

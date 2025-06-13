@@ -148,7 +148,7 @@ helpers.getCountryRevenue = async (appID, country, dateStart, dateEnd) => {
   const formattedStartDate = helpers.dateToString(startDate);
   const formattedEndDate = helpers.dateToString(endDate);
 
-  let result = await helpers.sendMessageAsync({ request: 'getData', type: 'Sales', appId: appID });
+  let result = await helpers.sendMessageAsync({ request: 'getData', type: 'Sales', appId: appID, dateStart: formattedStartDate, dateEnd: formattedEndDate, returnLackData: true });
 
   if (result === undefined) throw new Error(`Was not able to get sales data for appID ${appID}`);
 
@@ -170,9 +170,8 @@ helpers.correctDateRange = (startDate, endDate) => {
 }
 
 helpers.getDateNoOffset = () => {
-  const now = new Date();
-  const offset = now.getTimezoneOffset() * 60000;
-  return new Date(now.getTime() - offset);
+  const now = new Date(Date.now());
+  return now;
 }
 
 helpers.isDateInRange = (date, startDate, endDate) => {
