@@ -9,9 +9,6 @@ const init = async () => {
 
   settings = await chrome.storage.local.get(defaultSettings);
 
-  await requestTotalUSRevenue();
-  await requestUSRevenueForCurrentDateRange();
-
   readChartColors();
 
   createCustomContentBlock();
@@ -28,6 +25,9 @@ const init = async () => {
   createReviewsTable();
   moveHeatmapNewBlock();
   moveOldChartToNewBlock();
+
+  await requestTotalUSRevenue();
+  await requestUSRevenueForCurrentDateRange();
 
   requestSales();
   requestReviews();
