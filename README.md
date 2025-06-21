@@ -3,6 +3,7 @@
 # Steamworks extras
 [![GitHub Release][github_release_badge]][github_release_link]
 [![GitHub License][github_license_badge]][github_license_link]
+[![DeepWiki][deepwiki_badge]][deepwiki_link]
 
 [![][chrome_ext_badge]][chrome_ext_link]
 [![][chrome_store_rating_badge]][chrome_ext_link]
@@ -59,4 +60,7 @@ The extension has an options page where you can set up all the revenue shares an
 
 [chrome_store_rating_badge]: https://img.shields.io/chrome-web-store/rating/cdobnjfogldjaihapojppnopiaccgpag
 [chrome_store_users_badge]: https://img.shields.io/chrome-web-store/users/cdobnjfogldjaihapojppnopiaccgpag
+
+[deepwiki_badge]: https://deepwiki.com/badge.svg
+[deepwiki_link]: [https://deepwiki.com/badge.svg](https://deepwiki.com/Flakky/steamworks-extras)
 
