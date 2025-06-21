@@ -62,5 +62,5 @@ The extension has an options page where you can set up all the revenue shares an
 [chrome_store_users_badge]: https://img.shields.io/chrome-web-store/users/cdobnjfogldjaihapojppnopiaccgpag
 
 [deepwiki_badge]: https://deepwiki.com/badge.svg
-[deepwiki_link]: [https://deepwiki.com/badge.svg](https://deepwiki.com/Flakky/steamworks-extras)
+[deepwiki_link]: https://deepwiki.com/Flakky/steamworks-extras
 
