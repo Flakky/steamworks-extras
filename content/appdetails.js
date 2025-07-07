@@ -11,20 +11,27 @@ const init = async () => {
 
   readChartColors();
 
+  // Recreate the page structure
   createCustomContentBlock();
-
   moveGameTitle();
-  moveLinksToTop();
+  hideOldLinks();
+  createToolbarBlock(getAppID());
   moveDateRangeSelectionToTop();
-  addStatusBlock();
+  addStatusBlockToPage();
 
+  // Create blocks
   moveSummaryTableToNewBlock();
-  createSalesChart();
+  createSalesChartBlock();
   moveSalesTableToNewBlock();
-  createReviewsChart();
-  createReviewsTable();
+  createReviewsChartBlock();
+  createReviewsTableBlock();
   moveHeatmapNewBlock();
   moveOldChartToNewBlock();
+
+  hideOriginalMainBlock();
+
+  addRefundDataLink();
+  addFollowers();
 
   await requestTotalUSRevenue();
   await requestUSRevenueForCurrentDateRange();
@@ -35,11 +42,6 @@ const init = async () => {
   updateSummaryRows();
   updateSalesNetRow();
 
-  addRefundDataLink();
-
-  hideOriginalMainBlock();
-
-  addFollowers();
 }
 
 const getSummaryTable = () => {
@@ -502,6 +504,7 @@ const requestSales = () => {
     console.log('Sales data received: ', response);
     salesForDateRange = response;
 
+    createSalesChart();
     updateSalesChart(chartSplit, chartValueType);
   });
 }
@@ -524,122 +527,10 @@ const readChartColors = () => {
   });
 }
 
-const createCustomContentBlock = () => {
-  const newBlockElem = document.createElement('div');
-  newBlockElem.id = 'extra_main_block';
-
-  document.body.insertBefore(newBlockElem, document.body.children[2]); // After header toolbar
-
-  const extraToolbarBlock = document.createElement('div');
-  extraToolbarBlock.id = 'extra_toolbar_block';
-
-  const contentBlockElem = document.createElement('div');
-  contentBlockElem.id = 'extra_main_content_block';
-
-  newBlockElem.appendChild(extraToolbarBlock);
-  newBlockElem.appendChild(contentBlockElem);
-}
-
-const getCustomMainBlock = () => {
-  return document.getElementById('extra_main_block');
-}
-
-const getCustomContentBlock = () => {
-  return document.getElementById('extra_main_content_block');
-}
-
-const getExtraToolbarBlock = () => {
-  return document.getElementById('extra_toolbar_block');
-}
-
-const createFlexContentBlock = (title, id) => {
-  const newBlockElem = document.createElement('div');
-  newBlockElem.id = id;
-  newBlockElem.classList.add('extra_content_block');
-
-  const titleElem = document.createElement('h2');
-  titleElem.textContent = title;
-
-  newBlockElem.appendChild(titleElem);
-
-  getCustomContentBlock().appendChild(newBlockElem);
-
-  return newBlockElem;
-}
-
-const moveLinksToTop = () => {
+const hideOldLinks = () => {
   const contentBlock = document.getElementById('gameDataLeft');
   const linksElem = contentBlock.children[1];
   linksElem.style.display = 'none';
-
-  const newLinksBlockElem = document.createElement('div');
-  newLinksBlockElem.classList.add('extra_content_block');
-  newLinksBlockElem.id = 'extra_links_block';
-
-  const toolbarBlock = getExtraToolbarBlock();
-  toolbarBlock.appendChild(newLinksBlockElem);
-
-  const dateUrlParams = new URLSearchParams(window.location.search);
-  const dateStart = dateUrlParams.get('dateStart');
-  const dateEnd = dateUrlParams.get('dateEnd');
-  const dateParamsString = dateStart && dateEnd ? `?dateStart=${dateStart}&dateEnd=${dateEnd}` : '';
-
-  const appID = getAppID();
-  const toolbarData = [
-    {
-      label: 'General',
-      links: [
-        { text: 'Store page', href: `http://store.steampowered.com/app/${appID}` },
-        { text: 'Steamworks page', href: `https://partner.steamgames.com/apps/landing/${appID}` },
-        { text: 'Sales', href: `https://partner.steampowered.com/app/details/${appID}/${dateParamsString}` },
-        { text: 'Wishlists', href: `https://partner.steampowered.com/app/wishlist/${appID}/${dateParamsString}` },
-      ]
-    },
-    {
-      label: 'Regional reports',
-      links: [
-        { text: 'Regional sales report', href: `https://partner.steampowered.com/region/${appID}/` },
-        { text: 'Regional key activations report', href: `https://partner.steampowered.com/cdkeyreport.php?appID=${appID}` },
-        { text: 'Downloads by Region', href: `https://partner.steampowered.com/nav_regions.php?downloads=1&appID=${appID}` }
-      ]
-    },
-    {
-      label: 'Hardware',
-      links: [
-        { text: 'Hardware survey', href: `https://partner.steampowered.com/survey2.php?appID=${appID}` },
-        { text: 'Controller stats', href: `https://partner.steampowered.com/app/controllerstats/${appID}/` },
-        { text: 'Remote Play stats', href: `https://partner.steampowered.com/app/remoteplay/${appID}/` }
-      ]
-    }
-  ];
-
-  const toolbar = document.createElement('div');
-  toolbar.className = 'toolbar';
-
-  toolbarData.forEach(item => {
-    const dropdown = document.createElement('div');
-    dropdown.className = 'dropdown';
-
-    const button = document.createElement('button');
-    button.textContent = item.label;
-
-    const dropdownContent = document.createElement('div');
-    dropdownContent.className = 'dropdown-content';
-
-    item.links.forEach(link => {
-      const anchor = document.createElement('a');
-      anchor.href = link.href;
-      anchor.textContent = link.text;
-      dropdownContent.appendChild(anchor);
-    });
-
-    // Assemble the dropdown
-    dropdown.appendChild(button);
-    dropdown.appendChild(dropdownContent);
-    toolbar.appendChild(dropdown);
-  });
-
-  newLinksBlockElem.appendChild(toolbar);
 }
 
 const moveSummaryTableToNewBlock = () => {
@@ -648,18 +539,32 @@ const moveSummaryTableToNewBlock = () => {
 
   const contentBlock = createFlexContentBlock('Lifetime summary', 'extra_summary_block');
 
-  contentBlock.appendChild(summaryTable);
+  setFlexContentBlockContentElem(contentBlock, summaryTable);
 }
 
 const moveOldChartToNewBlock = () => {
-  const oldChartControlsElem = document.getElementsByClassName('graphControls')[0];
-  const oldChartElem = helpers.findParentByTag(document.getElementById('ChartUnitsHistory'), 'div');
-  if (!oldChartElem || !oldChartControlsElem) return;
+  const oldChartElem = document.getElementById('ChartUnitsHistory');
+  if (!oldChartElem) return;
+
+  const oldChartElemParentDiv = helpers.findParentByTag(oldChartElem, 'div');
+  if (!oldChartElemParentDiv) return;
+
+  const AllStatsDiv = helpers.findParentByTag(oldChartElemParentDiv, 'div');
+  if (!AllStatsDiv || AllStatsDiv.children.length === 0) return;
 
   const contentBlock = createFlexContentBlock('Original chart', 'extra_original_chart_block');
 
-  contentBlock.appendChild(oldChartControlsElem);
-  contentBlock.appendChild(oldChartElem);
+  const oldChartContainer = document.createElement('div');
+  oldChartContainer.id = 'extra_old_chart_container';
+
+  // We only need the first 4 children because this is the part about sales
+  for (let i = 0; i < 4; i++) {
+    if (AllStatsDiv.children.length > 0) {
+      oldChartContainer.appendChild(AllStatsDiv.children[0]);
+    }
+  }
+
+  setFlexContentBlockContentElem(contentBlock, oldChartContainer);
 }
 
 const moveHeatmapNewBlock = () => {
@@ -668,27 +573,7 @@ const moveHeatmapNewBlock = () => {
 
   const contentBlock = createFlexContentBlock('Sales heatmap', 'extra_sales_heatmap_block');
 
-  contentBlock.appendChild(heatmapElem);
-}
-
-const moveDateRangeSelectionToTop = () => {
-  const toolbarBlock = getExtraToolbarBlock();
-
-  const periodSelectBlock = document.getElementsByClassName('PeriodLinks')[0];
-  const periodSelectWholeBlock = helpers.findParentByTag(periodSelectBlock, 'div');
-
-  const newDateRangeContainerElem = document.createElement('div');
-  newDateRangeContainerElem.classList.add('extra_content_block');
-  newDateRangeContainerElem.id = 'extra_period_block';
-
-  newDateRangeContainerElem.appendChild(periodSelectWholeBlock);
-
-  toolbarBlock.appendChild(newDateRangeContainerElem);
-}
-
-const addStatusBlock = () => {
-  const statusBlock = createStatusBlock();
-  startUpdateStatus();
+  setFlexContentBlockContentElem(contentBlock, heatmapElem);
 }
 
 const moveSalesTableToNewBlock = () => {
@@ -708,7 +593,7 @@ const moveSalesTableToNewBlock = () => {
 
   const salesTable = divs[2].children[0];
 
-  contentBlock.appendChild(salesTable);
+  setFlexContentBlockContentElem(contentBlock, salesTable);
 }
 
 const moveGameTitle = () => {

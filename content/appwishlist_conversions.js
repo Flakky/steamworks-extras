@@ -5,7 +5,7 @@ let conversionsChart = undefined;
 const initConversionsChart = async () => {
   console.log("Steamworks extras: Init");
 
-  createConversionsChart();
+  createConversionsChartBlock();
 
   const {dateStart, dateEnd} = getDateRangeOfCurrentPage();
 
@@ -28,16 +28,19 @@ const initConversionsChart = async () => {
   console.log("Steamworks extras: Wishlist conversions data loaded", wishlistConversions);
   console.log("Steamworks extras: Wishlist data loaded", wishlists);
 
+  createConversionsChart();
   updateConversionsChart();
 }
 
-const createConversionsChart = () => {
-  const contentBlock = createFlexContentBlock('Wishlist cohort chart', 'extra_wishlist_conversions_chart_block');
+const createConversionsChartBlock = () => {
+  createFlexContentBlock('Wishlist cohort chart', 'extra_wishlist_conversions_chart_block');
+}
 
+const createConversionsChart = () => {
   const chartBlockElem = document.createElement('div');
   chartBlockElem.id = 'extras_wishlist_conversions_chart';
 
-  contentBlock.appendChild(chartBlockElem);
+  setFlexContentBlockContent('extra_wishlist_conversions_chart_block', chartBlockElem);
 
   const config = {
     type: 'bar',

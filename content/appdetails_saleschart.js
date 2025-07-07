@@ -2,27 +2,20 @@ let salesChart = undefined;
 let chartSplit = "Country";
 let chartValueType = "Gross Steam Sales (USD)";
 
-const createSalesChart = () => {
+const createSalesChartBlock = () => {
   const contentBlock = createFlexContentBlock('Sales chart', 'extra_sales_chart_block');
-
-  const dataElem = document.getElementById('gameDataLeft');
-  const oldChartElem = document.getElementById('ChartUnitsHistory');
-  const oldChartElemParentDiv = helpers.findParentByTag(oldChartElem, 'div');
-  const AllStatsDiv = helpers.findParentByTag(oldChartElemParentDiv, 'div');
-
-  if (!AllStatsDiv) {
-    return;
-  }
-
-  const dateWithCSVLinkElem = AllStatsDiv.children[0];
-
-  AllStatsDiv.style.display = 'none';
 
   const chartBlockElem = document.createElement('div');
   chartBlockElem.id = 'extras_sales_chart';
 
   contentBlock.appendChild(chartBlockElem);
-  contentBlock.appendChild(dateWithCSVLinkElem);
+};
+
+const createSalesChart = () => {
+  const chartBlockElem = document.createElement('div');
+  chartBlockElem.id = 'extras_sales_chart';
+
+  setFlexContentBlockContent('extra_sales_chart_block', chartBlockElem);
 
   const createChartSelect = (options, name, defaultValue, onSelect) => {
     const nameElem = document.createElement("b");
@@ -198,4 +191,5 @@ const updateSalesChart = (split, valueType) => {
   salesChart.config.type = oneDay ? 'bar' : 'line';
 
   salesChart.update();
+
 }

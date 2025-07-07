@@ -39,6 +39,7 @@
         "shared/statusblock.js",
         "scripts/helpers.js",
         "data/defaultsettings.js",
+        "content/pageblocks.js",
         "content/appdetails_reviews.js",
         "content/appdetails_saleschart.js",
         "content/appdetails.js"
@@ -73,6 +74,7 @@
         "shared/statusblock.js",
         "scripts/helpers.js",
         "data/defaultsettings.js",
+        "content/pageblocks.js",
         "content/appwishlist_conversions.js",
         "content/appwishlist.js"
       ],
