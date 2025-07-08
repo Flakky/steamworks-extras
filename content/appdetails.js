@@ -403,12 +403,6 @@ const updateSalesNetRow = () => {
 }
 
 const addFollowers = async () => {
-  const url = `https://steamcommunity.com/games/${getAppID()}/membersManage`;
-  console.log(`Requesting followers from `, url);
-  const followers = await helpers.sendMessageAsync({ request: 'parseDOM', url: url, type: 'followers' });
-
-  console.log(`Followers:`, followers);
-
   const summaryTable = getSummaryTable();
   if (!summaryTable) return;
 
@@ -428,18 +422,33 @@ const addFollowers = async () => {
   followersValueCell.setAttribute('align', 'right')
   newRow.appendChild(followersValueCell);
 
+  const loader = document.createElement('div');
+  loader.className = 'loader';
+  followersValueCell.appendChild(loader);
+
   let followersDescriptionCell = document.createElement('td');
   newRow.appendChild(followersDescriptionCell);
+
+  let followers = NaN;
+
+  try{
+    const url = `https://steamcommunity.com/games/${getAppID()}/membersManage`;
+    console.log(`Requesting followers from `, url);
+    followers = await helpers.sendMessageAsync({ request: 'parseDOM', url: url, type: 'followers' });
+  }
+  catch(e){
+    console.error('Failed to get followers:', e);
+  }
 
   if (isNaN(followers) || followers < 0) {
     console.error('Invalid followers count:', followers);
 
-    followersValueCell.textContent = `Error`;
+    followersValueCell.innerHTML = `---`;
     followersDescriptionCell.innerHTML = `Failed to get followers. <a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/games/${getAppID()}/membersManage">Make sure you have access.</a>`;
     return;
   }
 
-  followersValueCell.textContent = followers;
+  followersValueCell.innerHTML = followers;
   followersDescriptionCell.innerHTML = `<a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/games/${getAppID()}/membersManage">(View & manage followers)</a>`;
 
 }
