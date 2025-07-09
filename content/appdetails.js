@@ -22,7 +22,7 @@ const init = async () => {
   // Create blocks
   moveSummaryTableToNewBlock();
   createSalesChartBlock();
-  moveSalesTableToNewBlock();
+  createSalesTableBlock();
   createReviewsChartBlock();
   createReviewsTableBlock();
   moveHeatmapNewBlock();
@@ -59,7 +59,7 @@ const getAppID = () => {
 }
 
 const getSalesTable = () => {
-  return document.querySelector('#extra_sales_table_block table');
+  return document.querySelector('#gameDataLeft table');
 }
 
 const getPackageId = () => {
@@ -199,8 +199,8 @@ const updateFinalRevenueRow = (index, calculation) => {
 }
 
 const getRevenueMap = (gross, net, usGross) => {
-  const grossRevenue = gross || getTotalRevenue(true);
-  const netRevenue = net || getTotalRevenue(false);
+  const grossRevenue = gross == undefined ? getTotalRevenue(true) : gross;
+  const netRevenue = net == undefined ? getTotalRevenue(false) : net;
 
   const shareMap = getRevenuePercentageMap(grossRevenue, netRevenue, usGross);
 
@@ -218,8 +218,8 @@ const getRevenueMap = (gross, net, usGross) => {
 }
 
 const getRevenuePercentageMap = (gross, net, usGross) => {
-  const grossRevenue = gross || getTotalRevenue(true);
-  const netRevenue = net || getTotalRevenue(false);
+  const grossRevenue = gross == undefined ? getTotalRevenue(true) : gross;
+  const netRevenue = net == undefined ? getTotalRevenue(false) : net;
 
   const out = {};
 
@@ -515,6 +515,9 @@ const requestSales = () => {
 
     createSalesChart();
     updateSalesChart(chartSplit, chartValueType);
+
+    createSalesTable();
+    updateSalesTable(salesTableSplit);
   });
 }
 
@@ -583,26 +586,6 @@ const moveHeatmapNewBlock = () => {
   const contentBlock = createFlexContentBlock('Sales heatmap', 'extra_sales_heatmap_block');
 
   setFlexContentBlockContentElem(contentBlock, heatmapElem);
-}
-
-const moveSalesTableToNewBlock = () => {
-  const contentBlock = createFlexContentBlock('Sales table', 'extra_sales_table_block');
-
-  var parentElement = document.getElementById('gameDataLeft');
-
-  var childElements = parentElement.children;
-  var divs = [];
-
-  // Filter out only those children that are divs
-  for (var i = 0; i < childElements.length; i++) {
-    if (childElements[i].tagName === 'DIV') {
-      divs.push(childElements[i]);
-    }
-  }
-
-  const salesTable = divs[2].children[0];
-
-  setFlexContentBlockContentElem(contentBlock, salesTable);
 }
 
 const moveGameTitle = () => {

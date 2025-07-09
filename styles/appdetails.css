@@ -27,6 +27,38 @@
   color: #ED4949;
 }
 
+#extras_sales_table table {
+  width: 100%;
+}
+
+#extras_sales_table>div {
+  width: 100%;
+  margin-top: 10px;
+  overflow: auto;
+  max-height: 400px;
+  scrollbar-color: #333 #555;
+  scrollbar-width: thin;
+}
+
+#extras_sales_table td:first-child {
+  width: 200px;
+  font-weight: bold;
+}
+
+#extras_sales_table>div::-webkit-scrollbar {
+  width: 12px;
+}
+
+#extras_sales_table>div::-webkit-scrollbar-track {
+  background: #555;
+}
+
+#extras_sales_table>div::-webkit-scrollbar-thumb {
+  background-color: #333;
+  border-radius: 10px;
+  border: 3px solid #555;
+}
+
 #extras_reviews_table {
   width: 100%;
 }

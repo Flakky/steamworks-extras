@@ -435,8 +435,6 @@ const createCountryTableBlock = () => {
 
 const createCountryTable = () => {
   const scrollableBlock = document.createElement('div');
-  scrollableBlock.style.overflow = 'auto';
-  scrollableBlock.style.maxHeight = '400px'; // Adjust the max height as needed
 
   const table = document.createElement('table');
   table.id = 'extra_country_table';
