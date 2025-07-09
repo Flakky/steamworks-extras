@@ -29,6 +29,8 @@
 #extra_country_table_block>div {
   scrollbar-color: #333 #555;
   scrollbar-width: thin;
+  overflow: auto;
+  max-height: 400px;
 }
 
 #extra_country_table_block>div::-webkit-scrollbar {

@@ -9,19 +9,27 @@ const requestReviews = () => {
     reviews = response;
     console.log("Steamworks extras: Reviews data received: ", reviews);
 
+    createReviewsChart();
+    createReviewsTable();
     updateReviewsChart();
     updateReviewsSummary();
     updateReviewsTable();
   });
 }
 
-const createReviewsChart = () => {
-  const contentBlock = createFlexContentBlock('Reviews chart', 'extra_reviews_chart_block');
+const createReviewsChartBlock = () => {
+  createFlexContentBlock('Reviews chart', 'extra_reviews_chart_block');
+};
 
+const createReviewsTableBlock = () => {
+  createFlexContentBlock('Reviews table', 'extra_reviews_table_block');
+};
+
+const createReviewsChart = () => {
   const chartBlockElem = document.createElement('div');
   chartBlockElem.id = 'extras_reviews_chart';
 
-  contentBlock.appendChild(chartBlockElem);
+  setFlexContentBlockContent('extra_reviews_chart_block', chartBlockElem);
 
   const createChartSelect = (options, name, defaultValue, onSelect) => {
     const nameElem = document.createElement("b");
@@ -277,12 +285,10 @@ const updateReviewsSummary = () => {
 }
 
 const createReviewsTable = () => {
-  const contentBlock = createFlexContentBlock('Reviews table', 'extra_reviews_table_block');
-
   const reviesTableElem = document.createElement('table');
   reviesTableElem.id = 'extras_reviews_table';
 
-  contentBlock.appendChild(reviesTableElem);
+  setFlexContentBlockContent('extra_reviews_table_block', reviesTableElem);
 }
 
 const updateReviewsTable = () => {

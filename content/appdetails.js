@@ -2,43 +2,40 @@ let settings = {};
 let usRevenue = -1; // -1 means did not receive US share or got an error
 let usRevenueForDateRange = -1; // -1 means did not receive US share or got an error
 let salesForDateRange = undefined;
+let salesAllTime = undefined;
 let chartColors = undefined;
 
-const init = () => {
+const init = async () => {
   console.log("Steamworks extras: Init");
 
-  getBrowser().storage.local.get(defaultSettings, (result) => {
-    settings = result;
+  settings = await getBrowser().storage.local.get(defaultSettings);
 
-    readChartColors();
+  readChartColors();
 
-    createCustomContentBlock();
+  // Recreate the page structure
+  createCustomContentBlock();
+  moveGameTitle();
+  hideOldLinks();
+  createToolbarBlock(getAppID());
+  moveDateRangeSelectionToTop();
+  addStatusBlockToPage();
 
-    moveGameTitle();
-    moveLinksToTop();
-    moveDateRangeSelectionToTop();
-    addStatusBlock();
+  // Create blocks
+  moveSummaryTableToNewBlock();
+  createSalesChartBlock();
+  createSalesTableBlock();
+  createReviewsChartBlock();
+  createReviewsTableBlock();
+  moveHeatmapNewBlock();
+  moveOldChartToNewBlock();
 
-    moveSummaryTableToNewBlock();
-    createSalesChart();
-    moveSalesTableToNewBlock();
-    createReviewsChart();
-    createReviewsTable();
-    moveHeatmapNewBlock();
-    moveOldChartToNewBlock();
+  hideOriginalMainBlock();
 
-    requestTotalUSRevenue();
-    requestUSRevenueForCurrentDateRange();
-    requestSales();
-    requestReviews();
+  addRefundDataLink();
+  addFollowers();
 
-    updateSummaryRows();
-    updateSalesNetRow();
-
-    addRefundDataLink();
-
-    hideOriginalMainBlock();
-  });
+  requestReviews();
+  requestSales();
 }
 
 const getSummaryTable = () => {
@@ -56,7 +53,7 @@ const getAppID = () => {
 }
 
 const getSalesTable = () => {
-  return document.querySelector('#extra_sales_table_block table');
+  return document.querySelector('#gameDataLeft table');
 }
 
 const getPackageId = () => {
@@ -82,10 +79,13 @@ const getTotalRevenue = (gross) => {
   const revenueCell = rows[gross ? 0 : 1].cells[1];
 
   let revenue = revenueCell.textContent.split(' ')[0]; // Remove percentage if shown by settings
-  revenue = revenue.replace('$', '');
-  revenue = revenue.replace(',', '');
 
-  return Math.floor(revenue);
+  revenue = revenue.replace('$', '');
+  revenue = revenue.replace(/,/g, '');
+
+  const revenueNumber = parseInt(revenue);
+
+  return revenueNumber;
 }
 
 const updateSummaryRowUnderExtend = (index, title, description, calculation) => {
@@ -193,8 +193,8 @@ const updateFinalRevenueRow = (index, calculation) => {
 }
 
 const getRevenueMap = (gross, net, usGross) => {
-  const grossRevenue = gross || getTotalRevenue(true);
-  const netRevenue = net || getTotalRevenue(false);
+  const grossRevenue = gross == undefined ? getTotalRevenue(true) : gross;
+  const netRevenue = net == undefined ? getTotalRevenue(false) : net;
 
   const shareMap = getRevenuePercentageMap(grossRevenue, netRevenue, usGross);
 
@@ -212,8 +212,8 @@ const getRevenueMap = (gross, net, usGross) => {
 }
 
 const getRevenuePercentageMap = (gross, net, usGross) => {
-  const grossRevenue = gross || getTotalRevenue(true);
-  const netRevenue = net || getTotalRevenue(false);
+  const grossRevenue = gross == undefined ? getTotalRevenue(true) : gross;
+  const netRevenue = net == undefined ? getTotalRevenue(false) : net;
 
   const out = {};
 
@@ -320,74 +320,55 @@ const toggleExtraSummaryRows = () => {
   extendLinkElem.textContent = extendButtonElem.textContent.replace(newShow ? '►' : '▼', newShow ? '▼' : '►');
 }
 
-const updateSalesNetRow = () => {
-  const salesTable = getSalesTable();
+const addFollowers = async () => {
+  const summaryTable = getSummaryTable();
+  if (!summaryTable) return;
 
-  const rows = salesTable.rows;
+  const lifeTimeUnitsReturnedCell = helpers.findElementByText('td', 'Wishlists');
 
-  let revenueRow = undefined;
-  let revenueRowIndex = -1;
+  const lifetimeUnitsRow = helpers.findParentByTag(lifeTimeUnitsReturnedCell, 'tr');
 
-  for (const row of rows) {
-    revenueRowIndex++;
+  const lifetimeUnitsRowIndex = lifetimeUnitsRow.rowIndex;
 
-    const bElemWithText = row.getElementsByTagName('b')[0];
-    if (!bElemWithText) continue;
+  let newRow = summaryTable.insertRow(lifetimeUnitsRowIndex + 3); // Insert after wishlists (including extended wishlists rows)
 
-    if (bElemWithText.textContent == 'Total revenue') {
-      revenueRow = row;
-      break;
-    }
+  let followersTitleCell = document.createElement('td');
+  followersTitleCell.textContent = 'Followers';
+  newRow.appendChild(followersTitleCell);
+
+  let followersValueCell = document.createElement('td');
+  followersValueCell.setAttribute('align', 'right')
+  newRow.appendChild(followersValueCell);
+
+  const loader = document.createElement('div');
+  loader.className = 'loader';
+  followersValueCell.appendChild(loader);
+
+  let followersDescriptionCell = document.createElement('td');
+  newRow.appendChild(followersDescriptionCell);
+
+  let followers = NaN;
+
+  try{
+    const url = `https://steamcommunity.com/games/${getAppID()}/membersManage`;
+    console.log(`Requesting followers from `, url);
+    followers = await helpers.sendMessageAsync({ request: 'parseDOM', url: url, type: 'followers' });
+  }
+  catch(e){
+    console.error('Failed to get followers:', e);
   }
 
-  if (!revenueRow) {
-    console.error('Revenue row was not found!');
+  if (isNaN(followers) || followers < 0) {
+    console.error('Invalid followers count:', followers);
+
+    followersValueCell.innerHTML = `---`;
+    followersDescriptionCell.innerHTML = `Failed to get followers. <a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/games/${getAppID()}/membersManage">Make sure you have access.</a>`;
     return;
   }
 
-  const revenueCell = revenueRow.cells[2];
-  let revenue = revenueCell.textContent;
-  revenue = revenue.replace('$', '');
-  revenue = revenue.replace(',', '');
+  followersValueCell.innerHTML = followers;
+  followersDescriptionCell.innerHTML = `<a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/games/${getAppID()}/membersManage">(View & manage followers)</a>`;
 
-  const grossNetRatio = getTotalRevenue(false) / getTotalRevenue(true);
-
-  const { finalRevenue } = getRevenueMap(revenue, revenue * grossNetRatio, usRevenueForDateRange);
-
-  const devRevenueString = helpers.numberWithCommas(Math.floor(finalRevenue));
-
-  const cell = helpers.findElementByText('b', 'Developer revenue');
-  let newRow = helpers.findParentByTag(cell, 'tr');
-
-  console.log(newRow);
-
-  if (newRow === undefined) {
-    let newRow = salesTable.insertRow(revenueRowIndex + 1); // Insert after total revenue
-
-    const nameElem = document.createElement('td');
-    nameElem.innerHTML = '<b>Developer revenue</b>';
-    newRow.appendChild(nameElem);
-
-    sumElem = document.createElement('td');
-    const spacerElem = document.createElement('td');
-
-    sumElem.setAttribute('align', 'right');
-
-    newRow.appendChild(spacerElem);
-    newRow.appendChild(sumElem);
-
-    for (let i = 3; i < revenueRow.cells.length; i++) {
-      const cell = document.createElement('td');
-      newRow.appendChild(cell);
-    }
-  }
-  else {
-    sumElem = newRow.cells[2];
-  }
-
-  sumElem.innerHTML = `<b>$${devRevenueString}</b>`;
-
-  console.log("Steamworks extras: Added sales for date range net");
 }
 
 const addRefundDataLink = () => {
@@ -408,55 +389,61 @@ const getDateRangeOfCurrentPage = () => {
   // https://partner.steampowered.com/app/details/AppID/?dateStart=2024-08-21&dateEnd=2024-08-27
   const urlObj = new URL(window.location.href);
 
-  const dateStartString = urlObj.searchParams.get('dateStart');
-  const dateEndString = urlObj.searchParams.get('dateEnd');
-
-  console.log(dateStartString)
-  console.log(dateEndString)
-
   let today = helpers.getDateNoOffset();
   if (today.getHours() < 7) today.setDate(today.getDate() - 1); // Steam still stands on the previous day until 6am UTC
 
   let dateStart = today;
   let dateEnd = today;
 
-  if (!helpers.isStringEmpty(dateStartString)) dateStart = new Date(dateStartString);
-  if (!helpers.isStringEmpty(dateEndString)) dateEnd = new Date(dateEndString);
+  const isToday = urlObj.searchParams.get('specialPeriod') === 'today';
+
+  if(!isToday){
+    const dateStartString = urlObj.searchParams.get('dateStart');
+    const dateEndString = urlObj.searchParams.get('dateEnd');
+
+    console.log(dateStartString)
+    console.log(dateEndString)
+
+    if (!helpers.isStringEmpty(dateStartString)) dateStart = new Date(dateStartString);
+    if (!helpers.isStringEmpty(dateEndString)) dateEnd = new Date(dateEndString);
+  }
 
   helpers.correctDateRange(dateStart, dateEnd);
 
   return { dateStart: dateStart, dateEnd: dateEnd };
 }
 
-const requestUSRevenueForCurrentDateRange = () => {
+const requestSales = async () => {
   const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
 
-  helpers.getCountryRevenue(getAppID(), 'United States', dateStart, dateEnd).then((revenue) => {
-    usRevenueForDateRange = revenue;
+  console.log('Steamworks extras: Requesting sales data...');
 
-    updateSalesNetRow();
+  salesAllTime = await helpers.sendMessageAsync({ request: 'getData', type: 'Sales', appId: getAppID() });
+  console.debug('Steamworks extras: Sales data received: ', salesAllTime);
+
+  // Filter to current date range
+  salesForDateRange = salesAllTime.filter(item => {
+    if (!item["Date"]) return false;
+    const date = new Date(item["Date"]);
+    return helpers.isDateInRange(date, dateStart, dateEnd);
   });
-}
 
-const requestTotalUSRevenue = () => {
-  helpers.getCountryRevenue(getAppID(), 'United States').then((revenue) => {
-    usRevenue = revenue;
+  // US sales for tax calculation purposes
+  usRevenueForDateRange = salesForDateRange
+    .filter(item => item["Country"] === "United States")
+    .reduce((sum, item) => sum + (item["Gross Steam Sales (USD)"] || 0), 0);
 
-    updateSummaryRows();
-  });
-}
+  usRevenue = salesAllTime
+    .filter(item => item["Country"] === "United States")
+    .reduce((sum, item) => sum + (item["Gross Steam Sales (USD)"] || 0), 0);
 
-const requestSales = () => {
-  const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
+  createSalesChart();
+  updateSalesChart(chartSplit, chartValueType);
 
-  console.log('Requesting sales data between ', dateStart, ' and ', dateEnd);
+  createSalesTable();
+  updateSalesTable(salesTableSplit);
 
-  helpers.sendMessageAsync({ request: 'getData', type: 'Sales', appId: getAppID(), dateStart: dateStart, dateEnd: dateEnd }).then((response) => {
-    console.log('Sales data received: ', response);
-    salesForDateRange = response;
-
-    updateSalesChart(chartSplit, chartValueType);
-  });
+  updateSummaryRows();
 }
 
 const readChartColors = () => {
@@ -477,122 +464,10 @@ const readChartColors = () => {
   });
 }
 
-const createCustomContentBlock = () => {
-  const newBlockElem = document.createElement('div');
-  newBlockElem.id = 'extra_main_block';
-
-  document.body.insertBefore(newBlockElem, document.body.children[2]); // After header toolbar
-
-  const extraToolbarBlock = document.createElement('div');
-  extraToolbarBlock.id = 'extra_toolbar_block';
-
-  const contentBlockElem = document.createElement('div');
-  contentBlockElem.id = 'extra_main_content_block';
-
-  newBlockElem.appendChild(extraToolbarBlock);
-  newBlockElem.appendChild(contentBlockElem);
-}
-
-const getCustomMainBlock = () => {
-  return document.getElementById('extra_main_block');
-}
-
-const getCustomContentBlock = () => {
-  return document.getElementById('extra_main_content_block');
-}
-
-const getExtraToolbarBlock = () => {
-  return document.getElementById('extra_toolbar_block');
-}
-
-const createFlexContentBlock = (title, id) => {
-  const newBlockElem = document.createElement('div');
-  newBlockElem.id = id;
-  newBlockElem.classList.add('extra_content_block');
-
-  const titleElem = document.createElement('h2');
-  titleElem.textContent = title;
-
-  newBlockElem.appendChild(titleElem);
-
-  getCustomContentBlock().appendChild(newBlockElem);
-
-  return newBlockElem;
-}
-
-const moveLinksToTop = () => {
+const hideOldLinks = () => {
   const contentBlock = document.getElementById('gameDataLeft');
   const linksElem = contentBlock.children[1];
   linksElem.style.display = 'none';
-
-  const newLinksBlockElem = document.createElement('div');
-  newLinksBlockElem.classList.add('extra_content_block');
-  newLinksBlockElem.id = 'extra_links_block';
-
-  const toolbarBlock = getExtraToolbarBlock();
-  toolbarBlock.appendChild(newLinksBlockElem);
-
-  const dateUrlParams = new URLSearchParams(window.location.search);
-  const dateStart = dateUrlParams.get('dateStart');
-  const dateEnd = dateUrlParams.get('dateEnd');
-  const dateParamsString = dateStart && dateEnd ? `?dateStart=${dateStart}&dateEnd=${dateEnd}` : '';
-
-  const appID = getAppID();
-  const toolbarData = [
-    {
-      label: 'General',
-      links: [
-        { text: 'Store page', href: `http://store.steampowered.com/app/${appID}` },
-        { text: 'Steamworks page', href: `https://partner.steamgames.com/apps/landing/${appID}` },
-        { text: 'Sales', href: `https://partner.steampowered.com/app/details/${appID}/${dateParamsString}` },
-        { text: 'Wishlists', href: `https://partner.steampowered.com/app/wishlist/${appID}/${dateParamsString}` },
-      ]
-    },
-    {
-      label: 'Regional reports',
-      links: [
-        { text: 'Regional sales report', href: `https://partner.steampowered.com/region/${appID}/` },
-        { text: 'Regional key activations report', href: `https://partner.steampowered.com/cdkeyreport.php?appID=${appID}` },
-        { text: 'Downloads by Region', href: `https://partner.steampowered.com/nav_regions.php?downloads=1&appID=${appID}` }
-      ]
-    },
-    {
-      label: 'Hardware',
-      links: [
-        { text: 'Hardware survey', href: `https://partner.steampowered.com/survey2.php?appID=${appID}` },
-        { text: 'Controller stats', href: `https://partner.steampowered.com/app/controllerstats/${appID}/` },
-        { text: 'Remote Play stats', href: `https://partner.steampowered.com/app/remoteplay/${appID}/` }
-      ]
-    }
-  ];
-
-  const toolbar = document.createElement('div');
-  toolbar.className = 'toolbar';
-
-  toolbarData.forEach(item => {
-    const dropdown = document.createElement('div');
-    dropdown.className = 'dropdown';
-
-    const button = document.createElement('button');
-    button.textContent = item.label;
-
-    const dropdownContent = document.createElement('div');
-    dropdownContent.className = 'dropdown-content';
-
-    item.links.forEach(link => {
-      const anchor = document.createElement('a');
-      anchor.href = link.href;
-      anchor.textContent = link.text;
-      dropdownContent.appendChild(anchor);
-    });
-
-    // Assemble the dropdown
-    dropdown.appendChild(button);
-    dropdown.appendChild(dropdownContent);
-    toolbar.appendChild(dropdown);
-  });
-
-  newLinksBlockElem.appendChild(toolbar);
 }
 
 const moveSummaryTableToNewBlock = () => {
@@ -601,18 +476,32 @@ const moveSummaryTableToNewBlock = () => {
 
   const contentBlock = createFlexContentBlock('Lifetime summary', 'extra_summary_block');
 
-  contentBlock.appendChild(summaryTable);
+  setFlexContentBlockContentElem(contentBlock, summaryTable);
 }
 
 const moveOldChartToNewBlock = () => {
-  const oldChartControlsElem = document.getElementsByClassName('graphControls')[0];
-  const oldChartElem = helpers.findParentByTag(document.getElementById('ChartUnitsHistory'), 'div');
-  if (!oldChartElem || !oldChartControlsElem) return;
+  const oldChartElem = document.getElementById('ChartUnitsHistory');
+  if (!oldChartElem) return;
+
+  const oldChartElemParentDiv = helpers.findParentByTag(oldChartElem, 'div');
+  if (!oldChartElemParentDiv) return;
+
+  const AllStatsDiv = helpers.findParentByTag(oldChartElemParentDiv, 'div');
+  if (!AllStatsDiv || AllStatsDiv.children.length === 0) return;
 
   const contentBlock = createFlexContentBlock('Original chart', 'extra_original_chart_block');
 
-  contentBlock.appendChild(oldChartControlsElem);
-  contentBlock.appendChild(oldChartElem);
+  const oldChartContainer = document.createElement('div');
+  oldChartContainer.id = 'extra_old_chart_container';
+
+  // We only need the first 4 children because this is the part about sales
+  for (let i = 0; i < 4; i++) {
+    if (AllStatsDiv.children.length > 0) {
+      oldChartContainer.appendChild(AllStatsDiv.children[0]);
+    }
+  }
+
+  setFlexContentBlockContentElem(contentBlock, oldChartContainer);
 }
 
 const moveHeatmapNewBlock = () => {
@@ -621,60 +510,7 @@ const moveHeatmapNewBlock = () => {
 
   const contentBlock = createFlexContentBlock('Sales heatmap', 'extra_sales_heatmap_block');
 
-  contentBlock.appendChild(heatmapElem);
-}
-
-const moveDateRangeSelectionToTop = () => {
-  const toolbarBlock = getExtraToolbarBlock();
-
-  const periodSelectBlock = document.getElementsByClassName('PeriodLinks')[0];
-  const periodSelectWholeBlock = helpers.findParentByTag(periodSelectBlock, 'div');
-
-  const newDateRangeContainerElem = document.createElement('div');
-  newDateRangeContainerElem.classList.add('extra_content_block');
-  newDateRangeContainerElem.id = 'extra_period_block';
-
-  newDateRangeContainerElem.appendChild(periodSelectWholeBlock);
-
-  toolbarBlock.appendChild(newDateRangeContainerElem);
-}
-
-const addStatusBlock = () => {
-  const statusBlock = createStatusBlock();
-  startUpdateStatus();
-}
-
-const moveSalesTableToNewBlock = () => {
-  const contentBlock = createFlexContentBlock('Sales table', 'extra_sales_table_block');
-
-  var parentElement = document.getElementById('gameDataLeft');
-
-  var childElements = parentElement.children;
-  var divs = [];
-
-  // Filter out only those children that are divs
-  for (var i = 0; i < childElements.length; i++) {
-    if (childElements[i].tagName === 'DIV') {
-      divs.push(childElements[i]);
-    }
-  }
-
-  const salesTable = divs[2].children[0];
-
-  contentBlock.appendChild(salesTable);
-}
-
-const moveGameTitle = () => {
-  const toolbarBlock = getExtraToolbarBlock();
-
-  const titleElem = document.getElementsByTagName('h1')[0];
-
-  toolbarBlock.insertBefore(titleElem, toolbarBlock.firstChild);
-}
-
-const hideOriginalMainBlock = () => {
-  const elem = document.getElementsByClassName('ContentWrapper')[0];
-  elem.style.display = 'none';
+  setFlexContentBlockContentElem(contentBlock, heatmapElem);
 }
 
 init();

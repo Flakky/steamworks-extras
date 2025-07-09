@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Steamworks extra reports",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "permissions": [
     "storage",
     "offscreen"
@@ -13,7 +13,8 @@
     "http://127.0.0.1:3000/*",
     "http://localhost:3000/*",
     "https://127.0.0.1:3000/*",
-    "https://localhost:3000/*"
+    "https://localhost:3000/*",
+    "https://steamcommunity.com/*"
   ],
   "content_scripts": [
     {
@@ -38,8 +39,10 @@
         "shared/statusblock.js",
         "scripts/helpers.js",
         "data/defaultsettings.js",
+        "content/pageblocks.js",
         "content/appdetails_reviews.js",
         "content/appdetails_saleschart.js",
+        "content/appdetails_salestable.js",
         "content/appdetails.js"
       ],
       "css": [
@@ -72,6 +75,8 @@
         "shared/statusblock.js",
         "scripts/helpers.js",
         "data/defaultsettings.js",
+        "content/pageblocks.js",
+        "content/appwishlist_conversions.js",
         "content/appwishlist.js"
       ],
       "css": [

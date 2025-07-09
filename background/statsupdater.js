@@ -39,6 +39,7 @@ const fetchAllData = async (appID) => {
 
   fetchSalesData(appID);
   fetchReviewsData(appID);
+  fetchWishlistConversionsData(appID);
   await fetchTrafficData(appID);
   await fetchWishlistsData(appID);
 }
@@ -90,6 +91,11 @@ const fetchReviewsData = (appID) => {
   // We do not check for missing dates because reviews cannot be requested for certain dates.
   // We can request all reviews with couple requests in a single action
   addToQueue(new StorageActionRequestReviews(appID));
+}
+
+const fetchWishlistConversionsData = (appID) => {
+  // We do not check for missing dates because we can request all conversions data at once
+  addToQueue(new StorageActionRequestWishlistConversions(appID));
 }
 
 const fetchWishlistsData = async (appID) => {

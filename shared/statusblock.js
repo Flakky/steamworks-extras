@@ -34,6 +34,11 @@ const createStatusBlockElement = () => {
   return statusBlock;
 }
 
+const addStatusBlockToPage = () => {
+  const statusBlock = createStatusBlock();
+  startUpdateStatus();
+}
+
 const startUpdateStatus = () => {
   const statusElement = document.getElementById('extra_status');
   statusElement.style.display = 'none';

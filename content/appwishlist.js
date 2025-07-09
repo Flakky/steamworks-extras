@@ -25,21 +25,23 @@ const init = async () => {
 
   await readChartColors();
 
+  // Recreate the page structure
   createCustomContentBlock();
-  moveLinksToTop();
   moveGameTitle();
+  createToolbarBlock(getAppID());
   moveDateRangeSelectionToTop();
-  addStatusBlock();
+  addStatusBlockToPage();
 
+  // Create blocks
   moveTotalTableToNewBlock();
+  moveSummaryToNewBlock();
+  createWishlistChartBlock();
+  createCountryTableBlock();
+  
   fixLifetimeLayout();
 
-  moveSummaryToNewBlock();
-
-  createWishlistChart();
-  createCountryTable();
-
   moveWishlistConversionRateChartToNewBlock();
+  initConversionsChart();
   moveConversionsToNewBlock();
 
   moveLifetimeChartToNewBlock();
@@ -58,11 +60,6 @@ const getAppID = () => {
   console.log(id);
 
   return id;
-}
-
-const hideOriginalMainBlock = () => {
-  const elem = document.getElementsByClassName('ContentWrapper')[0];
-  elem.style.display = 'none';
 }
 
 const getDateRangeOfCurrentPage = () => {
@@ -90,14 +87,6 @@ const getDateRangeOfCurrentPage = () => {
   return { dateStart: dateStart, dateEnd: dateEnd };
 }
 
-const moveGameTitle = () => {
-  const toolbarBlock = getExtraToolbarBlock();
-
-  const titleElem = document.getElementsByTagName('h1')[0];
-
-  toolbarBlock.insertBefore(titleElem, toolbarBlock.firstChild);
-}
-
 const readChartColors = async () => {
   const jsonFilePath = getBrowser().runtime.getURL('data/chartcolors.json');
 
@@ -106,148 +95,12 @@ const readChartColors = async () => {
 
 }
 
-const createCustomContentBlock = () => {
-  const newBlockElem = document.createElement('div');
-  newBlockElem.id = 'extra_main_block';
-
-  document.body.insertBefore(newBlockElem, document.body.children[2]); // After header toolbar
-
-  const extraToolbarBlock = document.createElement('div');
-  extraToolbarBlock.id = 'extra_toolbar_block';
-
-  const contentBlockElem = document.createElement('div');
-  contentBlockElem.id = 'extra_main_content_block';
-
-  newBlockElem.appendChild(extraToolbarBlock);
-  newBlockElem.appendChild(contentBlockElem);
-}
-
-const getCustomMainBlock = () => {
-  return document.getElementById('extra_main_block');
-}
-
-const getCustomContentBlock = () => {
-  return document.getElementById('extra_main_content_block');
-}
-
-const getExtraToolbarBlock = () => {
-  return document.getElementById('extra_toolbar_block');
-}
-
-const createFlexContentBlock = (title, id) => {
-  const newBlockElem = document.createElement('div');
-  newBlockElem.id = id;
-  newBlockElem.classList.add('extra_content_block');
-
-  const titleElem = document.createElement('h2');
-  titleElem.textContent = title;
-
-  newBlockElem.appendChild(titleElem);
-
-  getCustomContentBlock().appendChild(newBlockElem);
-
-  return newBlockElem;
-}
-
-const moveLinksToTop = () => {
-  const newLinksBlockElem = document.createElement('div');
-  newLinksBlockElem.classList.add('extra_content_block');
-  newLinksBlockElem.id = 'extra_links_block';
-
-  const toolbarBlock = getExtraToolbarBlock();
-  toolbarBlock.appendChild(newLinksBlockElem);
-
-  const dateUrlParams = new URLSearchParams(window.location.search);
-  const dateStart = dateUrlParams.get('dateStart');
-  const dateEnd = dateUrlParams.get('dateEnd');
-  const dateParamsString = dateStart && dateEnd ? `?dateStart=${dateStart}&dateEnd=${dateEnd}` : '';
-
-  const appID = getAppID();
-  const toolbarData = [
-    {
-      label: 'General',
-      links: [
-        { text: 'Store page', href: `http://store.steampowered.com/app/${appID}` },
-        { text: 'Steamworks page', href: `https://partner.steamgames.com/apps/landing/${appID}` },
-        { text: 'Sales', href: `https://partner.steampowered.com/app/details/${appID}/${dateParamsString}` },
-        { text: 'Wishlists', href: `https://partner.steampowered.com/app/wishlist/${appID}/${dateParamsString}` },
-      ]
-    },
-    {
-      label: 'Regional reports',
-      links: [
-        { text: 'Regional sales report', href: `https://partner.steampowered.com/region/${appID}/` },
-        { text: 'Regional key activations report', href: `https://partner.steampowered.com/cdkeyreport.php?appID=${appID}` },
-        { text: 'Downloads by Region', href: `https://partner.steampowered.com/nav_regions.php?downloads=1&appID=${appID}` }
-      ]
-    },
-    {
-      label: 'Hardware',
-      links: [
-        { text: 'Hardware survey', href: `https://partner.steampowered.com/survey2.php?appID=${appID}` },
-        { text: 'Controller stats', href: `https://partner.steampowered.com/app/controllerstats/${appID}/` },
-        { text: 'Remote Play stats', href: `https://partner.steampowered.com/app/remoteplay/${appID}/` }
-      ]
-    }
-  ];
-
-  const toolbar = document.createElement('div');
-  toolbar.className = 'toolbar';
-
-  toolbarData.forEach(item => {
-    const dropdown = document.createElement('div');
-    dropdown.className = 'dropdown';
-
-    const button = document.createElement('button');
-    button.textContent = item.label;
-
-    const dropdownContent = document.createElement('div');
-    dropdownContent.className = 'dropdown-content';
-
-    item.links.forEach(link => {
-      const anchor = document.createElement('a');
-      anchor.href = link.href;
-      anchor.textContent = link.text;
-      dropdownContent.appendChild(anchor);
-    });
-
-    // Assemble the dropdown
-    dropdown.appendChild(button);
-    dropdown.appendChild(dropdownContent);
-    toolbar.appendChild(dropdown);
-  });
-
-  newLinksBlockElem.appendChild(toolbar);
-}
-
-const moveDateRangeSelectionToTop = () => {
-  const toolbarBlock = getExtraToolbarBlock();
-
-  const periodSelectBlock = document.getElementsByClassName('PeriodLinks')[0];
-  const periodSelectWholeBlock = helpers.findParentByTag(periodSelectBlock, 'div');
-
-  const newDateRangeContainerElem = document.createElement('div');
-  newDateRangeContainerElem.classList.add('extra_content_block');
-  newDateRangeContainerElem.id = 'extra_period_block';
-
-  newDateRangeContainerElem.appendChild(periodSelectWholeBlock);
-
-  toolbarBlock.appendChild(newDateRangeContainerElem);
-}
-
 const moveTotalTableToNewBlock = () => {
   const contentBlock = createFlexContentBlock('Lifetime Overview', 'extra_lifetime_table_block');
 
   let content = document.getElementsByClassName('lifetimeSummaryCtn')[0];
 
-  contentBlock.appendChild(content);
-
-  // contentBlock.appendChild(content);
-}
-
-const addStatusBlock = () => {
-  const statusBlock = createStatusBlock();
-  startUpdateStatus();
+  setFlexContentBlockContentElem(contentBlock, content);
 }
 
 const fixLifetimeLayout = () => {
@@ -275,8 +128,12 @@ const moveWishlistConversionRateChartToNewBlock = () => {
 
   const description = document.createElement('p');
   description.textContent = 'Wishlist purchases & activations as a percent of all purchases & activations';
-  contentBlock.appendChild(description);
-  contentBlock.appendChild(content);
+
+  const container = document.createElement('div');
+  container.appendChild(description);
+  container.appendChild(content);
+
+  setFlexContentBlockContentElem(contentBlock, container);
 }
 
 const moveLifetimeChartToNewBlock = () => {
@@ -285,7 +142,7 @@ const moveLifetimeChartToNewBlock = () => {
 
   const contentBlock = createFlexContentBlock('Lifetime Wishlist Actions', 'extra_lifetime_chart_block');
 
-  contentBlock.appendChild(content);
+  setFlexContentBlockContentElem(contentBlock, content);
 }
 
 const moveWishlistChartToNewBlock = () => {
@@ -330,10 +187,10 @@ const moveSummaryToNewBlock = () => {
   const contentBlock = createFlexContentBlock('Wishlist Action Summary', 'extra_summary_block');
 
   if (firstB) {
-    contentBlock.appendChild(firstB);
+    setFlexContentBlockContentElem(contentBlock, firstB);
   }
   if (firstTable) {
-    contentBlock.appendChild(firstTable);
+    setFlexContentBlockContentElem(contentBlock, firstTable);
   }
 }
 
@@ -371,10 +228,10 @@ const moveNotificationsToNewBlock = () => {
   const contentBlock = createFlexContentBlock('Wishlist Notifications for Period', 'extra_notifications_block');
 
   if (firstP) {
-    contentBlock.appendChild(firstP);
+    setFlexContentBlockContentElem(contentBlock, firstP);
   }
   if (firstTable) {
-    contentBlock.appendChild(firstTable);
+    setFlexContentBlockContentElem(contentBlock, firstTable);
   }
 }
 
@@ -412,20 +269,22 @@ const moveConversionsToNewBlock = () => {
   const contentBlock = createFlexContentBlock('Wishlist Conversions by Cohort', 'extra_conversions_block');
 
   if (firstB) {
-    contentBlock.appendChild(firstB);
+    setFlexContentBlockContentElem(contentBlock, firstB);
   }
   if (firstTable) {
-    contentBlock.appendChild(firstTable);
+    setFlexContentBlockContentElem(contentBlock, firstTable);
   }
 }
 
-const createWishlistChart = () => {
-  const contentBlock = createFlexContentBlock('Wishlist chart', 'extra_wishlist_chart_block');
+const createWishlistChartBlock = () => {
+  createFlexContentBlock('Wishlist chart', 'extra_wishlist_chart_block');
+}
 
+const createWishlistChart = () => {
   const chartBlockElem = document.createElement('div');
   chartBlockElem.id = 'extras_wishlist_chart';
 
-  contentBlock.appendChild(chartBlockElem);
+  setFlexContentBlockContent('extra_wishlist_chart_block', chartBlockElem);
 
   const createChartSelect = (options, name, defaultValue, onSelect) => {
     const nameElem = document.createElement("b");
@@ -557,12 +416,12 @@ const updateWishlistChart = () => {
   wishlistChart.update();
 }
 
-const createCountryTable = () => {
-  const contentBlock = createFlexContentBlock('Wishlists by country', 'extra_country_table_block');
+const createCountryTableBlock = () => {
+  createFlexContentBlock('Wishlists by country', 'extra_country_table_block');
+}
 
+const createCountryTable = () => {
   const scrollableBlock = document.createElement('div');
-  scrollableBlock.style.overflow = 'auto';
-  scrollableBlock.style.maxHeight = '400px'; // Adjust the max height as needed
 
   const table = document.createElement('table');
   table.id = 'extra_country_table';
@@ -580,9 +439,6 @@ const createCountryTable = () => {
 
   table.appendChild(thead);
   table.appendChild(tbody);
-
-  scrollableBlock.appendChild(table);
-  contentBlock.appendChild(scrollableBlock);
 
   // Create second table for regions
   const regionsTable = document.createElement('table');
@@ -603,7 +459,8 @@ const createCountryTable = () => {
   regionsTable.appendChild(regionsTbody);
 
   scrollableBlock.appendChild(regionsTable);
-  contentBlock.appendChild(scrollableBlock);
+
+  setFlexContentBlockContent('extra_country_table_block', scrollableBlock);
 }
 
 const updateCountryTable = () => {
@@ -727,6 +584,9 @@ const requestWishlistsForDateRange = async () => {
       }
 
       wishlistsForDateRange = response;
+
+      createWishlistChart();
+      createCountryTable();
 
       updateWishlistChart();
       updateCountryTable();

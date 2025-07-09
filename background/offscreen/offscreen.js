@@ -9,7 +9,9 @@ const getBrowser = () => {
 }
 
 getBrowser().runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if(message.parseDOMId  === undefined) return;
+
   const result = parser.parseDocument(message.htmlText, message.action);
 
-  getBrowser().runtime.sendMessage({ action: 'parsedDOM', result: result });
+  getBrowser().runtime.sendMessage({ action: 'parsedDOM', id: message.parseDOMId, success: result.success, result: result });
 });

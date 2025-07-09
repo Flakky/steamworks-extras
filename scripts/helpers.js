@@ -158,7 +158,7 @@ helpers.getCountryRevenue = async (appID, country, dateStart, dateEnd) => {
   const formattedStartDate = helpers.dateToString(startDate);
   const formattedEndDate = helpers.dateToString(endDate);
 
-  let result = await helpers.sendMessageAsync({ request: 'getData', type: 'Sales', appId: appID });
+  let result = await helpers.sendMessageAsync({ request: 'getData', type: 'Sales', appId: appID, dateStart: formattedStartDate, dateEnd: formattedEndDate, returnLackData: true });
 
   if (result === undefined) throw new Error(`Was not able to get sales data for appID ${appID}`);
 
@@ -180,9 +180,8 @@ helpers.correctDateRange = (startDate, endDate) => {
 }
 
 helpers.getDateNoOffset = () => {
-  const now = new Date();
-  const offset = now.getTimezoneOffset() * 60000;
-  return new Date(now.getTime() - offset);
+  const now = new Date(Date.now());
+  return now;
 }
 
 helpers.isDateInRange = (date, startDate, endDate) => {
@@ -283,39 +282,6 @@ helpers.getDataFromStorage = async (type, appId, dateStart, dateEnd, returnLackD
   return result;
 }
 
-helpers.getWishlistData = async (appID, date) => {
-  const url = `https://store.steampowered.com/app/${appID}`;
-
-  console.log(`Fetching wishlist data from URL: ${url}`);
-
-  const response = await fetch(url);
-  if (!response.ok) throw new Error('Network response was not ok');
-  const htmlText = await response.text();
-
-  const wishlistData = await helpers.parseDOM(htmlText, 'parseWishlistData');
-
-  return wishlistData;
-}
-
-helpers.getPackageIDs = async (appID, useBackgroundScript) => {
-  const url = `https://partner.steamgames.com/apps/landing/${appID}`;
-
-  console.log(`Fetching package IDs from URL: ${url}`);
-
-  let htmlText;
-  if (useBackgroundScript) {
-    htmlText = await helpers.sendMessageAsync({ request: 'makeRequest', url: url });
-  } else {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('Network response was not ok');
-    htmlText = await response.text();
-  }
-
-  const packageIDs = await helpers.parseDOM(htmlText, 'parsePackageID');
-
-  return packageIDs;
-}
-
 helpers.createMessageBlock = (type, text) => {
   const block = document.createElement('div');
   const title = document.createElement('b');
@@ -373,93 +339,17 @@ helpers.selectChartColor = (chartColors, tag) => {
   return `rgb(${30 + Math.round(Math.random() * 225)}, ${30 + Math.round(Math.random() * 225)}, ${30 + Math.round(Math.random() * 225)})`;
 }
 
-helpers.requestPageCreationDate = async (appID) => {
-  const url = `https://partner.steamgames.com/apps/navtrafficstats/${appID}?attribution_filter=all&preset_date_range=lifetime`;
-  const pageCreationDate = await helpers.parseDataFromPage(url, 'parsePageCreationDate');
-  return new Date(pageCreationDate);
-}
-
-helpers.parseDataFromPage = async (url, request) => {
-  console.debug(`Getting data "${request}" from URL: ${url}`);
-
+helpers.getDOMLocal = async (url) => {
   const response = await fetch(url);
 
-  if (!response.ok) throw new Error('Network response was not ok');
+  if (!response.ok) throw new Error('Network response was not ok', url);
 
   const htmlText = await response.text();
 
-  const parsedData = await helpers.parseDOM(htmlText, request);
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(htmlText, 'text/html');
 
-  console.debug(`Steamworks extras: Data result from parsing for "${request}": `, parsedData);
-
-  return parsedData;
-}
-
-helpers.parseDOM = (htmlText, request) => {
-  return new Promise(async (resolve, reject) => {
-    console.debug('Parsing DOM started: ', request);
-
-    // DOM parser is available in some browsers, so we use it if possible.
-    // Firefox +, Chrome -
-    if (globalThis.DOMParser) {
-      const result = parser.parseDocument(htmlText, request);
-      resolve(result);
-      return;
-    }
-
-    const offscreenUrl = getBrowser().runtime.getURL('background/offscreen/offscreen.html');
-    const maxRetries = 20;
-    let attemptCount = 0;
-    const timeout = 10 * 1000;
-    let timer;
-
-    const attemptParse = async () => {
-      attemptCount++;
-
-      // Only one offscreen document can be open at a time, so we handle the error and try again
-      try {
-
-        await getBrowser().offscreen.createDocument({
-          url: offscreenUrl,
-          reasons: [getBrowser().offscreen.Reason.DOM_PARSER],
-          justification: 'Parse HTML in background script'
-        });
-
-        // Set a timeout to reject the promise if the document creation takes too long
-        timer = setTimeout(() => {
-          getBrowser().offscreen.closeDocument();
-          reject(new Error(`ParseDOM for "${request}" timed out`));
-        }, timeout);
-      } catch (error) {
-        console.error(error);
-        if (attemptCount < maxRetries) {
-          setTimeout(attemptParse, 1000);
-        } else {
-          reject(new Error('Failed to create offscreen document after multiple attempts'));
-        }
-        return;
-      }
-
-      await getBrowser().runtime.sendMessage({
-        action: request,
-        htmlText: htmlText
-      });
-
-      getBrowser().runtime.onMessage.addListener(function listener(message) {
-        if (message.action === 'parsedDOM') {
-          getBrowser().runtime.onMessage.removeListener(listener);
-          console.debug('Parsing DOM completed', message.result);
-
-          clearTimeout(timer); // Clear the timeout if the document creation is successful
-          getBrowser().offscreen.closeDocument();
-
-          resolve(message.result);
-        }
-      });
-    };
-
-    attemptParse();
-  });
+  return doc;
 }
 
 helpers.sendMessageAsync = (message) => {
