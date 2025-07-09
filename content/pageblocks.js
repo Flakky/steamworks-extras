@@ -187,6 +187,25 @@ const moveDateRangeSelectionToTop = () => {
 }
 
 /**
+ * Moves the game title to the top of the toolbar block
+ */
+const moveGameTitle = () => {
+  const toolbarBlock = getExtraToolbarBlock();
+
+  const titleElem = document.getElementsByTagName('h1')[0];
+
+  toolbarBlock.insertBefore(titleElem, toolbarBlock.firstChild);
+}
+
+/**
+ * Hides the original main block with all the content which has not been moved to blocks
+ */
+const hideOriginalMainBlock = () => {
+  const elem = document.getElementsByClassName('ContentWrapper')[0];
+  elem.style.display = 'none';
+}
+
+/**
  * Gets the main custom block element
  * @returns {HTMLElement|null} The main custom block element
  */

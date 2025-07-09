@@ -2,6 +2,7 @@ let settings = {};
 let usRevenue = -1; // -1 means did not receive US share or got an error
 let usRevenueForDateRange = -1; // -1 means did not receive US share or got an error
 let salesForDateRange = undefined;
+let salesAllTime = undefined;
 let chartColors = undefined;
 
 const init = async () => {
@@ -33,15 +34,8 @@ const init = async () => {
   addRefundDataLink();
   addFollowers();
 
-  await requestTotalUSRevenue();
-  await requestUSRevenueForCurrentDateRange();
-
-  requestSales();
   requestReviews();
-
-  updateSummaryRows();
-  updateSalesNetRow();
-
+  requestSales();
 }
 
 const getSummaryTable = () => {
@@ -326,82 +320,6 @@ const toggleExtraSummaryRows = () => {
   extendLinkElem.textContent = extendButtonElem.textContent.replace(newShow ? '►' : '▼', newShow ? '▼' : '►');
 }
 
-const updateSalesNetRow = () => {
-  const salesTable = getSalesTable();
-
-  const rows = salesTable.rows;
-
-  let revenueRow = undefined;
-  let revenueRowIndex = -1;
-
-  for (const row of rows) {
-    revenueRowIndex++;
-
-    const bElemWithText = row.getElementsByTagName('b')[0];
-    if (!bElemWithText) continue;
-
-    if (bElemWithText.textContent == 'Total revenue') {
-      revenueRow = row;
-      break;
-    }
-  }
-
-  if (!revenueRow) {
-    console.error('Revenue row was not found!');
-    return;
-  }
-
-  const revenueCell = revenueRow.cells[2];
-  let revenue = revenueCell.textContent;
-  revenue = revenue.replace('$', '');
-  revenue = revenue.replace(',', '');
-
-  console.log('Reading total revenue');
-
-  const totalGrossRevenue = getTotalRevenue(true);
-  const totalNetRevenue = getTotalRevenue(false);
-  const grossNetRatio = totalNetRevenue / totalGrossRevenue;
-
-  console.log(grossNetRatio);
-
-  const { finalRevenue } = getRevenueMap(revenue, revenue * grossNetRatio, usRevenueForDateRange);
-
-  const devRevenueString = helpers.numberWithCommas(Math.floor(finalRevenue));
-
-  const cell = helpers.findElementByText('b', 'Developer revenue');
-  let newRow = helpers.findParentByTag(cell, 'tr');
-
-  console.log(newRow);
-
-  if (newRow === undefined) {
-    let newRow = salesTable.insertRow(revenueRowIndex + 1); // Insert after total revenue
-
-    const nameElem = document.createElement('td');
-    nameElem.innerHTML = '<b>Developer revenue</b>';
-    newRow.appendChild(nameElem);
-
-    sumElem = document.createElement('td');
-    const spacerElem = document.createElement('td');
-
-    sumElem.setAttribute('align', 'right');
-
-    newRow.appendChild(spacerElem);
-    newRow.appendChild(sumElem);
-
-    for (let i = 3; i < revenueRow.cells.length; i++) {
-      const cell = document.createElement('td');
-      newRow.appendChild(cell);
-    }
-  }
-  else {
-    sumElem = newRow.cells[2];
-  }
-
-  sumElem.innerHTML = `<b>$${devRevenueString}</b>`;
-
-  console.log("Steamworks extras: Added sales for date range net");
-}
-
 const addFollowers = async () => {
   const summaryTable = getSummaryTable();
   if (!summaryTable) return;
@@ -495,30 +413,37 @@ const getDateRangeOfCurrentPage = () => {
   return { dateStart: dateStart, dateEnd: dateEnd };
 }
 
-const requestUSRevenueForCurrentDateRange = async () => {
-  const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
-  usRevenueForDateRange = await helpers.getCountryRevenue(getAppID(), 'United States', dateStart, dateEnd);
-}
-
-const requestTotalUSRevenue = async () => {
-  usRevenue = await helpers.getCountryRevenue(getAppID(), 'United States');
-}
-
-const requestSales = () => {
+const requestSales = async () => {
   const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
 
-  console.log('Requesting sales data between ', dateStart, ' and ', dateEnd);
+  console.log('Steamworks extras: Requesting sales data...');
 
-  helpers.sendMessageAsync({ request: 'getData', type: 'Sales', appId: getAppID(), dateStart: dateStart, dateEnd: dateEnd }).then((response) => {
-    console.log('Sales data received: ', response);
-    salesForDateRange = response;
+  salesAllTime = await helpers.sendMessageAsync({ request: 'getData', type: 'Sales', appId: getAppID() });
+  console.debug('Steamworks extras: Sales data received: ', salesAllTime);
 
-    createSalesChart();
-    updateSalesChart(chartSplit, chartValueType);
-
-    createSalesTable();
-    updateSalesTable(salesTableSplit);
+  // Filter to current date range
+  salesForDateRange = salesAllTime.filter(item => {
+    if (!item["Date"]) return false;
+    const date = new Date(item["Date"]);
+    return helpers.isDateInRange(date, dateStart, dateEnd);
   });
+
+  // US sales for tax calculation purposes
+  usRevenueForDateRange = salesForDateRange
+    .filter(item => item["Country"] === "United States")
+    .reduce((sum, item) => sum + (item["Gross Steam Sales (USD)"] || 0), 0);
+
+  usRevenue = salesAllTime
+    .filter(item => item["Country"] === "United States")
+    .reduce((sum, item) => sum + (item["Gross Steam Sales (USD)"] || 0), 0);
+
+  createSalesChart();
+  updateSalesChart(chartSplit, chartValueType);
+
+  createSalesTable();
+  updateSalesTable(salesTableSplit);
+
+  updateSummaryRows();
 }
 
 const readChartColors = () => {
@@ -586,19 +511,6 @@ const moveHeatmapNewBlock = () => {
   const contentBlock = createFlexContentBlock('Sales heatmap', 'extra_sales_heatmap_block');
 
   setFlexContentBlockContentElem(contentBlock, heatmapElem);
-}
-
-const moveGameTitle = () => {
-  const toolbarBlock = getExtraToolbarBlock();
-
-  const titleElem = document.getElementsByTagName('h1')[0];
-
-  toolbarBlock.insertBefore(titleElem, toolbarBlock.firstChild);
-}
-
-const hideOriginalMainBlock = () => {
-  const elem = document.getElementsByClassName('ContentWrapper')[0];
-  elem.style.display = 'none';
 }
 
 init();

@@ -62,11 +62,6 @@ const getAppID = () => {
   return id;
 }
 
-const hideOriginalMainBlock = () => {
-  const elem = document.getElementsByClassName('ContentWrapper')[0];
-  elem.style.display = 'none';
-}
-
 const getDateRangeOfCurrentPage = () => {
   // URL format:
   // https://partner.steampowered.com/app/details/AppID/?dateStart=2024-08-21&dateEnd=2024-08-27
@@ -90,14 +85,6 @@ const getDateRangeOfCurrentPage = () => {
   helpers.correctDateRange(dateStart, dateEnd);
 
   return { dateStart: dateStart, dateEnd: dateEnd };
-}
-
-const moveGameTitle = () => {
-  const toolbarBlock = getExtraToolbarBlock();
-
-  const titleElem = document.getElementsByTagName('h1')[0];
-
-  toolbarBlock.insertBefore(titleElem, toolbarBlock.firstChild);
 }
 
 const readChartColors = async () => {
