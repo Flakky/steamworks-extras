@@ -2,6 +2,7 @@ let parser = {};
 
 parser.parseDocument = (htmlText, parseType) => {
   let result = null;
+  let success = true;
 
   try {
     const domParser = new DOMParser();
@@ -20,13 +21,17 @@ parser.parseDocument = (htmlText, parseType) => {
       case 'parseAppIDs':
         result = parser.parseAppIDs(doc);
         break;
+      case 'followers':
+        result = parser.parseFollowers(doc);
+        break;
     }
   }
   catch (error) {
+    success = false;
     result = error.toString();
   }
 
-  return result;
+  return { success: success, result: result };
 }
 
 parser.parsePackageIDs = (doc) => {
@@ -139,4 +144,23 @@ parser.parseAppIDs = (doc) => {
   });
 
   return appIDs;
+}
+
+parser.parseFollowers = (doc) => {
+  const groupPagingElement = doc.querySelector('.group_paging');
+  if (!groupPagingElement) {
+    throw new Error('No element with class "group_paging" found');
+  }
+
+  const text = groupPagingElement.textContent;
+  const match = text.match(/of\s+([\d,]+)\s+Members/);
+
+  if (match) {
+    const membersStr = match[1];
+    const followers = parseInt(membersStr.replace(/,/g, ''));
+    console.log(followers);
+    return followers;
+  } else {
+    console.log("No followers match found");
+  }
 }
