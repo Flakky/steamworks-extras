@@ -13,5 +13,5 @@ getBrowser().runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   const result = parser.parseDocument(message.htmlText, message.action);
 
-  getBrowser().runtime.sendMessage({ action: 'parsedDOM', id: message.parseDOMId, success: result.success, result: result });
+  getBrowser().runtime.sendMessage({ request: 'parsedDOM', id: message.parseDOMId, success: result.success, result: result.result });
 });

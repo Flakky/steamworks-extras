@@ -23,6 +23,8 @@ const initOffscreen = async () => {
 }
 
 const processParsedDOM = (message) => {
+  console.debug('Steamworks extras: Processing parsed DOM message: ', message);
+  
   if(message.request !== 'parsedDOM'
     || message.id === undefined
     || message.result === undefined) {
@@ -32,7 +34,7 @@ const processParsedDOM = (message) => {
 
   console.debug('Parsing DOM completed', message.result);
 
-  const { id, result } = message;
+  const { id, result, success } = message;
 
   const parsingAction = parsingQueue.find(action => action.id === id);
   if(!parsingAction) {

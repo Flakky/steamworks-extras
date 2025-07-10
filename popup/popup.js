@@ -21,25 +21,6 @@ const bindButton = (id, func) => {
   button.addEventListener('click', func);
 }
 
-const updateStatus = () => {
-  getBrowser().runtime.sendMessage({ request: "getStatus" }, res => {
-    const statusElement = document.getElementById('extra_status');
-
-    if (res === undefined) {
-      statusElement.innerHTML = `<b>Status:</b> Unknown`;
-      statusElement.classList.add('extra_error');
-    }
-    if (res.includes('Updating stats')) {
-      statusElement.innerHTML = `<b>Status:</b> ${res}`;
-      statusElement.classList.add('extra_warning');
-    }
-    if (res == 'Ready') {
-      statusElement.innerHTML = `<b>Status:</b> Ready`;
-      statusElement.classList.add('extra_info');
-    }
-  });
-}
-
 const openLink = (link) => {
   console.log('Opening link:', link);
   getBrowser().tabs.create({ url: link, active: true });

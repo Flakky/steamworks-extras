@@ -14,7 +14,7 @@ if (typeof browser == "undefined") {
   importScripts('storage/storage_sales.js');
   importScripts('storage/storage_traffic.js');
   importScripts('storage/storage_wishlists.js');
-  importScripts('storage/storage_wishlist_conversions.js');
+  importScripts('storage/storage_wishlistconversions.js');
   importScripts('statsupdater.js');
 }
 
@@ -248,6 +248,8 @@ const parseAppIDs = async () => {
 
   const appIDs = await bghelpers.parseDataFromPage('https://partner.steampowered.com/nav_games.php', 'parseAppIDs');
 
+  console.log('Steamworks extras: AppIDs: ', appIDs);
+
   const nonRedirectedAppIDs = [];
 
   for (const appID of appIDs) {
@@ -280,9 +282,11 @@ const parseAppIDs = async () => {
 }
 
 const getAppIDs = async () => {
+  console.log('Steamworks extras: Getting AppIDs');
+  
   let result = await getBrowser().storage.local.get("appIDs");
 
-  console.log(result);
+  console.log('Steamworks extras: AppIDs: ', result);
 
   let appIDs = undefined;
 

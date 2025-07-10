@@ -30,6 +30,8 @@ const initGameStatsStorage = (appID, index) => {
     gameStatsStorage = undefined;
   }
 
+  console.log(`Steamworks Extras: Initializing game stats storage for app ${appID} with index ${index}`);
+
   return new Promise((resolve, reject) => {
     console.log(`Steamworks Extras: Init database for app ${appID} with index ${index}`);
 
