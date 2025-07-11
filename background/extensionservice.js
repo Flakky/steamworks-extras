@@ -2,6 +2,8 @@ if (typeof browser == "undefined") {
   // Chrome does not support the browser namespace yet.
   globalThis.browser = chrome;
 
+  console.log('Steamworks extras: Importing scripts');
+  
   importScripts('../data/defaultsettings.js');
   importScripts('../scripts/helpers.js');
   importScripts('offscreen/offscreenmanager.js');

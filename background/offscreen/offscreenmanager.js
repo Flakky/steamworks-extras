@@ -1,21 +1,22 @@
 let parsingQueue = []; // {id, resolve, reject}
+let offscreenInitialized = false;
 
 const initOffscreen = async () => {
-  const offscreenUrl = chrome.runtime.getURL('background/offscreen/offscreen.html');
+  if(getBrowser().offscreen === undefined) {
+    console.warn('Offscreen is not supported by this browser');
+    return;
+  }
 
-  const existingOffscreen = await chrome.runtime.getContexts({
-    contextTypes: ['OFFSCREEN_DOCUMENT'],
-    documentUrls: [offscreenUrl]
-  });
+  const offscreenUrl = getBrowser().runtime.getURL('background/offscreen/offscreen.html');
 
-  if (existingOffscreen.length > 0) {
+  if (offscreenInitialized) {
     console.warn('Offscreen document already exists, reusing it');
     return;
   }
 
-  await chrome.offscreen.createDocument({
+  await getBrowser().offscreen.createDocument({
     url: offscreenUrl,
-    reasons: [chrome.offscreen.Reason.DOM_PARSER],
+    reasons: [getBrowser().offscreen.Reason.DOM_PARSER],
     justification: 'Parse HTML using DOM in background script'
   });
 
@@ -48,15 +49,31 @@ const processParsedDOM = (message) => {
 
 const parseDOM = (htmlText, request) => {
   return new Promise(async (resolve, reject) => {
+
     console.debug('Parsing DOM started: ', request);
 
-    const id = crypto.randomUUID();
-    parsingQueue.push({ id, resolve, reject });
+    if(getBrowser().offscreen === undefined) {
+      try{
+        const result = parser.parseDocument(htmlText, request);
 
-    await chrome.runtime.sendMessage({
-      parseDOMId: id,
-      action: request,
-      htmlText: htmlText
-    });
+        console.debug('Parsing DOM completed', result);
+
+        if(result.success) resolve(result.result);
+        else reject(new Error(result.result));
+      }
+      catch(error) {
+        reject(error);
+      }
+    }
+    else {
+      const id = crypto.randomUUID();
+      parsingQueue.push({ id, resolve, reject });
+  
+      await getBrowser().runtime.sendMessage({
+        parseDOMId: id,
+        action: request,
+        htmlText: htmlText
+      });
+    }
   });
 }

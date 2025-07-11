@@ -17,7 +17,7 @@ const createStatusBlockElement = () => {
 
   const icon = document.createElement('img');
   icon.id = 'extra_status_icon';
-  icon.src = chrome.runtime.getURL('assets/status_info.png');
+  icon.src = getBrowser().runtime.getURL('assets/status_info.png');
 
   const statusText = document.createElement('span');
   statusText.id = 'extra_status_message';
@@ -69,18 +69,18 @@ const updateStatus = () => {
     if (status.code === 0) {
       statusElement.classList.add('extra_info');
       statusElement.style.display = 'none';
-      statusImage.src = chrome.runtime.getURL('assets/status_info.png');
+      statusImage.src = getBrowser().runtime.getURL('assets/status_info.png');
     }
     if (status.code >= 10 && status.code < 100) {
       statusElement.classList.add('extra_warning');
       statusElement.style.display = '';
-      statusImage.src = chrome.runtime.getURL('assets/status_warning.png');
+      statusImage.src = getBrowser().runtime.getURL('assets/status_warning.png');
 
     }
     if (status.code >= 100) {
       statusElement.classList.add('extra_error');
       statusElement.style.display = '';
-      statusImage.src = chrome.runtime.getURL('assets/status_error.png');
+      statusImage.src = getBrowser().runtime.getURL('assets/status_error.png');
     }
 
     statusText.innerHTML = statusInfo.message;
@@ -90,7 +90,7 @@ const updateStatus = () => {
 
 const readStatuses = () => {
   console.log('Loading extension statuses...');
-  const jsonFilePath = chrome.runtime.getURL('data/extensionstatuses.json');
+  const jsonFilePath = getBrowser().runtime.getURL('data/extensionstatuses.json');
 
   console.log(jsonFilePath);
 

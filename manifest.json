@@ -110,6 +110,7 @@
     "scripts": [
       "data/defaultsettings.js",
       "scripts/helpers.js",
+      "background/offscreen/offscreenmanager.js",
       "scripts/parser.js",
       "background/bghelpers.js",
       "background/status.js",
@@ -119,6 +120,7 @@
       "background/storage/storage_sales.js",
       "background/storage/storage_traffic.js",
       "background/storage/storage_wishlists.js",
+      "background/storage/storage_wishlistconversions.js",
       "background/statsupdater.js",
       "background/extensionservice.js"
     ],
