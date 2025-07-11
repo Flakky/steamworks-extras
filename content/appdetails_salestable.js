@@ -8,7 +8,7 @@ const salesTableColumns = [
   { key: "Net Units Sold", label: "Net units" },
   { key: "Chargeback/Returns (USD)", label: "Refunds" },
   { key: "Chargeback/Returns", label: "Refund units" },
-  { key: "FinalDevRevenue", label: "Est. dev revenue" },
+  { key: "FinalDevRevenue", label: "Est. revenue" },
 ];
 
 const createSalesTableBlock = () => {
@@ -17,7 +17,6 @@ const createSalesTableBlock = () => {
 
 const createSalesTable = () => {
   const tableBlockElem = document.createElement('div');
-  tableBlockElem.id = 'extras_sales_table';
 
   setFlexContentBlockContent('extra_sales_table_block', tableBlockElem);
 
@@ -55,16 +54,45 @@ const createSalesTable = () => {
     updateSalesTable(salesTableSplit);
   });
 
-  // Another div is for scrollable table
-  const tableContainerElem = document.createElement('div');
-  const tableElem = document.createElement('table');
+  // Table header outside of scrollable table
+  const headerTableElem = document.createElement('table');
+  const thead = headerTableElem.createTHead();
+  const headerRow = thead.insertRow();
+  const th0 = document.createElement('th');
+  th0.textContent = salesTableSplit;
+  headerRow.appendChild(th0);
 
+  salesTableColumns.forEach(col => {
+    const th = document.createElement('th');
+    if (col.key === "FinalDevRevenue") {
+      th.innerHTML = `${col.label} <a href="#" class="tooltip">(?)<span>Estimated developer revenue based on gross. We do not calculate it based on net here, because net is deducted by refunds from sales made in previous periods.</span></a>`;
+    } else {
+      th.textContent = col.label;
+    }
+    headerRow.appendChild(th);
+  });
+
+//  const th = document.createElement('th');
+//  headerRow.appendChild(th);
+  
+  // Wrapper is for margin
+  const wrapperDiv = document.createElement('div');
+  wrapperDiv.id = 'extras_sales_table_header';
+  wrapperDiv.appendChild(headerTableElem);
+
+  tableBlockElem.appendChild(wrapperDiv);
+  
+  // Div for scrollable table
+  const tableContainerElem = document.createElement('div');
+  tableContainerElem.id = 'extras_sales_table';
+  const tableElem = document.createElement('table');
   tableContainerElem.appendChild(tableElem);
+
   tableBlockElem.appendChild(tableContainerElem);
 }
 
 const updateSalesTable = (split) => {
-  const tableElem = document.querySelector('#extras_sales_table > div > table');
+  const tableElem = document.querySelector('#extras_sales_table table');
   if (!tableElem) return;
 
   tableElem.innerHTML = "";
@@ -146,21 +174,12 @@ const updateSalesTable = (split) => {
 
   totalRow["FinalDevRevenue"] = finalRevenue;
 
-  // Table header
-  const thead = tableElem.createTHead();
-  const headerRow = thead.insertRow();
-  const splitLabel = split;
-  const th0 = document.createElement('th');
-  th0.textContent = splitLabel;
-  headerRow.appendChild(th0);
+  // Update the first column label in the header (outside the scrollable table)
+  const firstTh = document.querySelector('#extras_sales_table_header table thead th');
+  if (firstTh) {
+    firstTh.textContent = split;
+  }
 
-  salesTableColumns.forEach(col => {
-    const th = document.createElement('th');
-    th.textContent = col.label;
-    headerRow.appendChild(th);
-  });
-
-  // Table body
   const tbody = tableElem.createTBody();
 
   const insertSalesTableRow = (tbody, rowData) => {

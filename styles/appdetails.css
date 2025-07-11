@@ -31,18 +31,45 @@
   width: 100%;
 }
 
-#extras_sales_table>div {
+#extras_sales_table {
   width: 100%;
-  margin-top: 10px;
-  overflow: auto;
+  overflow-y: scroll;
   max-height: 400px;
   scrollbar-color: #333 #555;
   scrollbar-width: thin;
 }
 
 #extras_sales_table td:first-child {
-  width: 200px;
+  width: 30%;
   font-weight: bold;
+}
+
+#extras_sales_table td:last-child {
+  width: 15%;
+}
+
+#extras_sales_table td {
+  width: 9%;
+}
+
+#extras_sales_table_header table {
+  width: 100%;
+}
+
+#extras_sales_table_header {
+  margin-top: 10px;
+}
+
+#extras_sales_table_header table th:first-child {
+  width: 30%;
+}
+
+#extras_sales_table_header table th:last-child {
+  width: 15%;
+}
+
+#extras_sales_table_header table th {
+  width: 9%;
 }
 
 #extras_sales_table>div::-webkit-scrollbar {
