@@ -20,6 +20,8 @@ const initOffscreen = async () => {
     justification: 'Parse HTML using DOM in background script'
   });
 
+  offscreenInitialized = true;
+
   console.debug('Offscreen document created');
 }
 
