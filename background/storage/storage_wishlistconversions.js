@@ -97,6 +97,11 @@ const requestWishlistConversionsData = async (appID) => {
     return object;
   });
 
+  // Remove every invalid record
+  const filteredResult = result.filter(record => record['Date'] && record['MonthCohort']);
+  result.length = 0;
+  result.push(...filteredResult);
+
   console.log(`Steamworks extras: Wishlist conversions CSV result:`, result);
 
   await writeData(appID, 'WishlistConversions', result);
