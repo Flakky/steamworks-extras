@@ -2,13 +2,13 @@ let salesTableSplit = "Country";
 let salesTableValueType = "Gross Steam Sales (USD)";
 
 const salesTableColumns = [
-  { key: "Gross Steam Sales (USD)", label: "Gross $" },
-  { key: "Net Steam Sales (USD)", label: "Net $" },
+  { key: "Gross Steam Sales (USD)", label: "Gross" },
+  { key: "Net Steam Sales (USD)", label: "Net" },
   { key: "Gross Units Sold", label: "Gross units" },
   { key: "Net Units Sold", label: "Net units" },
-  { key: "Chargeback/Returns (USD)", label: "Refunds $" },
+  { key: "Chargeback/Returns (USD)", label: "Refunds" },
   { key: "Chargeback/Returns", label: "Refund units" },
-  { key: "FinalDevRevenue", label: "Dev revenue" }
+  { key: "FinalDevRevenue", label: "Est. dev revenue" },
 ];
 
 const createSalesTableBlock = () => {
@@ -99,18 +99,25 @@ const updateSalesTable = (split) => {
     });
   });
 
-  // Convert to array and sort by Gross USD descending
+  const grossNetRatio = getTotalRevenue(false) / getTotalRevenue(true);
+
+  // Add final dev revenue for groups
   const groupArr = Object.entries(groupMap).map(([key, values]) => {
-    // Calculate final dev revenue for this group
+    
     const gross = values["Gross Steam Sales (USD)"] || 0;
-    const net = values["Net Steam Sales (USD)"] || 0;
-    // US Gross: sum of Gross Steam Sales (USD) for US only, if available in group, else 0
+
+    if(gross == 0) return {
+      key,
+      ...values,
+      FinalDevRevenue: 0
+    };
+
     let usGross = 0;
     if (split === "Country" && key === "United States") {
       usGross = gross;
     }
-    const rev = getRevenueMap(gross, net, usGross);
-    console.log(`Final revenue for ${key}: ${rev.finalRevenue}`);
+    const rev = getRevenueMap(gross, gross * grossNetRatio, usGross);
+
     return {
       key,
       ...values,
@@ -118,7 +125,8 @@ const updateSalesTable = (split) => {
     };
   });
 
-  groupArr.sort((a, b) => b["Gross Steam Sales (USD)"] - a["Gross Steam Sales (USD)"]);
+  const sortKey = "Gross Steam Sales (USD)";
+  groupArr.sort((a, b) => b[sortKey] - a[sortKey]);
 
   // Calculate total row
   const totalRow = salesTableColumns.reduce((acc, col) => {
@@ -128,15 +136,15 @@ const updateSalesTable = (split) => {
 
   // Calculate total dev revenue
   const totalGross = totalRow["Gross Steam Sales (USD)"] || 0;
-  const totalNet = totalRow["Net Steam Sales (USD)"] || 0;
   let totalUsGross = 0;
   if (split === "Country") {
     const usGroup = groupArr.find(row => row.key === "United States");
     if (usGroup) totalUsGross = usGroup["Gross Steam Sales (USD)"] || 0;
   }
-  
-  const totalRev = getRevenueMap(totalGross, totalNet, totalUsGross);
-  totalRow["FinalDevRevenue"] = totalRev.finalRevenue;
+
+  const { finalRevenue } = getRevenueMap(totalGross, totalGross * grossNetRatio, totalUsGross);
+
+  totalRow["FinalDevRevenue"] = finalRevenue;
 
   // Table header
   const thead = tableElem.createTHead();
@@ -154,33 +162,14 @@ const updateSalesTable = (split) => {
 
   // Table body
   const tbody = tableElem.createTBody();
-  // Add total row first
-  const trTotal = tbody.insertRow();
-  const tdTotalKey = trTotal.insertCell();
-  tdTotalKey.textContent = "Total";
-  salesTableColumns.forEach(col => {
-    const td = trTotal.insertCell();
-    let val = totalRow[col.key];
-    if (col.key === "FinalDevRevenue") {
-      td.textContent = "$" + helpers.numberWithCommas(Math.floor(val));
-      td.setAttribute('align', 'right');
-    } else if (col.key.includes("USD") || col.key.includes("$")) {
-      td.textContent = "$" + helpers.numberWithCommas(val.toFixed(2));
-      td.setAttribute('align', 'right');
-    } else {
-      td.textContent = helpers.numberWithCommas(Math.round(val));
-      td.setAttribute('align', 'right');
-    }
-  });
 
-  // Add group rows
-  groupArr.forEach(row => {
+  const insertSalesTableRow = (tbody, rowData) => {
     const tr = tbody.insertRow();
     const tdKey = tr.insertCell();
-    tdKey.textContent = row.key;
+    tdKey.textContent = rowData.key;
     salesTableColumns.forEach(col => {
       const td = tr.insertCell();
-      let val = row[col.key];
+      let val = rowData[col.key];
       if (col.key === "FinalDevRevenue") {
         td.textContent = "$" + helpers.numberWithCommas(Math.floor(val));
         td.setAttribute('align', 'right');
@@ -192,5 +181,10 @@ const updateSalesTable = (split) => {
         td.setAttribute('align', 'right');
       }
     });
+  }
+
+  insertSalesTableRow(tbody, totalRow);
+  groupArr.forEach(row => {
+    insertSalesTableRow(tbody, row);
   });
 }

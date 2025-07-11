@@ -22,7 +22,7 @@ const getBrowser = () => {
  */
 helpers.numberWithCommas = (x) => {
   // https://stackoverflow.com/questions/2901102/how-to-format-a-number-with-commas-as-thousands-separators
-  return Math.round(x).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+  return Math.floor(x).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
 }
 
 /**
