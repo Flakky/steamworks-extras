@@ -9,7 +9,12 @@ const initOffscreen = async () => {
 
   const offscreenUrl = getBrowser().runtime.getURL('background/offscreen/offscreen.html');
 
-  if (offscreenInitialized) {
+  const existingOffscreen = await getBrowser().runtime.getContexts({
+    contextTypes: ['OFFSCREEN_DOCUMENT'],
+    documentUrls: [offscreenUrl]
+  });
+
+  if (existingOffscreen.length > 0) {
     console.warn('Offscreen document already exists, reusing it');
     return;
   }
@@ -19,8 +24,6 @@ const initOffscreen = async () => {
     reasons: [getBrowser().offscreen.Reason.DOM_PARSER],
     justification: 'Parse HTML using DOM in background script'
   });
-
-  offscreenInitialized = true;
 
   console.debug('Offscreen document created');
 }
