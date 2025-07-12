@@ -420,8 +420,12 @@ const createCountryTableBlock = () => {
 }
 
 const createCountryTable = () => {
+
+  const countryTableContainer = document.createElement('div');
+
   const scrollableBlock = document.createElement('div');
 
+  // Table
   const table = document.createElement('table');
   table.id = 'extra_country_table';
 
@@ -457,9 +461,11 @@ const createCountryTable = () => {
   regionsTable.appendChild(regionsThead);
   regionsTable.appendChild(regionsTbody);
 
+  scrollableBlock.appendChild(table);
   scrollableBlock.appendChild(regionsTable);
 
-  setFlexContentBlockContent('extra_country_table_block', scrollableBlock);
+  countryTableContainer.appendChild(scrollableBlock);
+  setFlexContentBlockContent('extra_country_table_block', countryTableContainer);
 }
 
 const updateCountryTable = () => {
@@ -477,76 +483,75 @@ const updateCountryTable = () => {
   const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
   const dateRangeArray = helpers.getDateRangeArray(dateStart, dateEnd, false, true);
 
-  if (wishlistsForDateRange) {
-    const countryData = {};
+  if (!wishlistsForDateRange) throw new Error('No wishlist data for date range');
 
-    dateRangeArray.forEach(date => {
-      console.log(date);
+  const countryData = {};
 
-      const data = wishlistsForDateRange.find(item => item['Date'] === date);
+  dateRangeArray.forEach(date => {
 
-      if (data) {
-        for (const country in data) {
-          if (['Adds', 'Date', 'Deletes', 'Gifts', 'Activations'].includes(country)) {
-            continue;
-          }
+    const data = wishlistsForDateRange.find(item => item['Date'] === date);
 
-          if (!countryData[country]) {
-            countryData[country] = 0;
-          }
-
-          countryData[country] += data[country];
+    if (data) {
+      for (const country in data) {
+        if (['Adds', 'Date', 'Deletes', 'Gifts', 'Activations'].includes(country)) {
+          continue;
         }
+
+        if (!countryData[country]) {
+          countryData[country] = 0;
+        }
+
+        countryData[country] += data[country];
       }
-    });
+    }
+  });
 
-    const sortedCountries = Object.entries(countryData)
-      .filter(([country, value]) => value > 0)
-      .sort((a, b) => b[1] - a[1]);
+  const sortedCountries = Object.entries(countryData)
+    .filter(([country, value]) => value != 0)
+    .sort((a, b) => b[1] - a[1]);
 
-    sortedCountries.forEach(([country, value]) => {
-      const row = document.createElement('tr');
+  sortedCountries.forEach(([country, value]) => {
+    const row = document.createElement('tr');
 
-      const isRegion = regions.includes(country);
+    const isRegion = regions.includes(country);
 
-      if (!isRegion) {
-        const checkboxCell = document.createElement('td');
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
+    if (!isRegion) {
+      const checkboxCell = document.createElement('td');
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
 
-        if (countryTableBody.children.length < settings.chartMaxBreakdown) {
-          checkbox.checked = true;
+      if (countryTableBody.children.length < settings.chartMaxBreakdown) {
+        checkbox.checked = true;
+        selectedCountries.push(country);
+      }
+
+      checkbox.addEventListener('change', () => {
+        if (checkbox.checked) {
           selectedCountries.push(country);
         }
+        else {
+          selectedCountries = selectedCountries.filter(c => c !== country);
+        }
 
-        checkbox.addEventListener('change', () => {
-          if (checkbox.checked) {
-            selectedCountries.push(country);
-          }
-          else {
-            selectedCountries = selectedCountries.filter(c => c !== country);
-          }
+        if (wishlistChartType === 'Country') updateWishlistChart();
+      });
 
-          if (wishlistChartType === 'Country') updateWishlistChart();
-        });
+      checkboxCell.appendChild(checkbox);
+      row.appendChild(checkboxCell);
+    }
 
-        checkboxCell.appendChild(checkbox);
-        row.appendChild(checkboxCell);
-      }
+    const countryCell = document.createElement('td');
+    countryCell.textContent = country;
 
-      const countryCell = document.createElement('td');
-      countryCell.textContent = country;
+    const valueCell = document.createElement('td');
+    valueCell.textContent = value;
 
-      const valueCell = document.createElement('td');
-      valueCell.textContent = value;
+    row.appendChild(countryCell);
+    row.appendChild(valueCell);
 
-      row.appendChild(countryCell);
-      row.appendChild(valueCell);
-
-      const body = isRegion ? regionTableBody : countryTableBody;
-      body.appendChild(row);
-    });
-  }
+    const body = isRegion ? regionTableBody : countryTableBody;
+    body.appendChild(row);
+  });
 }
 
 const requestWishlistsForDateRange = async () => {
@@ -555,7 +560,7 @@ const requestWishlistsForDateRange = async () => {
   console.log(`Steamworks extras: Requesting wishlist data for date range: ${dateStart} - ${dateEnd}`);
 
   const errorAction = (error) => {
-    console.warn(`Steamworks extras: Some wishlist data in current perioud could not be retrieved from cache.`);
+    console.warn(`Steamworks extras: Some wishlist data in current perioud could not be retrieved from cache.`, error);
 
     const chartCanvas = document.getElementById('extras_wishlist_chart_canvas');
     chartCanvas.style.display = 'none';
@@ -578,7 +583,7 @@ const requestWishlistsForDateRange = async () => {
       console.log(`Steamworks extras: Received wishlist data for date range: ${dateStart} - ${dateEnd}`, response);
 
       if (!response) {
-        errorAction();
+        errorAction('No response');
         return;
       }
 

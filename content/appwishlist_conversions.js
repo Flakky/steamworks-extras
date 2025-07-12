@@ -3,19 +3,19 @@ let wishlists = undefined;
 let conversionsChart = undefined;
 
 const initConversionsChart = async () => {
-  console.log("Steamworks extras: Init");
+  console.log("Steamworks extras: Init wishlist conversions");
 
   createConversionsChartBlock();
 
   const {dateStart, dateEnd} = getDateRangeOfCurrentPage();
 
-  wishlistConversions = await helpers.sendMessageAsync({
-    request: 'getData',
-    type: 'WishlistConversions',
-    dateStart: dateStart,
-    dateEnd: dateEnd,
-    appId: getAppID()
-  });
+  wishlistConversions = await helpers.getDataFromStorage(
+    'WishlistConversions',
+    getAppID(),
+    dateStart,
+    dateEnd,
+    true 
+  );
 
   wishlists = await helpers.getDataFromStorage(
     'Wishlists',
@@ -69,7 +69,6 @@ const updateConversionsChart = () => {
   if (!conversionsChart) return;
 
   let labels = getLabelsForConversionsChart();
-  console.log("Steamworks extras: Labels for conversions chart", labels);
 
   let conversionsData = getConversionRates(labels);
   console.log("Steamworks extras: Rates for conversions chart", conversionsData);
@@ -121,7 +120,6 @@ const getConversionRates = (labels) => {
         return wishlistDate >= monthStart && wishlistDate < monthEnd;
       })
       .reduce((sum, wishlist) => {
-        console.log(wishlist["Adds"]);
         return sum + (wishlist["Adds"] || 0);
       }, 0);
 
@@ -132,8 +130,6 @@ const getConversionRates = (labels) => {
       .reduce((sum, conversion) => sum + conversion["TotalConversions"], 0);
 
     const conversionRate = conversionsForMonth / addsForMonth;
-
-    console.log("Steamworks extras: Conversion rate for month", label, ":", conversionRate, "(", conversionsForMonth, "/", addsForMonth, ")");
 
     return conversionRate * 100; // percentage
   });
