@@ -1,7 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Steamworks extra reports",
+  "name": "Steamworks Extras",
   "version": "2.3.0",
+  "author": "Alex Blintsov",
   "permissions": [
     "storage",
     "offscreen"
@@ -128,6 +129,11 @@
   },
   "action": {
     "default_popup": "popup/popup.html"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "ext@steamextras.com"
+    }
   },
   "icons": {
     "16": "assets/icon-16.png",
