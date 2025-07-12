@@ -73,8 +73,7 @@ const getDateRangeOfCurrentPage = () => {
   console.log(dateStartString)
   console.log(dateEndString)
 
-  let today = helpers.getDateNoOffset();
-  if (today.getHours() < 7) today.setDate(today.getDate() - 1); // Steam still stands on the previous day until 6am UTC
+  let today = helpers.getCalculationToday();
 
   let dateStart = today;
   let dateEnd = today;

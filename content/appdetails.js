@@ -389,8 +389,7 @@ const getDateRangeOfCurrentPage = () => {
   // https://partner.steampowered.com/app/details/AppID/?dateStart=2024-08-21&dateEnd=2024-08-27
   const urlObj = new URL(window.location.href);
 
-  let today = helpers.getDateNoOffset();
-  if (today.getHours() < 7) today.setDate(today.getDate() - 1); // Steam still stands on the previous day until 6am UTC
+  let today = helpers.getCalculationToday();
 
   let dateStart = today;
   let dateEnd = today;

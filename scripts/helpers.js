@@ -117,6 +117,19 @@ helpers.dateToString = (date) => {
   return new Date(date.getTime() - offset).toISOString().split('T')[0];
 }
 
+/**
+ * Returns an array of dates between a given date range.
+ *
+ * @param {Date} dateStart - Start date of the range
+ * @param {Date} dateEnd - End date of the range
+ * @param {boolean} reverse - [Optional] If true, the array will be reversed
+ * @param {boolean} outputDateStrings - [Optional] If true, the array will contain date strings instead of Date objects
+ * @returns {Array} - Array of dates
+ *
+ * @example
+ * // returns ['2020-01-20', '2020-01-21', '2020-01-22']
+ * getDateRangeArray(new Date('2020-01-20'), new Date('2020-01-22'));
+ */
 helpers.getDateRangeArray = (dateStart, dateEnd, reverse, outputDateStrings) => {
   const days = [];
 
@@ -174,6 +187,16 @@ helpers.getCountryRevenue = async (appID, country, dateStart, dateEnd) => {
   return revenue;
 }
 
+/**
+ * Corrects a given date range to be a full day. 
+ *
+ * @param {Date} startDate - Start date of the range
+ * @param {Date} endDate - End date of the range
+ * 
+ * @example
+ * // returns 2025-01-01 00:00:00 and 2025-01-02 23:59:59
+ * correctDateRange(new Date('2025-01-01'), new Date('2025-01-02'));
+ */
 helpers.correctDateRange = (startDate, endDate) => {
   startDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
   endDate = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999);
@@ -184,6 +207,25 @@ helpers.getDateNoOffset = () => {
   return now;
 }
 
+/**
+ * Returns today's date, but if it's before 7am UTC, it returns the previous day. This is because Steam updates date only at 7am UTC for statistics.
+ *
+ * @returns {Date} - Corrected today's date
+ */
+helpers.getCalculationToday = () => {
+  const now = new Date(Date.now());
+  if (now.getUTCHours() < 7) now.setUTCDate(now.getUTCDate() - 1); // Steam still stands on the previous day until 7am UTC
+  return now;
+}
+
+/**
+ * Checks if a given date is in a given date range.
+ *
+ * @param {Date} date - Date to check
+ * @param {Date} startDate - Start date of the range
+ * @param {Date} endDate - End date of the range
+ * @returns {boolean} - True if the date is in the range, false otherwise
+ */
 helpers.isDateInRange = (date, startDate, endDate) => {
   const start = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
   const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999);
@@ -192,6 +234,13 @@ helpers.isDateInRange = (date, startDate, endDate) => {
   return target >= start && target <= end;
 }
 
+/**
+ * Parses a CSV text to an array of objects.
+ *
+ * @param {string} strData - CSV text to parse
+ * @param {string} strDelimiter - [Optional] Delimiter. Default is comma
+ * @returns {Array} - Array of arrays
+ */
 helpers.csvTextToArray = (strData, strDelimiter) => {
   // https://www.bennadel.com/blog/1504-ask-ben-parsing-csv-strings-with-javascript-exec-regular-expression-command.htm
 
@@ -276,12 +325,33 @@ helpers.csvTextToArray = (strData, strDelimiter) => {
   return (arrData);
 }
 
+/**
+ * Sends a message to the background script to get data from storage.
+ *
+ * @param {string} type - Type of the data to get
+ * @param {string} appId - AppID of the game
+ * @param {string} dateStart - Start date of the range
+ * @param {string} dateEnd - End date of the range  
+ * @param {boolean} returnLackData - [Optional] If true, the function will return data even if some of it is not available. Otherwise, it will return undefined if some data is not available.
+ * @returns {Promise} - Promise with the response
+ *
+ * @example
+ * // returns data from storage
+ * await getDataFromStorage('Sales', 123456, new Date('2020-01-20'), new Date('2020-01-22'), true);
+ */
 helpers.getDataFromStorage = async (type, appId, dateStart, dateEnd, returnLackData) => {
   const result = await helpers.sendMessageAsync({ request: 'getData', type: type, appId: appId, dateStart: dateStart, dateEnd: dateEnd, returnLackData: returnLackData });
   console.debug(`Steamworks extras: returning "${type}" data from background: `, result);
   return result;
 }
 
+/**
+ * Creates a message block with a title and a text.
+ *
+ * @param {string} type - Type of the message. Can be 'error' or 'warning'
+ * @param {string} text - Text of the message
+ * @returns {object} - DOM Element
+ */
 helpers.createMessageBlock = (type, text) => {
   const block = document.createElement('div');
   const title = document.createElement('b');
@@ -307,6 +377,13 @@ helpers.createMessageBlock = (type, text) => {
   return block;
 }
 
+/**
+ * Creates a message block with a title and a text.
+ *
+ * @param {string} type - Type of the message. Can be 'error' or 'warning'
+ * @param {string} text - Text of the message
+ * @returns {object} - DOM Element
+ */
 helpers.createMessageText = (type, text) => {
   const block = document.createElement('p');
   const title = document.createElement('b');
@@ -352,6 +429,12 @@ helpers.getDOMLocal = async (url) => {
   return doc;
 }
 
+/**
+ * Sends a message to the background script.
+ *
+ * @param {object} message - Message to send. Must contain 'request' property in order to be recognized.
+ * @returns {Promise} - Promise with the response
+ */
 helpers.sendMessageAsync = (message) => {
   return new Promise((resolve, reject) => {
     getBrowser().runtime.sendMessage(message, (response) => {
