@@ -17,7 +17,7 @@
 </div>
 
 ## Features
-- Improved sales chart with different data types and view categories
+- Improved sales chart and table with different data types and view categories
 - Enhanced wishlists chart with splits by countries and regions, including an extra table with regional wishlist information
 - Reviews chart, along with a table of reviews divided by language
 - Enhanced traffic chart with the ability to see any categories by impressions, visits, and even click-through rate
