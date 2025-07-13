@@ -219,13 +219,9 @@ const getRevenuePercentageMap = (gross, net, usGross) => {
 
   const usRevenueShare = (usGross <= 0 ? 0 : usGross) * (grossRevenue <= 0 ? 0 : 1 / grossRevenue);
 
-  console.log('us share: ' + usRevenueShare);
-
   out.gross = 1.0;
   out.net = netRevenue / grossRevenue;
   out.royaltyAfterSteamShare = out.net * 0.7;
-
-  console.log('net share: ' + out.net);
 
   out.royaltyAfterUSShare = out.royaltyAfterSteamShare - (((out.net * usRevenueShare) * 0.7) * settings.usSalesTax / 100);
   out.royaltyAfterExtraGrossTake = out.royaltyAfterUSShare - (out.gross * (settings.grossRoyalties / 100));
