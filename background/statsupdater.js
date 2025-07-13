@@ -67,6 +67,10 @@ const fetchTrafficData = async (appID) => {
       const dateString = helpers.dateToString(date);
 
       const hasData = trafficData.some((data) => {
+        // If page category is not a string, then the data is not valid or skipped for some reason
+        if (typeof data['PageCategory'] !== 'string') {
+          return false;
+        }
         const sameDate = data['Date'] === dateString;
         return sameDate;
       });
