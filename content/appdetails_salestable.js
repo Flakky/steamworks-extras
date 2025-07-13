@@ -44,12 +44,24 @@ const createSalesTable = () => {
     return selectElem;
   }
 
-  createTableSelect([
+  // Get date range to determine if we should show Date filter
+  const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
+  const isSingleDay = helpers.dateToString(dateStart) === helpers.dateToString(dateEnd);
+  
+  const viewByOptions = [
     "Country",
     "Region",
     "Currency",
     "Platform"
-  ], 'View by', salesTableSplit, (select) => {
+  ];
+
+  if (!isSingleDay) {
+    viewByOptions.unshift("Date");
+  }
+
+  salesTableSplit = isSingleDay ? "Country" : "Date";
+
+  createTableSelect(viewByOptions, 'View by', salesTableSplit, (select) => {
     salesTableSplit = select.value;
     updateSalesTable(salesTableSplit);
   });
@@ -71,11 +83,8 @@ const createSalesTable = () => {
     }
     headerRow.appendChild(th);
   });
-
-//  const th = document.createElement('th');
-//  headerRow.appendChild(th);
   
-  // Wrapper is for margin
+  // Wrapper is for margin because tables do not support margin in browsers
   const wrapperDiv = document.createElement('div');
   wrapperDiv.id = 'extras_sales_table_header';
   wrapperDiv.appendChild(headerTableElem);
@@ -143,6 +152,10 @@ const updateSalesTable = (split) => {
     let usGross = 0;
     if (split === "Country" && key === "United States") {
       usGross = gross;
+    } else if (split === "Date") {
+      usGross = salesForDateRange
+        .filter(item => item["Date"] === key && item["Country"] === "United States")
+        .reduce((sum, item) => sum + (item["Gross Steam Sales (USD)"] || 0), 0);
     }
     const rev = getRevenueMap(gross, gross * grossNetRatio, usGross);
 
@@ -153,8 +166,13 @@ const updateSalesTable = (split) => {
     };
   });
 
-  const sortKey = "Gross Steam Sales (USD)";
-  groupArr.sort((a, b) => b[sortKey] - a[sortKey]);
+  // Sort
+  if (split === "Date") {
+    groupArr.sort((a, b) => new Date(b.key) - new Date(a.key));
+  } else {
+    const sortKey = "Gross Steam Sales (USD)";
+    groupArr.sort((a, b) => b[sortKey] - a[sortKey]);
+  }
 
   // Calculate total row
   const totalRow = salesTableColumns.reduce((acc, col) => {
@@ -168,6 +186,15 @@ const updateSalesTable = (split) => {
   if (split === "Country") {
     const usGroup = groupArr.find(row => row.key === "United States");
     if (usGroup) totalUsGross = usGroup["Gross Steam Sales (USD)"] || 0;
+  } else if (split === "Date") {
+    // For date grouping, sum up all US sales across all dates
+    totalUsGross = groupArr.reduce((sum, row) => {
+      // Find US sales for this date from the original data
+      const dateUsSales = salesForDateRange
+        .filter(item => item["Date"] === row.key && item["Country"] === "United States")
+        .reduce((dateSum, item) => dateSum + (item["Gross Steam Sales (USD)"] || 0), 0);
+      return sum + dateUsSales;
+    }, 0);
   }
 
   const { finalRevenue } = getRevenueMap(totalGross, totalGross * grossNetRatio, totalUsGross);
