@@ -113,8 +113,7 @@ helpers.tryConvertStringToNumber = (str) => {
  * await dateToString(new Date('2020-01-20'));
  */
 helpers.dateToString = (date) => {
-  const offset = date.getTimezoneOffset() * 60000;
-  return new Date(date.getTime() - offset).toISOString().split('T')[0];
+  return date.toISOString().split('T')[0];
 }
 
 /**
@@ -197,9 +196,22 @@ helpers.getCountryRevenue = async (appID, country, dateStart, dateEnd) => {
  * // returns 2025-01-01 00:00:00 and 2025-01-02 23:59:59
  * correctDateRange(new Date('2025-01-01'), new Date('2025-01-02'));
  */
-helpers.correctDateRange = (startDate, endDate) => {
-  startDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-  endDate = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999);
+helpers.correctDateRange = (dateStart, dateEnd) => {
+  dateStart = new Date(Date.UTC(
+    dateStart.getUTCFullYear(),
+    dateStart.getUTCMonth(),
+    dateStart.getUTCDate(),
+    0, 0, 0, 0
+  ));
+
+  dateEnd = new Date(Date.UTC(
+    dateEnd.getUTCFullYear(),
+    dateEnd.getUTCMonth(),
+    dateEnd.getUTCDate(),
+    23, 59, 59, 999
+  ));
+
+  return { dateStart: dateStart, dateEnd: dateEnd };
 }
 
 helpers.getDateNoOffset = () => {
@@ -227,11 +239,22 @@ helpers.getCalculationToday = () => {
  * @returns {boolean} - True if the date is in the range, false otherwise
  */
 helpers.isDateInRange = (date, startDate, endDate) => {
-  const start = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-  const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999);
-  const target = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0); // To be sure the date is inside start and end
+  const start = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getUTCDate());
+  const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getUTCDate(), 23, 59, 59, 999);
+  const target = new Date(date.getFullYear(), date.getMonth(), date.getUTCDate(), 12, 0, 0, 0); // To be sure the date is inside start and end
 
   return target >= start && target <= end;
+}
+
+/**
+ * Converts a date string in format "YYYY-MM-DD" (UTC) to a Date object.
+ *
+ * @param {string} dateString - Date string in format "YYYY-MM-DD"
+ * @returns {Date} - Date object
+ */
+helpers.dateFromString = (dateString) => {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
 }
 
 /**

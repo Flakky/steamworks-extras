@@ -389,25 +389,25 @@ const getDateRangeOfCurrentPage = () => {
   // https://partner.steampowered.com/app/details/AppID/?dateStart=2024-08-21&dateEnd=2024-08-27
   const urlObj = new URL(window.location.href);
 
+  const urlParams = urlObj.searchParams
+
   let today = helpers.getCalculationToday();
 
   let dateStart = today;
   let dateEnd = today;
 
-  const isToday = urlObj.searchParams.get('specialPeriod') === 'today';
+  const isToday = urlParams.get('specialPeriod') === 'today'
+                  ||(!urlParams.has('dateStart') && !urlParams.has('dateEnd'));
 
   if(!isToday){
-    const dateStartString = urlObj.searchParams.get('dateStart');
-    const dateEndString = urlObj.searchParams.get('dateEnd');
+    const dateStartString = urlParams.get('dateStart');
+    const dateEndString = urlParams.get('dateEnd');
 
-    console.log(dateStartString)
-    console.log(dateEndString)
-
-    if (!helpers.isStringEmpty(dateStartString)) dateStart = new Date(dateStartString);
-    if (!helpers.isStringEmpty(dateEndString)) dateEnd = new Date(dateEndString);
+    if (!helpers.isStringEmpty(dateStartString)) dateStart = helpers.dateFromString(dateStartString);
+    if (!helpers.isStringEmpty(dateEndString)) dateEnd = helpers.dateFromString(dateEndString);
   }
 
-  helpers.correctDateRange(dateStart, dateEnd);
+  ({dateStart, dateEnd} = helpers.correctDateRange(dateStart, dateEnd));
 
   return { dateStart: dateStart, dateEnd: dateEnd };
 }
@@ -426,15 +426,19 @@ const requestSales = async () => {
     const date = new Date(item["Date"]);
     return helpers.isDateInRange(date, dateStart, dateEnd);
   });
-
+  
   // US sales for tax calculation purposes
   usRevenueForDateRange = salesForDateRange
-    .filter(item => item["Country"] === "United States")
-    .reduce((sum, item) => sum + (item["Gross Steam Sales (USD)"] || 0), 0);
-
+  .filter(item => item["Country"] === "United States")
+  .reduce((sum, item) => sum + (item["Gross Steam Sales (USD)"] || 0), 0);
+  
   usRevenue = salesAllTime
-    .filter(item => item["Country"] === "United States")
-    .reduce((sum, item) => sum + (item["Gross Steam Sales (USD)"] || 0), 0);
+  .filter(item => item["Country"] === "United States")
+  .reduce((sum, item) => sum + (item["Gross Steam Sales (USD)"] || 0), 0);
+  
+  console.debug('Steamworks extras: Sales data for range: ', salesForDateRange);
+  console.debug('Steamworks extras: US sales data: ', usRevenue);
+  console.debug('Steamworks extras: US sales data for range: ', usRevenueForDateRange);
 
   createSalesChart();
   updateSalesChart(chartSplit, chartValueType);
