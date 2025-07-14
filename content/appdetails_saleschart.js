@@ -98,6 +98,7 @@ const updateSalesChart = (split, valueType) => {
   }
 
   const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
+  const oneDay = helpers.dateToString(dateStart) === helpers.dateToString(dateEnd);
 
   // Fill labels (dates) for chart
   let labels = [];
@@ -134,6 +135,11 @@ const updateSalesChart = (split, valueType) => {
     }
   });
 
+  // Floor all gross values in grossByDateAndSplit
+  Object.values(grossByDateAndSplit).forEach(entry => {
+    entry.gross = entry.gross.map(val => Math.floor(val));
+  });
+
   // Filter only top entries by total value
   const entriesWithSum = Object.entries(grossByDateAndSplit).map(([key, value]) => {
     const grossSum = value.gross.reduce((acc, cur) => acc + cur, 0);
@@ -149,15 +155,12 @@ const updateSalesChart = (split, valueType) => {
     return obj;
   }, {});
 
-  // Determine if we only have one day
-  const oneDay = helpers.dateToString(dateStart) === helpers.dateToString(dateEnd);
-
   // Fill chart data set
   const datasets = [];
 
   if (oneDay) {
     labels = Object.keys(top10EntriesObject);
-    const data = Object.entries(top10EntriesObject).map(([key, value]) => value.gross);
+    const data = Object.entries(top10EntriesObject).map(([key, value]) => value.gross[0]);
     const colors = Object.entries(top10EntriesObject).map(([key, value]) => {
       return chartColors[key] || `rgb(${30 + Math.round(Math.random() * 225)}, ${30 + Math.round(Math.random() * 225)}, ${30 + Math.round(Math.random() * 225)})`;
     });
