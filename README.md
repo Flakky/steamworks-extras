@@ -5,10 +5,6 @@
 [![GitHub License][github_license_badge]][github_license_link]
 [![DeepWiki][deepwiki_badge]][deepwiki_link]
 
-[![][chrome_ext_badge]][chrome_ext_link]
-[![][chrome_store_rating_badge]][chrome_ext_link]
-[![][chrome_store_users_badge]][chrome_ext_link]
-
 **This extension shows additional information about your games in Steamworks report pages.**
 
 [How to install](https://github.com/Flakky/steamworks-extras/wiki/How-to-install) | [Discord](https://discord.gg/zmpUPnP4BM) | [FAQ](https://github.com/Flakky/steamworks-extras/wiki/FAQ) | [Report an issue](https://github.com/Flakky/steamworks-extras/issues)
@@ -29,19 +25,26 @@
 > [!NOTE]
 > The extension collects information about your game and stores it locally. The extension does not send your data anywhere outside your browser.
 
-## Install
+## Get the extension
 
-### Chrome store
-Go to the Chrome extensions store and simply install it.
+<h3><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Google_Chrome_icon_%28February_2022%29.svg/64px-Google_Chrome_icon_%28February_2022%29.svg.png" width=30px height=30x> Chrome</h3>
+
+[![][chrome_store_rating_badge]][chrome_ext_link]
+[![][chrome_store_users_badge]][chrome_ext_link]
+
+Install from Chrome extensions store:
 
 https://chromewebstore.google.com/detail/steamworks-extra-reports/cdobnjfogldjaihapojppnopiaccgpag
 
-### Developer mode
+You can also [install the extension in developer mode](https://github.com/Flakky/steamworks-extras/wiki/How-to-install#install-in-developer-mode).
 
-1. Clone the repository or simply download it as a zip archive and extract it to some folder.
-2. Go to `chrome://extensions/`
-3. Enable Developer Mode
-4. Use "Load unpacked" and select directory wich contains `manifest.json` file.
+<h3><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Firefox_logo%2C_2019.png/960px-Firefox_logo%2C_2019.png" width=30px height=30x> Firefox</h3>
+
+[![][firefox_users_badge]][firefox_ext_link]
+
+Install from Firefox Add-ons webpage:
+
+https://addons.mozilla.org/en-US/firefox/addon/steamworks-extras/
 
 ## Setup
 
@@ -60,6 +63,11 @@ The extension has an options page where you can set up all the revenue shares an
 
 [chrome_store_rating_badge]: https://img.shields.io/chrome-web-store/rating/cdobnjfogldjaihapojppnopiaccgpag
 [chrome_store_users_badge]: https://img.shields.io/chrome-web-store/users/cdobnjfogldjaihapojppnopiaccgpag
+
+[firefox_ext_badge]: https://img.shields.io/badge/Firefox_Addon-test
+[firefox_ext_link]: https://addons.mozilla.org/en-US/firefox/addon/steamworks-extras/
+
+[firefox_users_badge]: https://img.shields.io/amo/users/steamworks-extras
 
 [deepwiki_badge]: https://deepwiki.com/badge.svg
 [deepwiki_link]: https://deepwiki.com/Flakky/steamworks-extras
