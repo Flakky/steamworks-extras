@@ -118,7 +118,7 @@ const createToolbarBlock = (appID) => {
     {
       label: 'Regional reports',
       links: [
-        { text: 'Regional sales report', href: `https://partner.steampowered.com/region/${appID}/` },
+        { text: 'Regional sales report', href: `https://partner.steampowered.com/region/?appID=${appID}` },
         { text: 'Regional key activations report', href: `https://partner.steampowered.com/cdkeyreport.php?appID=${appID}` },
         { text: 'Downloads by Region', href: `https://partner.steampowered.com/nav_regions.php?downloads=1&appID=${appID}` }
       ]
