@@ -84,6 +84,24 @@
         "styles/partner_steampowered_shared.css",
         "styles/appwishlist.css"
       ]
+    },
+    {
+      "matches": [
+        "https://partner.steampowered.com/package/refunds/*"
+      ],
+      "js": [
+        "scripts/chart.umd.min.js",
+        "shared/statusblock.js",
+        "scripts/helpers.js",
+        "data/defaultsettings.js",
+        "content/pageblocks.js",
+        "content/refunds_table.js",
+        "content/refunds.js"
+      ],
+      "css": [
+        "styles/partner_steampowered_shared.css",
+        "styles/refunds.css"
+      ]
     }
   ],
   "web_accessible_resources": [
