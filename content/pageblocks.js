@@ -4,7 +4,7 @@
  * @param {string} id - The unique identifier for the content block
  * @returns {HTMLElement} The created content block element
  */
-const createFlexContentBlock = (title, id) => {
+const createFlexContentBlock = (title, id, addToContent = true) => {
   const newBlockElem = document.createElement('div');
   newBlockElem.id = id;
   newBlockElem.classList.add('extra_content_block');
@@ -18,7 +18,7 @@ const createFlexContentBlock = (title, id) => {
   loaderDiv.classList.add('loader');
   newBlockElem.appendChild(loaderDiv);
 
-  getCustomContentBlock().appendChild(newBlockElem);
+  if(addToContent) getCustomContentBlock().appendChild(newBlockElem);
 
   return newBlockElem;
 }

@@ -105,7 +105,7 @@ getBrowser().runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "parseDOM":
       {
         (async () => {
-          const data = await bghelpers.parseDataFromPage(message.url, message.type);
+          const data = message.htmlText ? await parseDOM(message.htmlText, message.type) : await bghelpers.parseDataFromPage(message.url, message.type);
           console.debug(`Steamworks extras: returning DOM parsed "${message.type}" data from background: `, data);
           sendResponse(data);
         })(); break;

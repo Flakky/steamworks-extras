@@ -3,11 +3,13 @@
 }
 
 #extra_main_content_block {
+  max-width: 2000px;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-
   align-content: flex-start;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 #extra_main_content_block .extra_content_block {

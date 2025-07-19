@@ -96,6 +96,8 @@
         "data/defaultsettings.js",
         "content/pageblocks.js",
         "content/refunds_table.js",
+        "content/refunds_reasonstable.js",
+        "content/refunds_chart.js",
         "content/refunds.js"
       ],
       "css": [

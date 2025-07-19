@@ -24,6 +24,12 @@ parser.parseDocument = (htmlText, parseType) => {
       case 'followers':
         result = parser.parseFollowers(doc);
         break;
+      case 'RefundStats':
+        result = parser.parseRefundStats(doc);
+        break;
+      case 'RefundComments':
+        result = parser.parseRefundComments(doc);
+        break;
     }
   }
   catch (error) {
@@ -163,4 +169,101 @@ parser.parseFollowers = (doc) => {
   } else {
     console.log("No followers match found");
   }
+}
+
+parser.parseRefundStats = (doc) => {
+  const contentCenter = doc.querySelector('.content_center');
+  if (!contentCenter) {
+    throw new Error('No element with class "content_center" found');
+  }
+
+  const tables = contentCenter.querySelectorAll('table');
+
+  const table = tables[0];
+  if (!table) {
+    throw new Error('No table found in content_center');
+  }
+
+  const rows = table.querySelectorAll('tbody tr');
+  if (rows.length === 0) {
+    throw new Error('No rows found in table');
+  }
+
+  let stats = {};
+
+  rows.forEach(row => {
+    const cells = row.querySelectorAll('td');
+
+    if (cells.length >= 3) {
+      const firstCellText = cells[0].textContent.trim();
+      const secondCellText = cells[1].textContent.trim();
+      const thirdCellText = cells[2].textContent.trim();
+      
+      const value = parseFloat(secondCellText) || 0;
+      const percentage = parseFloat(thirdCellText.replace(/,/g, '')) || 0;
+
+
+      if (firstCellText === 'Gross units returned') {
+        stats.grossUnits = value;
+        stats.grossUnitsPercentage = percentage;
+      } else if (firstCellText === 'Refunded units') {
+        stats.units = value;
+        stats.unitsPercentage = percentage;
+      }
+    }
+  });
+
+  if (tables.length >= 2) {
+    const reasonsTable = tables[1];
+    const reasonRows = reasonsTable.querySelectorAll('tbody tr');
+    const refundReasons = [];
+
+    reasonRows.forEach(row => {
+      const tds = row.querySelectorAll('td');
+      if (tds.length >= 2) {
+        const a = tds[0].querySelector('a');
+        if (a && a.getAttribute('onclick')) {
+          const onclick = a.getAttribute('onclick');
+
+          // Extract category ID from onclick="Refund_LoadText( '723544', '115' ); return false;"
+          const match = onclick.match(/Refund_LoadText\(\s*'[^']*',\s*'(\d+)'\s*\)/);
+
+          if (match) {
+            const id = parseInt(match[1], 10);
+            const category = a.textContent.trim();
+            const amountText = tds[1].textContent.replace(/,/g, '').trim();
+            const amount = parseInt(amountText, 10) || 0;
+            refundReasons.push({ id, category, amount });
+          }
+        }
+      }
+    });
+    
+    stats.refundReasons = refundReasons;
+  }
+
+  return stats;
+}
+
+parser.parseRefundComments = (doc) => {
+  const comments = [];
+  const table = doc.querySelector('.refund_notes_table');
+  if (table) {
+    const rows = table.querySelectorAll('tr');
+    rows.forEach(row => {
+      const obj = {};
+      const langElem = row.querySelector('.refund_note_language');
+      const textElem = row.querySelector('.refund_note_text');
+      if (langElem) {
+        obj.language = langElem.textContent.replace(/^\(|\)$/g, '').trim();
+      }
+      if (textElem) {
+        obj.text = textElem.textContent.trim();
+      }
+      if (obj.text) {
+        comments.push(obj);
+      }
+    });
+  }
+  return comments;
 }

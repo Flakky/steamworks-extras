@@ -198,18 +198,3 @@ const updateRefundsTable = (split) => {
     insertRefundsTableRow(tbody, row);
   });
 }
-
-
-function getRefundPercentageColor(percentage) {
-  const startColor = { r: 0, g: 220, b: 0 };
-  const endColor = { r: 220, g: 0, b: 0 };
-  const min = 8;
-  const max = 20;
-  const clamped = Math.max(min, Math.min(max, percentage));
-  const factor = (clamped - min) / (max - min);
-  return {
-    r: Math.round(startColor.r + factor * (endColor.r - startColor.r)),
-    g: Math.round(startColor.g + factor * (endColor.g - startColor.g)),
-    b: Math.round(startColor.b + factor * (endColor.b - startColor.b))
-  };
-}
