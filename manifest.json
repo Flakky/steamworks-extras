@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Steamworks Extras",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "author": "Alex Blintsov",
   "permissions": [
     "storage",
