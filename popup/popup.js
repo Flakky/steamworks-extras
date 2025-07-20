@@ -9,6 +9,10 @@ document.addEventListener('DOMContentLoaded', () => {
   bindButton('gitButton', () => {
     openLink('https://github.com/Flakky/steamworks-extras');
   });
+  bindButton('updateButton', () => {
+    getBrowser().runtime.sendMessage({ request: "updateStats" }, res => { });
+    updateStatus();
+  });
 
   const statusBlock = createStatusBlockElement();
   document.body.appendChild(statusBlock);

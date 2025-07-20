@@ -110,11 +110,21 @@ getBrowser().runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse(data);
         })(); break;
       };
-      case "parsedDOM":
-        {
-          processParsedDOM(message);
-          break;
-        }
+    case "parsedDOM":
+      {
+        processParsedDOM(message);
+        break;
+      }
+    case "updateStats":
+      {
+        (async () => {
+          console.log('Steamworks extras: Update stats');
+          const appIDs = await getAppIDs();
+          updateStats(appIDs);
+          updateStatsStatus();
+          return appIDs;
+        })(); break;
+      };
     default:
       {
         console.debug(`Steamworks extras: Unknown request "${message.request}" from background`);
