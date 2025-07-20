@@ -3,7 +3,7 @@ if (typeof browser == "undefined") {
   globalThis.browser = chrome;
 
   console.log('Steamworks extras: Importing scripts');
-  
+
   importScripts('../data/defaultsettings.js');
   importScripts('../scripts/helpers.js');
   importScripts('offscreen/offscreenmanager.js');
@@ -295,7 +295,7 @@ const parseAppIDs = async () => {
 
 const getAppIDs = async () => {
   console.log('Steamworks extras: Getting AppIDs');
-  
+
   let result = await getBrowser().storage.local.get("appIDs");
 
   console.log('Steamworks extras: AppIDs: ', result);
@@ -309,6 +309,14 @@ const getAppIDs = async () => {
   }
   else {
     appIDs = result.appIDs;
+  }
+
+  const ignoredResult = await getBrowser().storage.local.get("ignoredAppIDs");
+  const ignoredAppIDs = ignoredResult.ignoredAppIDs || [];
+
+  if (ignoredAppIDs.length > 0) {
+    appIDs = appIDs.filter(appID => !ignoredAppIDs.includes(appID));
+    console.log('Steamworks extras: Filtered AppIDs (removed ignored): ', appIDs);
   }
 
   return appIDs;
@@ -365,14 +373,17 @@ const initIDs = async () => {
     return false;
   }
 
+  // Get filtered appIDs (excluding ignored ones) for package ID initialization
+  const filteredAppIDs = await getAppIDs();
+
   let packageIDs = {};
-  for (const appID of appIDs) {
+  for (const appID of filteredAppIDs) {
     const IDs = await getPackageIDs(appID);
 
     packageIDs[appID] = IDs;
   }
 
-  console.log('Steamworks extras: AppIDs and PackageIDs have been initialized.', appIDs, packageIDs);
+  console.log('Steamworks extras: AppIDs and PackageIDs have been initialized.', filteredAppIDs, packageIDs);
   return true;
 }
 
