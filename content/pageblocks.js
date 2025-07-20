@@ -113,6 +113,7 @@ const createToolbarBlock = (appID) => {
         { text: 'Steamworks page', href: `https://partner.steamgames.com/apps/landing/${appID}` },
         { text: 'Sales', href: `https://partner.steampowered.com/app/details/${appID}/${dateParamsString}` },
         { text: 'Wishlists', href: `https://partner.steampowered.com/app/wishlist/${appID}/${dateParamsString}` },
+        { text: 'Traffic', href: `https://partner.steamgames.com/apps/navtrafficstats/${appID}` },
       ]
     },
     {
