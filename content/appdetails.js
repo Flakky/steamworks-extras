@@ -88,7 +88,7 @@ const getTotalRevenue = (gross) => {
   return revenueNumber;
 }
 
-constupdateSummaryRowUnderExtend = (index, title, description, calculation) => {
+const updateSummaryRowUnderExtend = (index, title, description, calculation) => {
   const cell = helpers.findElementByText('td', title);
   let row = helpers.findParentByTag(cell, 'tr');
 
