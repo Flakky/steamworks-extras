@@ -10,6 +10,10 @@ const initSettings = () => {
     document.getElementById('show_percentages').checked = result.showPercentages || defaultSettings.showPercentages;
     document.getElementById('chart_max_breakdown').value = result.chartMaxBreakdown || defaultSettings.chartMaxBreakdown;
     document.getElementById('update_period').value = result.statsUpdateInterval || defaultSettings.statsUpdateInterval;
+
+    // Handle ignored AppIDs - convert array to comma-separated string for display
+    const ignoredAppIDs = result.ignoredAppIDs || defaultSettings.ignoredAppIDs;
+    document.getElementById('ignored_app_ids').value = ignoredAppIDs.join(', ');
   });
 
   document.getElementById('save').addEventListener('click', saveSettings);
@@ -39,6 +43,14 @@ const saveSettings = () => {
   result.chartMaxBreakdown = document.getElementById('chart_max_breakdown').valueAsNumber;
   result.statsUpdateInterval = document.getElementById('update_period').valueAsNumber;
 
+  // Handle ignored AppIDs - convert comma-separated string to array
+  const ignoredAppIDsText = document.getElementById('ignored_app_ids').value.trim();
+  if (ignoredAppIDsText) {
+    result.ignoredAppIDs = ignoredAppIDsText.split(',').map(id => id.trim()).filter(id => id.length > 0);
+  } else {
+    result.ignoredAppIDs = [];
+  }
+
   getBrowser().storage.local.set(result, () => {
     alert('Settings saved!');
   });
@@ -47,6 +59,12 @@ const saveSettings = () => {
 const generateCacheTable = async () => {
   const data = await getBrowser().storage.local.get('appIDs');
   const appIDs = data.appIDs || [];
+
+  // Filter out ignored AppIDs for cache table
+  const ignoredData = await getBrowser().storage.local.get('ignoredAppIDs');
+  const ignoredAppIDs = ignoredData.ignoredAppIDs || [];
+  const filteredAppIDs = appIDs.filter(appID => !ignoredAppIDs.includes(appID));
+
   const table = document.querySelector('#cache table tbody');
 
   const pagesCreationDateResult = await getBrowser().storage.local.get("pagesCreationDate");
@@ -96,7 +114,7 @@ const generateCacheTable = async () => {
     table.deleteRow(1);
   }
 
-  appIDs.forEach(async (appID, index) => {
+  filteredAppIDs.forEach(async (appID, index) => {
     const row = document.createElement('tr');
 
     const cell = document.createElement('td');
