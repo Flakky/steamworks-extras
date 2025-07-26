@@ -1,11 +1,11 @@
 class StorageActionRequestSales extends StorageAction {
-  constructor(appID) {
-    super();
+  constructor(appID, settings = new StorageActionSettings()) {
+    super(settings);
     this.appID = appID;
   }
 
   async process() {
-    await requestSalesData(this.appID);
+    return await requestSalesData(this.appID);
   }
 
   getType() {
@@ -14,13 +14,12 @@ class StorageActionRequestSales extends StorageAction {
 }
 
 class StorageActionGetSales extends StorageAction {
-  constructor(appID, dateStart, dateEnd, returnLackData) {
-    super();
+  constructor(appID, dateStart, dateEnd, returnLackData, settings = new StorageActionSettings()) {
+    super(settings);
     this.appID = appID;
     this.dateStart = dateStart;
     this.dateEnd = dateEnd;
     this.returnLackData = returnLackData;
-    this.executeTimeout = 10;
   }
 
   async process() {

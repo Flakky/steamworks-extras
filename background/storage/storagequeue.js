@@ -2,11 +2,23 @@ let queue = [];
 let processingAction = null;
 let failedActions = [];
 
+class StorageActionSettings {
+  constructor({
+    executeTimeout = 20, // In seconds
+    minimalExecutionTime = 0 // In milliseconds
+  } = {}) {
+    this.executeTimeout = executeTimeout;
+    this.minimalExecutionTime = minimalExecutionTime;
+  }
+}
+
 class StorageAction {
-  constructor() {
+  constructor(settings = new StorageActionSettings()) {
     this.result = null;
-    this.executeTimeout = 20; // In seconds
+    this.executeTimeout = settings.executeTimeout;
+    this.minimalExecutionTime = settings.minimalExecutionTime;
     this.timedout = false;
+    this.completed = false;
   }
 
   addAndWait(insertFirst = false) {
@@ -21,22 +33,48 @@ class StorageAction {
     const promise = this.getPromise();
 
     this.timeoutHandle = setTimeout(() => { this.timeout() }, this.executeTimeout * 1000);
+    
+    // Minimal execution timer
+    if(this.minimalExecutionTime > 0) {
+      this.minimalTimerHandle = setTimeout(() => {
+        this.minimalTimerComplete = true;
+        if (this.completed && !this.timedout) {
+          this.resolve(this.result);
+        }
+      }, this.minimalExecutionTime);
+    }
+    else {
+      this.minimalTimerComplete = true;
+    }
 
+    // Action execution
     try {
       this.process()
         .then(r => {
           this.result = r;
-          if (!this.timedout) this.resolve(r)
+          this.completed = true;
+
+          if (!this.timedout) {
+            if (this.minimalTimerComplete) {
+              this.resolve(r);
+            }
+          }
         })
         .catch(e => {
-          if (!this.timedout) this.reject(e);
+          this.completed = true;
+          if (!this.timedout) {
+            this.reject(e);
+          }
         })
         .finally(() => {
           clearTimeout(this.timeoutHandle);
         });
     }
     catch (e) {
-      if (this.reject !== undefined) this.reject(e);
+      this.completed = true;
+      if (this.reject !== undefined) {
+        this.reject(e);
+      }
     }
 
     return promise;
@@ -54,6 +92,7 @@ class StorageAction {
 
   timeout() {
     this.timedout = true;
+    clearTimeout(this.minimalTimerHandle);
     this.reject(new Error(`Storage action timed out: `, this));
   }
 

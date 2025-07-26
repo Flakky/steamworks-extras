@@ -10,6 +10,7 @@ const initSettings = () => {
     document.getElementById('show_percentages').checked = result.showPercentages || defaultSettings.showPercentages;
     document.getElementById('chart_max_breakdown').value = result.chartMaxBreakdown || defaultSettings.chartMaxBreakdown;
     document.getElementById('update_period').value = result.statsUpdateInterval || defaultSettings.statsUpdateInterval;
+    document.getElementById('requests_period').value = result.requestsMinPeriod || defaultSettings.requestsMinPeriod;
   });
 
   document.getElementById('save').addEventListener('click', saveSettings);
@@ -38,6 +39,7 @@ const saveSettings = () => {
   result.showPercentages = document.getElementById('show_percentages').checked;
   result.chartMaxBreakdown = document.getElementById('chart_max_breakdown').valueAsNumber;
   result.statsUpdateInterval = document.getElementById('update_period').valueAsNumber;
+  result.requestsMinPeriod = document.getElementById('requests_period').valueAsNumber;
 
   getBrowser().storage.local.set(result, () => {
     alert('Settings saved!');

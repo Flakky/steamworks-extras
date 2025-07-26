@@ -1,11 +1,11 @@
 class StorageActionRequestWishlistConversions extends StorageAction {
-  constructor(appID) {
-    super();
+  constructor(appID, settings = new StorageActionSettings()) {
+    super(settings);
     this.appID = appID;
   }
 
   async process() {
-    await requestWishlistConversionsData(this.appID);
+    return await requestWishlistConversionsData(this.appID);
   }
 
   getType() {
@@ -14,13 +14,12 @@ class StorageActionRequestWishlistConversions extends StorageAction {
 }
 
 class StorageActionGetWishlistConversions extends StorageAction {
-  constructor(appID, dateStart, dateEnd, returnLackData) {
-    super();
+  constructor(appID, dateStart, dateEnd, returnLackData, settings = new StorageActionSettings()) {
+    super(settings);
     this.appID = appID;
     this.dateStart = dateStart;
     this.dateEnd = dateEnd;
     this.returnLackData = returnLackData;
-    this.executeTimeout = 10;
   }
 
   async process() {

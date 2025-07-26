@@ -81,8 +81,10 @@ const fetchTrafficData = async (appID) => {
 
   console.debug(`Steamworks extras: Missing traffic dates for app ${appID}:`, missingDates);
 
+  const actionSettings = await makeActionSettings();
+
   for (const date of missingDates) {
-    addToQueue(new StorageActionRequestTraffic(appID, date));
+    addToQueue(new StorageActionRequestTraffic(appID, date, actionSettings));
   }
 }
 
@@ -152,8 +154,10 @@ const fetchWishlistsData = async (appID) => {
 
   console.debug(`Steamworks extras: Missing wishlist dates for app ${appID}:`, missingDates);
 
+  const actionSettings = await makeActionSettings();
+
   for (const date of missingDates) {
-    addToQueue(new StorageActionRequestRegionalWishlists(appID, date));
+    addToQueue(new StorageActionRequestRegionalWishlists(appID, date, actionSettings));
   }
 }
 
@@ -166,4 +170,11 @@ const updateStatsStatus = () => {
   else {
     setExtentionStatus(0);
   }
+}
+
+const makeActionSettings = async () => {
+  const extSettings = await getBrowser().storage.local.get(Object.keys(defaultSettings));
+  const actionSettings = new StorageActionSettings();
+  actionSettings.minimalExecutionTime = extSettings.requestsMinPeriod || 1000;
+  return actionSettings;
 }

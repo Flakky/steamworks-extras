@@ -8,5 +8,6 @@ const defaultSettings = {
   "showZeroRevenues": false,
   "showPercentages": false,
   "chartMaxBreakdown": 10,
-  "statsUpdateInterval": 60
+  "statsUpdateInterval": 60,
+  "requestsMinPeriod": 1000
 }

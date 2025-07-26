@@ -109,15 +109,16 @@ th {
 }
 
 .table_value {
-  width: 80px;
+  width: 120px;
 }
 
 .table_value input {
+  width: 100%;
   background-color: #333;
   color: #ffffff;
   border: 0px;
   height: 20px;
-  margin: 0 5px 0 5px;
+  margin: 0 0px 0 0px;
 }
 
 #cache table {

@@ -1,12 +1,11 @@
 class StorageActionRequestReviews extends StorageAction {
-  constructor(appID) {
-    super();
+  constructor(appID, settings = new StorageActionSettings()) {
+    super(settings);
     this.appID = appID;
-    this.executeTimeout = 30;
   }
 
   async process() {
-    await requestAllReviewsData(this.appID);
+    return await requestAllReviewsData(this.appID);
   }
 
   getType() {
@@ -15,13 +14,12 @@ class StorageActionRequestReviews extends StorageAction {
 }
 
 class StorageActionGetReviews extends StorageAction {
-  constructor(appID, dateStart, dateEnd, returnLackData) {
-    super();
+  constructor(appID, dateStart, dateEnd, returnLackData, settings = new StorageActionSettings()) {
+    super(settings);
     this.appID = appID;
     this.dateStart = dateStart;
     this.dateEnd = dateEnd;
     this.returnLackData = returnLackData;
-    this.executeTimeout = 10;
   }
 
   async process() {
