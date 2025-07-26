@@ -1,14 +1,15 @@
-document.addEventListener('requestTrafficData', function (e) {
-  console.log('Steamworks extras: Requesting traffic data: ', e.detail);
+document.addEventListener('ExtensionRequest', function (e) {
+  console.log('Steamworks extras: Requesting data: ', e);
+  const request = e.detail;
+  const requestId = request.requestId;
+  console.log('Steamworks extras: Requesting data: ', request);
 
   (async () => {
-    await initGameStatsStorage('2004080', 1);
-    const trafficData = await getlTrafficData('2004080', new Date('2024-09-20'), new Date());
+    const data = await helpers.sendMessageAsync(request.data);
 
-    const event = new CustomEvent('trafficDataResponse', {
-      detail: { 'traffic': trafficData }
-    });
-    document.dispatchEvent(event);
+    console.log("Steamworks extras: sending requested data back: ", data);
+
+    window.postMessage({ type: 'ExtensionResponse', requestId: requestId, data: data }, '*');
   })();
 
 }, false);
@@ -17,4 +18,4 @@ const init = () => {
   console.log('Steamworks extras: Init');
 }
 
-document.addEventListener('DOMContentLoaded', init);
+init();
