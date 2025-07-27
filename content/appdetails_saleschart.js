@@ -94,7 +94,7 @@ const updateSalesChart = (split, valueType) => {
   if (!salesChart) return;
 
   if (salesForDateRange === undefined) {
-    console.log("Steamworks extras: Sales for Date Rage are not yet ready to be used in sales chart");
+    console.log("Sales for Date Rage are not yet ready to be used in sales chart");
   }
 
   const { dateStart, dateEnd } = getDateRangeOfCurrentPage();

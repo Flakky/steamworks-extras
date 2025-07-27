@@ -1,5 +1,5 @@
 document.addEventListener('requestTrafficData', function (e) {
-  console.log('Steamworks extras: Requesting traffic data: ', e.detail);
+  console.log('Requesting traffic data: ', e.detail);
 
   (async () => {
     await initGameStatsStorage('2004080', 1);
@@ -14,7 +14,7 @@ document.addEventListener('requestTrafficData', function (e) {
 }, false);
 
 const init = () => {
-  console.log('Steamworks extras: Init');
+  console.log('Init');
 }
 
 document.addEventListener('DOMContentLoaded', init);

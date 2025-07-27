@@ -19,7 +19,7 @@ const regions = [
 let selectedCountries = [];
 
 const init = async () => {
-  console.log("Steamworks extras: Init");
+  console.log("Init");
 
   settings = await getBrowser().storage.local.get(defaultSettings);
 
@@ -345,7 +345,7 @@ const createWishlistChart = () => {
 const updateWishlistChart = () => {
   if (!wishlistsForDateRange) return;
 
-  console.log('Steamworks extras: Updating wishlist chart');
+  console.log('Updating wishlist chart');
 
   const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
   const dateRangeArray = helpers.getDateRangeArray(dateStart, dateEnd, false, true);
@@ -469,7 +469,7 @@ const createCountryTable = () => {
 }
 
 const updateCountryTable = () => {
-  console.log('Steamworks extras: Updating wishlist country table');
+  console.log('Updating wishlist country table');
 
   const countryTable = document.getElementById('extra_country_table');
   const countryTableBody = countryTable.querySelector('tbody');
@@ -557,10 +557,10 @@ const updateCountryTable = () => {
 const requestWishlistsForDateRange = async () => {
   const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
 
-  console.log(`Steamworks extras: Requesting wishlist data for date range: ${dateStart} - ${dateEnd}`);
+  console.log(`Requesting wishlist data for date range: ${dateStart} - ${dateEnd}`);
 
   const errorAction = (error) => {
-    console.warn(`Steamworks extras: Some wishlist data in current perioud could not be retrieved from cache.`, error);
+    console.warn(`Some wishlist data in current perioud could not be retrieved from cache.`, error);
 
     const chartCanvas = document.getElementById('extras_wishlist_chart_canvas');
     chartCanvas.style.display = 'none';
@@ -580,7 +580,7 @@ const requestWishlistsForDateRange = async () => {
 
   helpers.sendMessageAsync({ request: 'getData', type: 'Wishlists', appId: getAppID(), dateStart: dateStart, dateEnd: dateEnd, returnLackData: false })
     .then(response => {
-      console.log(`Steamworks extras: Received wishlist data for date range: ${dateStart} - ${dateEnd}`, response);
+      console.log(`Received wishlist data for date range: ${dateStart} - ${dateEnd}`, response);
 
       if (!response) {
         errorAction('No response');

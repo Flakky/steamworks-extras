@@ -33,10 +33,10 @@ const createReasonsTable = () => {
   const reasonsLastWeek = (refundStats[1] && refundStats[1].refundReasons) || {};
   const reasonsLastMonth = (refundStats[2] && refundStats[2].refundReasons) || {};
 
-  console.log('Steamworks extras: Reasons: ', refundStats);
-  console.log('Steamworks extras: Reasons lifetime: ', reasonsLifetime);
-  console.log('Steamworks extras: Reasons last week: ', reasonsLastWeek);
-  console.log('Steamworks extras: Reasons last month: ', reasonsLastMonth);
+  console.log('Reasons: ', refundStats);
+  console.log('Reasons lifetime: ', reasonsLifetime);
+  console.log('Reasons last week: ', reasonsLastWeek);
+  console.log('Reasons last month: ', reasonsLastMonth);
 
   // Get all unique reasons
   const allReasons = new Set([
@@ -45,16 +45,16 @@ const createReasonsTable = () => {
     ...(reasonsLastMonth.map(r => r.category))
   ]);
 
-  console.log('Steamworks extras: All reasons: ', allReasons);
+  console.log('All reasons: ', allReasons);
 
   // Get total refunds for each period
   const totalLifetime = reasonsLifetime.reduce((a, b) => a + (b.amount || 0), 0);
   const totalLastWeek = reasonsLastWeek.reduce((a, b) => a + (b.amount || 0), 0);
   const totalLastMonth = reasonsLastMonth.reduce((a, b) => a + (b.amount || 0), 0);
 
-  console.log('Steamworks extras: Total lifetime: ', totalLifetime);
-  console.log('Steamworks extras: Total last week: ', totalLastWeek);
-  console.log('Steamworks extras: Total last month: ', totalLastMonth);
+  console.log('Total lifetime: ', totalLifetime);
+  console.log('Total last week: ', totalLastWeek);
+  console.log('Total last month: ', totalLastMonth);
 
   // Create table body
   const tbody = tableElem.createTBody();
@@ -64,7 +64,7 @@ const createReasonsTable = () => {
 
     const reasonObj = reasonsLifetime.find(r => r.category === reason);
 
-    console.log('Steamworks extras: Reason: ', reason);
+    console.log('Reason: ', reason);
 
     // Reason
     const tdReason = row.insertCell();
@@ -163,7 +163,7 @@ const getRefundComments = async (reasonID) => {
     credentials: 'include'
   });
 
-  console.log('Steamworks extras: Response: ', response);
+  console.log('Response: ', response);
 
   if (!response.ok) {
     console.error('Failed to fetch refund comments:', response.status, response.statusText);
@@ -171,7 +171,7 @@ const getRefundComments = async (reasonID) => {
   }
   const data = await response.json();
 
-  console.log('Steamworks extras: Data: ', data);
+  console.log('Data: ', data);
   
   const result = await helpers.sendMessageAsync({
     request: 'parseDOM',
@@ -179,7 +179,7 @@ const getRefundComments = async (reasonID) => {
     type: 'RefundComments'
   });
 
-  console.log('Steamworks extras: Result: ', result);
+  console.log('Result: ', result);
  
   return result;
 }

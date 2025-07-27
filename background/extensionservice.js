@@ -2,9 +2,10 @@ if (typeof browser == "undefined") {
   // Chrome does not support the browser namespace yet.
   globalThis.browser = chrome;
 
-  console.log('Steamworks extras: Importing scripts');
+  console.log('Importing scripts');
 
   importScripts('../data/defaultsettings.js');
+  importScripts('../shared/log.js');
   importScripts('../scripts/helpers.js');
   importScripts('offscreen/offscreenmanager.js');
   importScripts('../scripts/parser.js');
@@ -32,14 +33,14 @@ getBrowser().runtime.onInstalled.addListener(async () => {
 
     if (Object.keys(settingsToStore).length > 0) {
       getBrowser().storage.local.set(settingsToStore, () => {
-        console.log('Steamworks extras: Default settings have been initialized.');
+        console.log('Default settings have been initialized.');
       });
     }
   });
 });
 
 getBrowser().runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.debug(`Steamworks extras: Background message: `, message);
+  console.debug(`Background message: `, message);
 
   switch (message.request) {
     case "showOptions":
@@ -89,7 +90,7 @@ getBrowser().runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "getStatus":
       {
         (async () => {
-          console.log('Steamworks extras: Get status');
+          console.log('Get status');
           const status = await getStatus();
           sendResponse(status);
         })(); break;
@@ -98,7 +99,7 @@ getBrowser().runtime.onMessage.addListener((message, sender, sendResponse) => {
       {
         (async () => {
           const data = await getDataFromDB(message.type, message.appId, message.dateStart, message.dateEnd, message.returnLackData);
-          console.debug(`Steamworks extras: returning "${message.type}" data from background: `, data);
+          console.debug(`returning "${message.type}" data from background: `, data);
           sendResponse(data);
         })(); break;
       };
@@ -106,7 +107,7 @@ getBrowser().runtime.onMessage.addListener((message, sender, sendResponse) => {
       {
         (async () => {
           const data = message.htmlText ? await parseDOM(message.htmlText, message.type) : await bghelpers.parseDataFromPage(message.url, message.type);
-          console.debug(`Steamworks extras: returning DOM parsed "${message.type}" data from background: `, data);
+          console.debug(`returning DOM parsed "${message.type}" data from background: `, data);
           sendResponse(data);
         })(); break;
       };
@@ -118,7 +119,7 @@ getBrowser().runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "updateStats":
       {
         (async () => {
-          console.log('Steamworks extras: Update stats');
+          console.log('Update stats');
           const appIDs = await getAppIDs();
           updateStats(appIDs);
           updateStatsStatus();
@@ -127,7 +128,7 @@ getBrowser().runtime.onMessage.addListener((message, sender, sendResponse) => {
       };
     default:
       {
-        console.debug(`Steamworks extras: Unknown request "${message.request}" from background`);
+        console.debug(`Unknown request "${message.request}" from background`);
         sendResponse({ error: "Unknown request" });
         return false;
       }
@@ -141,7 +142,7 @@ getBrowser().runtime.onMessageExternal.addListener((message, sender, sendRespons
     return;
   }
 
-  console.debug(`Steamworks extras: External message: `, message);
+  console.debug(`External message: `, message);
 
   (async () => {
     switch (message.request) {
@@ -153,7 +154,7 @@ getBrowser().runtime.onMessageExternal.addListener((message, sender, sendRespons
 });
 
 const showOptions = () => {
-  console.log('Steamworks extras: Show options')
+  console.log('Show options')
   getBrowser().runtime.openOptionsPage();
 }
 
@@ -216,17 +217,17 @@ const makeRequest = async (url, params) => {
 }
 
 const parsePackageIDs = async (appID) => {
-  console.log('Steamworks extras: Parsing PackageIDs for appID: ', appID);
+  console.log('Parsing PackageIDs for appID: ', appID);
 
   let result = await getBrowser().storage.local.get("packageIDs");
 
   let packageIDs = result.packageIDs === undefined ? {} : result.packageIDs;
 
   const IDs = await bghelpers.getPackageIDs(appID, false);
-  console.debug('Steamworks extras: Package IDs for app ', appID, ': ', IDs);
+  console.debug('Package IDs for app ', appID, ': ', IDs);
 
   if (IDs === undefined || !Array.isArray(IDs)) {
-    console.error(`Steamworks extras: Could not parse package IDs for app ${appID}`);
+    console.error(`Could not parse package IDs for app ${appID}`);
     return undefined;
   }
 
@@ -234,7 +235,7 @@ const parsePackageIDs = async (appID) => {
 
   await getBrowser().storage.local.set({ packageIDs: packageIDs });
 
-  console.log(`Steamworks extras: Package IDs have been updated for app ${appID}: `, packageIDs);
+  console.log(`Package IDs have been updated for app ${appID}: `, packageIDs);
 
   return packageIDs;
 }
@@ -256,11 +257,11 @@ const getPackageIDs = async (appID) => {
 }
 
 const parseAppIDs = async () => {
-  console.log('Steamworks extras: Parsing AppIDs');
+  console.log('Parsing AppIDs');
 
   const appIDs = await bghelpers.parseDataFromPage('https://partner.steampowered.com/nav_games.php', 'parseAppIDs');
 
-  console.log('Steamworks extras: AppIDs: ', appIDs);
+  console.log('AppIDs: ', appIDs);
 
   const nonRedirectedAppIDs = [];
 
@@ -268,7 +269,7 @@ const parseAppIDs = async () => {
     try {
       const response = await fetch(`https://store.steampowered.com/app/${appID}`, { redirect: 'manual' });
 
-      console.log(`Steamworks extras: Checking appID ${appID} for redirection: `, response.status);
+      console.log(`Checking appID ${appID} for redirection: `, response.status);
 
       if (response.status === 200) {
         nonRedirectedAppIDs.push(appID);
@@ -288,17 +289,17 @@ const parseAppIDs = async () => {
 
   await getBrowser().storage.local.set({ appIDs: mergedAppIDs });
 
-  console.log('Steamworks extras: AppIDs: ', mergedAppIDs);
+  console.log('AppIDs: ', mergedAppIDs);
 
   return mergedAppIDs;
 }
 
 const getAppIDs = async () => {
-  console.log('Steamworks extras: Getting AppIDs');
+  console.log('Getting AppIDs');
 
   let result = await getBrowser().storage.local.get("appIDs");
 
-  console.log('Steamworks extras: AppIDs: ', result);
+  console.log('AppIDs: ', result);
 
   let appIDs = undefined;
 
@@ -316,14 +317,14 @@ const getAppIDs = async () => {
 
   if (ignoredAppIDs.length > 0) {
     appIDs = appIDs.filter(appID => !ignoredAppIDs.includes(appID));
-    console.log('Steamworks extras: Filtered AppIDs (removed ignored): ', appIDs);
+    console.log('Filtered AppIDs (removed ignored): ', appIDs);
   }
 
   return appIDs;
 }
 
 const parsePageCreationDate = async (appID) => {
-  console.log('Steamworks extras: Parsing page creation date for appID: ', appID);
+  console.log('Parsing page creation date for appID: ', appID);
 
   let result = await getBrowser().storage.local.get("pagesCreationDate");
   let pagesCreationDate = result.pagesCreationDate || {};
@@ -334,13 +335,13 @@ const parsePageCreationDate = async (appID) => {
 
   if (date === undefined || !(date instanceof Date)) return undefined;
 
-  console.log(`Steamworks extras: Page creation date for ${appID}: `, date);
+  console.log(`Page creation date for ${appID}: `, date);
 
   pagesCreationDate[appID] = date.toISOString();
 
   await getBrowser().storage.local.set({ 'pagesCreationDate': pagesCreationDate });
 
-  console.log(`Steamworks extras: Page creation date for ${appID}: `, date);
+  console.log(`Page creation date for ${appID}: `, date);
 
   return date;
 }
@@ -365,11 +366,11 @@ const getPageCreationDate = async (appID) => {
 }
 
 const initIDs = async () => {
-  console.log('Steamworks extras: Init AppIDs and PackageIDs');
+  console.log('Init AppIDs and PackageIDs');
 
   const appIDs = await parseAppIDs();
   if (!Array.isArray(appIDs) || appIDs.length === 0) {
-    console.error('Steamworks extras: No appIDs found');
+    console.error('No appIDs found');
     return false;
   }
 
@@ -383,7 +384,7 @@ const initIDs = async () => {
     packageIDs[appID] = IDs;
   }
 
-  console.log('Steamworks extras: AppIDs and PackageIDs have been initialized.', filteredAppIDs, packageIDs);
+  console.log('AppIDs and PackageIDs have been initialized.', filteredAppIDs, packageIDs);
   return true;
 }
 
@@ -393,10 +394,10 @@ const initIDsWithRetry = async (interval = 5) => {
     try {
       success = await initIDs();
     } catch (error) {
-      console.error('Steamworks extras: Error during initIDs:', error);
+      console.error('Error during initIDs:', error);
     }
     if (!success) {
-      console.log(`Steamworks extras: Retry initializing in ${interval} seconds...`);
+      console.log(`Retry initializing in ${interval} seconds...`);
       setExtentionStatus(101);
       await new Promise(resolve => setTimeout(resolve, interval * 1000));
     }
@@ -404,11 +405,11 @@ const initIDsWithRetry = async (interval = 5) => {
 }
 
 const initPageCreationDates = async () => {
-  console.log('Steamworks extras: Init PageCreationDates');
+  console.log('Init PageCreationDates');
 
   const appIDs = await getAppIDs();
   if (appIDs.length === 0) {
-    console.error('Steamworks extras: No appIDs found.');
+    console.error('No appIDs found.');
     return;
   }
 
@@ -416,7 +417,7 @@ const initPageCreationDates = async () => {
     await getPageCreationDate(appID);
   }
 
-  console.log('Steamworks extras: PageCreationDates have been initialized.');
+  console.log('PageCreationDates have been initialized.');
 }
 
 const initPageCreationDatesWithRetry = async (interval = 5) => {
@@ -426,7 +427,7 @@ const initPageCreationDatesWithRetry = async (interval = 5) => {
       await initPageCreationDates();
       success = true;
     } catch (error) {
-      console.error('Steamworks extras: Error during initPageCreationDates:', error);
+      console.error('Error during initPageCreationDates:', error);
       setExtentionStatus(102, { error: error.message });
       await new Promise(resolve => setTimeout(resolve, interval * 1000));
     }
@@ -434,7 +435,7 @@ const initPageCreationDatesWithRetry = async (interval = 5) => {
 }
 
 const init = async () => {
-  console.log('Steamworks extras: Init');
+  console.log('Init');
 
   setExtentionStatus(10);
 
@@ -444,7 +445,7 @@ const init = async () => {
 
   const appIDs = await getAppIDs();
   if (appIDs.length === 0) {
-    console.error('Steamworks extras: No appIDs found.');
+    console.error('No appIDs found.');
     return;
   }
 
@@ -454,10 +455,10 @@ const init = async () => {
 
   startUpdatingStats(appIDs);
 
-  console.log("Steamworks extras: Extension service initiated");
+  console.log("Extension service initiated");
 }
 
 init().catch(error => {
-  console.error('Steamworks extras: Error while initializing extension service: ', error);
+  console.error('Error while initializing extension service: ', error);
   setExtentionStatus(100, { error: error.message });
 });

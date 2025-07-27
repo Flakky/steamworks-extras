@@ -34,7 +34,7 @@ class StorageActionGetTraffic extends StorageAction {
 }
 
 const requestAllTrafficData = async (appID) => {
-  console.log(`Steamworks extras: Requesting all traffic data for app ${appID}`);
+  console.log(`Requesting all traffic data for app ${appID}`);
 
   let records = await readData(appID, 'Traffic');
 
@@ -42,14 +42,14 @@ const requestAllTrafficData = async (appID) => {
 
   const pageCreationDate = await bghelpers.getPageCreationDate(appID);
 
-  console.log(`Steamworks extras: Cached traffic dates:`, cachedDates)
+  console.log(`Cached traffic dates:`, cachedDates)
 
   let date = new Date();
   date.setDate(date.getDate() - 1);
   while (true) {
 
     if (date < pageCreationDate) {
-      console.log(`Steamworks extras: Stop receiving traffic data because we reached page creation date`);
+      console.log(`Stop receiving traffic data because we reached page creation date`);
       return;
     }
 
@@ -89,7 +89,7 @@ const requestTrafficData = async (appID, date) => {
   const pageCreationDate = await bghelpers.getPageCreationDate(appID);
 
   if (date < pageCreationDate) {
-    console.error(`Steamworks extras: Cannot request traffic data for date ${date} because it is before page creation date`);
+    console.error(`Cannot request traffic data for date ${date} because it is before page creation date`);
     return;
   }
 
@@ -98,18 +98,18 @@ const requestTrafficData = async (appID, date) => {
 
   const URL = `https://partner.steamgames.com/apps/navtrafficstats/${appID}?attribution_filter=all&preset_date_range=custom&start_date=${formattedDate}&end_date=${formattedDate}&format=csv`;
 
-  console.debug(`Steamworks extras: Request traffic in CSV for ${formattedDate}. URL: ${URL}`);
+  console.debug(`Request traffic in CSV for ${formattedDate}. URL: ${URL}`);
 
   const response = await fetch(URL);
 
   const responseText = await response.text();
 
   if (responseText === undefined || responseText === '') {
-    throw new Error(`Steamworks extras: Received no response instead of CSV while requesting traffic data for date ${formattedDate}`);
+    throw new Error(`Received no response instead of CSV while requesting traffic data for date ${formattedDate}`);
   }
 
   if (responseText.includes('<html')) {
-    throw new Error(`Steamworks extras: Received HTML response instead of CSV while requesting traffic data for date ${formattedDate}`);
+    throw new Error(`Received HTML response instead of CSV while requesting traffic data for date ${formattedDate}`);
   }
 
   let lines = responseText.split('\n');
@@ -124,7 +124,7 @@ const requestTrafficData = async (appID, date) => {
   lines = helpers.csvTextToArray(csvString);
 
   if (lines.length === 1) {
-    console.log(`Steamworks extras: No traffic results for ${formattedDate}`);
+    console.log(`No traffic results for ${formattedDate}`);
     return false;
   };
 
@@ -149,7 +149,7 @@ const requestTrafficData = async (appID, date) => {
       return line['PageCategory'] !== undefined && line['PageFeature'] !== undefined;
     });
 
-  console.debug(`Steamworks extras: Traffic results for ${formattedDate}`, result);
+  console.debug(`Traffic results for ${formattedDate}`, result);
 
   // Make sure empty dates also get saved so we do not request it again
   if (result.length === 0) {
@@ -159,7 +159,7 @@ const requestTrafficData = async (appID, date) => {
     });
   }
 
-  console.log(`Steamworks extras: Writing traffic data for ${formattedDate}`, result);
+  console.log(`Writing traffic data for ${formattedDate}`, result);
 
   await writeData(appID, 'Traffic', result);
 

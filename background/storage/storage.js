@@ -18,7 +18,7 @@ const initStorageForAppIDs = async (appIDs) => {
       await initGameStatsStorage(appID, 1);
     }
     catch (e) {
-      console.error(`Steamworks extras: Error while initializing game stats storage for app ${appID}: `, e);
+      console.error(`Error while initializing game stats storage for app ${appID}: `, e);
       setExtensionStatus(103, { error: e.message });
     }
   }
@@ -30,15 +30,15 @@ const initGameStatsStorage = (appID, index) => {
     gameStatsStorage = undefined;
   }
 
-  console.log(`Steamworks Extras: Initializing game stats storage for app ${appID} with index ${index}`);
+  console.log(`Initializing game stats storage for app ${appID} with index ${index}`);
 
   return new Promise((resolve, reject) => {
-    console.log(`Steamworks Extras: Init database for app ${appID} with index ${index}`);
+    console.log(`Init database for app ${appID} with index ${index}`);
 
     gameStatsStorage = undefined;
 
     if (index > MAX_RETRY_COUNT) {
-      console.error(`Steamworks Extras: Max retry count on DB open reached for app ${appID}`);
+      console.error(`Max retry count on DB open reached for app ${appID}`);
       reject();
       return;
     }
@@ -49,12 +49,12 @@ const initGameStatsStorage = (appID, index) => {
       if (request === undefined) return;
       request = undefined;
 
-      console.log(`Steamworks Extras: Database opened with index ${index}`);
+      console.log(`Database opened with index ${index}`);
 
       gameStatsStorage = event.target.result;
 
       if (!gameStatsStorage) {
-        console.debug(`Steamworks Extras: Database is not valid for app ${appID} with index ${index}. Trying next index...`);
+        console.debug(`Database is not valid for app ${appID} with index ${index}. Trying next index...`);
         initGameStatsStorage(appID, index + 1).then(resolve).catch(reject);
       }
 
@@ -63,7 +63,7 @@ const initGameStatsStorage = (appID, index) => {
         for (const table of tables) {
           const storeName = `${appID}_${table.name}`;
           if (!isObjectStoreCorrect(gameStatsStorage, storeName, table.key)) {
-            console.warn(`Steamworks Extras: Object store "${storeName}" is not correct. Closing and reopening the database...`);
+            console.warn(`Object store "${storeName}" is not correct. Closing and reopening the database...`);
             gameStatsStorage.close();
             gameStatsStorage = undefined;
             initGameStatsStorage(appID, index + 1).then(resolve).catch(reject);
@@ -72,7 +72,7 @@ const initGameStatsStorage = (appID, index) => {
         }
       }
 
-      console.log(`Steamworks Extras: Database initialized for app ${appID} with index ${index}`);
+      console.log(`Database initialized for app ${appID} with index ${index}`);
       console.log(gameStatsStorage.objectStoreNames);
 
       resolve();
@@ -84,13 +84,13 @@ const initGameStatsStorage = (appID, index) => {
 
       gameStatsStorage = event.target.result;
 
-      console.log(`Steamworks Extras: Database update for app ${appID} with index ${index}`);
+      console.log(`Database update for app ${appID} with index ${index}`);
 
       for (const table of tables) {
         try {
           gameStatsStorage.createObjectStore(`${appID}_${table.name}`, { keyPath: table.key });
         } catch (e) {
-          console.log(`Steamworks Extras: Table "${table.name}" already exists for app ${appID}: `, e);
+          console.log(`Table "${table.name}" already exists for app ${appID}: `, e);
         }
       }
 
@@ -104,7 +104,7 @@ const initGameStatsStorage = (appID, index) => {
       if (request === undefined) return;
       request = undefined;
 
-      console.debug(`Steamworks Extras: Failed to open the database for app ${appID} with index ${index}:`, event);
+      console.debug(`Failed to open the database for app ${appID} with index ${index}:`, event);
 
       gameStatsStorage = event.target.result;
 
@@ -123,7 +123,7 @@ const isObjectStoreCorrect = (storage, storeName, expectedKeyPath) => {
 
   const objectStore = storage.transaction(storeName, 'readonly').objectStore(storeName);
 
-  console.debug(`Steamworks Extras: Checking object store "${storeName}" with key path "${objectStore.keyPath}" (Expected: "${expectedKeyPath}")`);
+  console.debug(`Checking object store "${storeName}" with key path "${objectStore.keyPath}" (Expected: "${expectedKeyPath}")`);
 
   if (Array.isArray(expectedKeyPath) && Array.isArray(objectStore.keyPath)) {
     return expectedKeyPath.length === objectStore.keyPath.length &&
@@ -237,11 +237,11 @@ const writeData = (appID, type, data) => {
       }
     }
     catch (e) {
-      console.error(`Steamworks extras: Failed to write data to storage (${appID})"${type}": `, data, e);
+      console.error(`Failed to write data to storage (${appID})"${type}": `, data, e);
     }
 
     transaction.oncomplete = () => {
-      console.debug(`Steamworks extras: Data "${type}"(${appID}) written to storage: `, data);
+      console.debug(`Data "${type}"(${appID}) written to storage: `, data);
       resolve();
     }
 

@@ -3,7 +3,7 @@ const startUpdatingStats = async (appIDs) => {
 
   const updateIntervalObject = await getBrowser().storage.local.get(`statsUpdateInterval`);
   const updateInterval = updateIntervalObject.statsUpdateInterval || 60;
-  console.debug(`Steamworks extras: Stats update interval:`, updateInterval);
+  console.debug(`Stats update interval:`, updateInterval);
 
   setInterval(() => {
     updateStats(appIDs);
@@ -29,13 +29,13 @@ const updateStats = async (appIDs) => {
     }
   }
   catch (error) {
-    console.error('Steamworks extras: Error while updating stats: ', error);
+    console.error('Error while updating stats: ', error);
   }
 }
 
 const fetchAllData = async (appID) => {
 
-  console.log(`Steamworks extras: Fetching data for appID: ${appID}`);
+  console.log(`Fetching data for appID: ${appID}`);
 
   fetchSalesData(appID);
   fetchReviewsData(appID);
@@ -79,7 +79,7 @@ const fetchTrafficData = async (appID) => {
     });
   }
 
-  console.debug(`Steamworks extras: Missing traffic dates for app ${appID}:`, missingDates);
+  console.debug(`Missing traffic dates for app ${appID}:`, missingDates);
 
   for (const date of missingDates) {
     addToQueue(new StorageActionRequestTraffic(appID, date));
@@ -150,7 +150,7 @@ const fetchWishlistsData = async (appID) => {
     });
   }
 
-  console.debug(`Steamworks extras: Missing wishlist dates for app ${appID}:`, missingDates);
+  console.debug(`Missing wishlist dates for app ${appID}:`, missingDates);
 
   for (const date of missingDates) {
     addToQueue(new StorageActionRequestRegionalWishlists(appID, date));
@@ -159,7 +159,7 @@ const fetchWishlistsData = async (appID) => {
 
 const updateStatsStatus = () => {
   const queueLength = queue.filter(item => item.getType().includes("Request")).length;
-  console.debug(`Steamworks extras: Queue length:`, queueLength);
+  console.debug(`Queue length:`, queueLength);
   if (queueLength > 0) {
     setExtentionStatus(11, { queueLength: queueLength });
   }

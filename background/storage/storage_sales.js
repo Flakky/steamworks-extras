@@ -41,14 +41,14 @@ const requestSalesData = async (appID) => {
   const formattedStartDate = helpers.dateToString(startDate);
   const formattedEndDate = helpers.dateToString(endDate);
 
-  console.log(`Steamworks extras: Request sales in CSV between ${formattedStartDate} and ${formattedEndDate}`);
+  console.log(`Request sales in CSV between ${formattedStartDate} and ${formattedEndDate}`);
 
   const packageIDs = await bghelpers.getAppPackageIDs(appID);
 
-  console.debug(`Steamworks extras: Package IDs found for app ${appID}:`, packageIDs);
+  console.debug(`Package IDs found for app ${appID}:`, packageIDs);
 
   if (packageIDs === undefined || !Array.isArray(packageIDs) || packageIDs.length === 0) {
-    console.error(`Steamworks extras: No package IDs found for app ${appID}`);
+    console.error(`No package IDs found for app ${appID}`);
     return;
   }
 
@@ -73,11 +73,11 @@ const requestSalesData = async (appID) => {
   const htmlText = await response.text();
 
   if (htmlText === undefined || htmlText === '') {
-    throw new Error(`Steamworks extras: Received no response instead of CSV while requesting sales data`);
+    throw new Error(`Received no response instead of CSV while requesting sales data`);
   }
 
   if (htmlText.includes('<html')) {
-    throw new Error('Steamworks extras: Received HTML response instead of CSV while requesting sales data');
+    throw new Error('Received HTML response instead of CSV while requesting sales data');
   }
 
   let lines = htmlText.split('\n');
@@ -86,7 +86,7 @@ const requestSalesData = async (appID) => {
 
   // Ensure that we have lines to process
   if (lines.length === 0) {
-    console.log(`Steamworks extras: No sales data found in CSV`);
+    console.log(`No sales data found in CSV`);
     return [];
   }
 
@@ -112,7 +112,7 @@ const requestSalesData = async (appID) => {
     return object;
   });
 
-  console.log(`Steamworks extras: Sales CSV result:`, result);
+  console.log(`Sales CSV result:`, result);
 
   await writeData(appID, 'Sales', result);
 }
@@ -122,7 +122,7 @@ const getAllSalesData = async (appID) => {
   let records = await readData(appID, 'Sales');
 
   if (records.length === 0) {
-    console.log(`Steamworks extras: No sales data found in DB. Requesting from server...`);
+    console.log(`No sales data found in DB. Requesting from server...`);
     await requestSalesData(appID);
     records = await readData(appID, 'Sales');
   }

@@ -181,7 +181,7 @@ helpers.getCountryRevenue = async (appID, country, dateStart, dateEnd) => {
     revenue += item["Gross Steam Sales (USD)"];
   });
 
-  console.log(`Steamworks extras: ${country} revenue share between ${formattedStartDate} and ${formattedEndDate}: ${revenue}`);
+  console.log(`${country} revenue share between ${formattedStartDate} and ${formattedEndDate}: ${revenue}`);
 
   return revenue;
 }
@@ -364,7 +364,7 @@ helpers.csvTextToArray = (strData, strDelimiter) => {
  */
 helpers.getDataFromStorage = async (type, appId, dateStart, dateEnd, returnLackData) => {
   const result = await helpers.sendMessageAsync({ request: 'getData', type: type, appId: appId, dateStart: dateStart, dateEnd: dateEnd, returnLackData: returnLackData });
-  console.debug(`Steamworks extras: returning "${type}" data from background: `, result);
+  console.debug(`returning "${type}" data from background: `, result);
   return result;
 }
 

@@ -8,7 +8,7 @@ let chartCategories = [];
 let chartSubcategories = [];
 
 const init = async () => {
-  console.log("Steamworks extras: Init");
+  console.log("Init");
 
   getBrowser().storage.local.get(defaultSettings, async (result) => {
     settings = result;
@@ -79,7 +79,7 @@ const readChartColors = () => {
 }
 
 const initTrafficData = async () => {
-  console.log("Steamworks extras: Requesting reviews data");
+  console.log("Requesting reviews data");
 
   const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
 

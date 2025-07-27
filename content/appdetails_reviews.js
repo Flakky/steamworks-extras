@@ -3,11 +3,11 @@ let reviewsChart = undefined;
 let reviewChartSplit = "Vote";
 
 const requestReviews = () => {
-  console.log("Steamworks extras: Requesting reviews data");
+  console.log("Requesting reviews data");
 
   helpers.sendMessageAsync({ request: 'getData', type: 'Reviews', appId: getAppID() }).then((response) => {
     reviews = response;
-    console.log("Steamworks extras: Reviews data received: ", reviews);
+    console.log("Reviews data received: ", reviews);
 
     createReviewsChart();
     createReviewsTable();
@@ -221,7 +221,7 @@ const updateReviewsChart = () => {
 
   reviewsChart.update();
 
-  console.log("Steamworks extras: Reviews chart updated");
+  console.log("Reviews chart updated");
 }
 
 const updateReviewsSummary = () => {

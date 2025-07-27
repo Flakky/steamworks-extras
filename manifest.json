@@ -27,6 +27,7 @@
         "https://localhost:3000/*"
       ],
       "js": [
+        "shared/log.js",
         "scripts/helpers.js",
         "data/defaultsettings.js",
         "content/site.js"
@@ -37,6 +38,7 @@
         "https://partner.steampowered.com/app/details/*"
       ],
       "js": [
+        "shared/log.js",
         "scripts/chart.umd.min.js",
         "shared/statusblock.js",
         "scripts/helpers.js",
@@ -57,6 +59,7 @@
         "https://partner.steamgames.com/apps/navtrafficstats/*"
       ],
       "js": [
+        "shared/log.js",
         "scripts/chart.umd.min.js",
         "shared/statusblock.js",
         "scripts/helpers.js",
@@ -73,6 +76,7 @@
         "https://partner.steampowered.com/app/wishlist/*"
       ],
       "js": [
+        "shared/log.js",
         "scripts/chart.umd.min.js",
         "shared/statusblock.js",
         "scripts/helpers.js",
@@ -91,6 +95,7 @@
         "https://partner.steampowered.com/package/refunds/*"
       ],
       "js": [
+        "shared/log.js",
         "scripts/chart.umd.min.js",
         "shared/statusblock.js",
         "scripts/helpers.js",
@@ -130,6 +135,7 @@
   "options_page": "options/options.html",
   "background": {
     "scripts": [
+      "shared/log.js",
       "data/defaultsettings.js",
       "scripts/helpers.js",
       "background/offscreen/offscreenmanager.js",

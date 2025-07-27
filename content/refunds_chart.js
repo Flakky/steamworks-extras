@@ -92,7 +92,7 @@ const updateRefundsChart = (split, valueType) => {
   if (!refundsChart) return;
 
   if (typeof salesAllTime === "undefined" || !Array.isArray(salesAllTime)) {
-    console.log("Steamworks extras: Sales data is not yet ready to be used in refunds chart");
+    console.log("Sales data is not yet ready to be used in refunds chart");
     return;
   }
 

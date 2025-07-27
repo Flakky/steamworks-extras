@@ -73,7 +73,7 @@ bghelpers.parseDataFromPage = async (url, request) => {
 
   const parsedData = await parseDOM(htmlText, request);
 
-  console.debug(`Steamworks extras: Data result from parsing for "${request}": `, parsedData);
+  console.debug(`Data result from parsing for "${request}": `, parsedData);
 
   return parsedData;
 }
