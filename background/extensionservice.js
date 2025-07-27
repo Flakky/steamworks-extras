@@ -6,6 +6,7 @@ if (typeof browser == "undefined") {
 
   importScripts('../data/defaultsettings.js');
   importScripts('../shared/log.js');
+  importScripts('servicelogger.js');
   importScripts('../scripts/helpers.js');
   importScripts('offscreen/offscreenmanager.js');
   importScripts('../scripts/parser.js');
@@ -90,16 +91,20 @@ getBrowser().runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "getStatus":
       {
         (async () => {
-          console.log('Get status');
           const status = await getStatus();
           sendResponse(status);
         })(); break;
+      };
+    case "getLogs":
+      {
+        sendResponse(logs); 
+        break;
       };
     case "getData":
       {
         (async () => {
           const data = await getDataFromDB(message.type, message.appId, message.dateStart, message.dateEnd, message.returnLackData);
-          console.debug(`returning "${message.type}" data from background: `, data);
+          console.debug(`Returning "${message.type}" data from background: `, data);
           sendResponse(data);
         })(); break;
       };
@@ -107,7 +112,7 @@ getBrowser().runtime.onMessage.addListener((message, sender, sendResponse) => {
       {
         (async () => {
           const data = message.htmlText ? await parseDOM(message.htmlText, message.type) : await bghelpers.parseDataFromPage(message.url, message.type);
-          console.debug(`returning DOM parsed "${message.type}" data from background: `, data);
+          console.debug(`Returning DOM parsed "${message.type}" data from background: `, data);
           sendResponse(data);
         })(); break;
       };
@@ -119,7 +124,6 @@ getBrowser().runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "updateStats":
       {
         (async () => {
-          console.log('Update stats');
           const appIDs = await getAppIDs();
           updateStats(appIDs);
           updateStatsStatus();
@@ -171,31 +175,26 @@ const getDataFromDB = async (type, appId, dateStart, dateEnd, returnLackData = t
     case "Traffic": {
       const action = new StorageActionGetTraffic(appId, startDate, endDate, returnLackData);
       const result = await action.addAndWait(true);
-      console.debug(result);
       return result;
     }
     case "Sales": {
       const action = new StorageActionGetSales(appId, startDate, endDate, returnLackData);
       const result = await action.addAndWait(true);
-      console.debug(result);
       return result;
     }
     case "Reviews": {
       const action = new StorageActionGetReviews(appId, startDate, endDate, returnLackData);
       const result = await action.addAndWait(true);
-      console.debug(result);
       return result;
     }
     case "Wishlists": {
       const action = new StorageActionGetWishlists(appId, startDate, endDate, returnLackData);
       const result = await action.addAndWait(true);
-      console.debug(result);
       return result;
     }
     case "WishlistConversions": {
       const action = new StorageActionGetWishlistConversions(appId, startDate, endDate, returnLackData);
       const result = await action.addAndWait(true);
-      console.debug(result);
       return result;
     }
   }
@@ -261,7 +260,7 @@ const parseAppIDs = async () => {
 
   const appIDs = await bghelpers.parseDataFromPage('https://partner.steampowered.com/nav_games.php', 'parseAppIDs');
 
-  console.log('AppIDs: ', appIDs);
+  console.debug('All AppIDs from partner panel: ', appIDs);
 
   const nonRedirectedAppIDs = [];
 
@@ -295,11 +294,7 @@ const parseAppIDs = async () => {
 }
 
 const getAppIDs = async () => {
-  console.log('Getting AppIDs');
-
   let result = await getBrowser().storage.local.get("appIDs");
-
-  console.log('AppIDs: ', result);
 
   let appIDs = undefined;
 
@@ -317,7 +312,6 @@ const getAppIDs = async () => {
 
   if (ignoredAppIDs.length > 0) {
     appIDs = appIDs.filter(appID => !ignoredAppIDs.includes(appID));
-    console.log('Filtered AppIDs (removed ignored): ', appIDs);
   }
 
   return appIDs;
@@ -334,8 +328,6 @@ const parsePageCreationDate = async (appID) => {
   const date = new Date(pageCreationDate);
 
   if (date === undefined || !(date instanceof Date)) return undefined;
-
-  console.log(`Page creation date for ${appID}: `, date);
 
   pagesCreationDate[appID] = date.toISOString();
 
@@ -385,6 +377,7 @@ const initIDs = async () => {
   }
 
   console.log('AppIDs and PackageIDs have been initialized.', filteredAppIDs, packageIDs);
+
   return true;
 }
 
@@ -453,9 +446,9 @@ const init = async () => {
 
   await initStorageForAppIDs(appIDs);
 
-  startUpdatingStats(appIDs);
-
   console.log("Extension service initiated");
+  
+  startUpdatingStats(appIDs);
 }
 
 init().catch(error => {

@@ -5,7 +5,7 @@ class StorageActionRequestWishlists extends StorageAction {
   }
 
   async process() {
-    await requestAllWishlistData(this.appID);
+    return await requestAllWishlistData(this.appID);
   }
 
   getType() {
@@ -21,7 +21,7 @@ class StorageActionRequestRegionalWishlists extends StorageAction {
   }
 
   async process() {
-    await requestWishlistRegionalData(this.appID, this.date);
+    return await requestWishlistRegionalData(this.appID, this.date);
   }
 
   getType() {
@@ -99,8 +99,6 @@ const requestAllWishlistData = async (appID) => {
 
   const htmlText = await response.text();
 
-  console.log(htmlText);
-
   if (htmlText === undefined || htmlText === '') {
     throw new Error(`Received no response instead of CSV while requesting wishlist data`);
   }
@@ -125,8 +123,6 @@ const requestAllWishlistData = async (appID) => {
 
   const headers = lines[0].map(header => header.trim());
 
-  console.debug(lines);
-
   // Map each line to an object using the headers as keys
   let wishlistActions = lines.slice(1).map(line => {
     return {
@@ -139,6 +135,8 @@ const requestAllWishlistData = async (appID) => {
   });
 
   await mergeData(appID, 'Wishlists', wishlistActions);
+
+  return wishlistActions;
 }
 
 const requestWishlistRegionalData = async (appID, date) => {

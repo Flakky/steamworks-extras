@@ -5,7 +5,7 @@ class StorageActionRequestSales extends StorageAction {
   }
 
   async process() {
-    await requestSalesData(this.appID);
+    return await requestSalesData(this.appID);
   }
 
   getType() {
@@ -41,7 +41,7 @@ const requestSalesData = async (appID) => {
   const formattedStartDate = helpers.dateToString(startDate);
   const formattedEndDate = helpers.dateToString(endDate);
 
-  console.log(`Request sales in CSV between ${formattedStartDate} and ${formattedEndDate}`);
+  console.debug(`Request sales in CSV between ${formattedStartDate} and ${formattedEndDate}`);
 
   const packageIDs = await bghelpers.getAppPackageIDs(appID);
 
@@ -86,7 +86,7 @@ const requestSalesData = async (appID) => {
 
   // Ensure that we have lines to process
   if (lines.length === 0) {
-    console.log(`No sales data found in CSV`);
+    console.debug(`No sales data found in CSV`);
     return [];
   }
 
@@ -112,9 +112,11 @@ const requestSalesData = async (appID) => {
     return object;
   });
 
-  console.log(`Sales CSV result:`, result);
+  console.debug(`Sales CSV result:`, result);
 
   await writeData(appID, 'Sales', result);
+
+  return result;
 }
 
 const getAllSalesData = async (appID) => {
@@ -122,7 +124,7 @@ const getAllSalesData = async (appID) => {
   let records = await readData(appID, 'Sales');
 
   if (records.length === 0) {
-    console.log(`No sales data found in DB. Requesting from server...`);
+    console.debug(`No sales data found in DB. Requesting from server...`);
     await requestSalesData(appID);
     records = await readData(appID, 'Sales');
   }

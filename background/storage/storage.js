@@ -73,7 +73,7 @@ const initGameStatsStorage = (appID, index) => {
       }
 
       console.log(`Database initialized for app ${appID} with index ${index}`);
-      console.log(gameStatsStorage.objectStoreNames);
+      console.debug(gameStatsStorage.objectStoreNames);
 
       resolve();
     }
@@ -84,13 +84,13 @@ const initGameStatsStorage = (appID, index) => {
 
       gameStatsStorage = event.target.result;
 
-      console.log(`Database update for app ${appID} with index ${index}`);
+      console.debug(`Database update for app ${appID} with index ${index}`);
 
       for (const table of tables) {
         try {
           gameStatsStorage.createObjectStore(`${appID}_${table.name}`, { keyPath: table.key });
         } catch (e) {
-          console.log(`Table "${table.name}" already exists for app ${appID}: `, e);
+          console.debug(`Table "${table.name}" already exists for app ${appID}: `, e);
         }
       }
 
@@ -165,7 +165,7 @@ const waitForDatabaseReady = () => {
         resolve();
         return;
       }
-      else console.log(`Database is not ready, waiting...`);
+      else console.warn(`Database is not ready, waiting...`);
       wait(resolve);
     }, 1000);
   }

@@ -1,6 +1,5 @@
 // Override console methods to add a prefix to the output
 (() => {
-    const prefix = '[Steamworks Extras]';
     const colors = {
         log: '#4CAF50',
         debug: '#2196F3',
@@ -21,6 +20,7 @@
     Object.keys(colors).forEach(level => {
         if (originalConsole[level]) {
             const color = colors[level] || colors.log;
+            const prefix = `[Steamworks Extras | ${level.charAt(0).toUpperCase() + level.slice(1)}]`;
             const prefixArgs = [`%c${prefix}%c`, `color: ${color}; font-weight: bold;`, 'color: inherit;'];
             console[level] = originalConsole[level].bind(console, ...prefixArgs);
         }

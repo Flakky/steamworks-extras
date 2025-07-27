@@ -6,7 +6,7 @@ class StorageActionRequestTraffic extends StorageAction {
   }
 
   async process() {
-    await requestTrafficData(this.appID, this.date);
+    return await requestTrafficData(this.appID, this.date);
   }
 
   getType() {
@@ -34,7 +34,7 @@ class StorageActionGetTraffic extends StorageAction {
 }
 
 const requestAllTrafficData = async (appID) => {
-  console.log(`Requesting all traffic data for app ${appID}`);
+  console.debug(`Requesting all traffic data for app ${appID}`);
 
   let records = await readData(appID, 'Traffic');
 
@@ -42,14 +42,14 @@ const requestAllTrafficData = async (appID) => {
 
   const pageCreationDate = await bghelpers.getPageCreationDate(appID);
 
-  console.log(`Cached traffic dates:`, cachedDates)
+  console.debug(`Cached traffic dates:`, cachedDates)
 
   let date = new Date();
   date.setDate(date.getDate() - 1);
   while (true) {
 
     if (date < pageCreationDate) {
-      console.log(`Stop receiving traffic data because we reached page creation date`);
+      console.debug(`Stop receiving traffic data because we reached page creation date`);
       return;
     }
 
@@ -124,11 +124,9 @@ const requestTrafficData = async (appID, date) => {
   lines = helpers.csvTextToArray(csvString);
 
   if (lines.length === 1) {
-    console.log(`No traffic results for ${formattedDate}`);
+    console.debug(`No traffic results for ${formattedDate}`);
     return false;
   };
-
-  console.debug(lines);
 
   let headers = lines[0]
     .map(header => header.trim())
@@ -159,9 +157,7 @@ const requestTrafficData = async (appID, date) => {
     });
   }
 
-  console.log(`Writing traffic data for ${formattedDate}`, result);
-
   await writeData(appID, 'Traffic', result);
 
-  return true;
+  return result;
 }

@@ -6,7 +6,7 @@ class StorageActionRequestReviews extends StorageAction {
   }
 
   async process() {
-    await requestAllReviewsData(this.appID);
+    return await requestAllReviewsData(this.appID);
   }
 
   getType() {
@@ -36,11 +36,9 @@ class StorageActionGetReviews extends StorageAction {
 const getReviewsData = async (appID, dateStart, dateEnd, returnLackData) => {
   await waitForDatabaseReady();
 
-  console.log(`Requesting reviews data for app ${appID}`);
+  console.debug(`Requesting reviews data for app ${appID}`);
 
   let records = await readData(appID, 'Reviews');
-
-  console.log(`Reviews data found in DB:`, records);
 
   if (dateStart && dateEnd) {
     const filteredRecords = records.filter(item => {
@@ -113,7 +111,7 @@ const requestAllReviewsData = async (appID) => {
     }
   }
 
-  console.log(`Reviews result: `, reviews);
+  console.debug(`Reviews result: `, reviews);
 
   await clearData(appID, 'Reviews');
 
