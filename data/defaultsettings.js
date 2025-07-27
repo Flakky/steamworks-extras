@@ -9,5 +9,6 @@ const defaultSettings = {
   "showPercentages": false,
   "chartMaxBreakdown": 10,
   "statsUpdateInterval": 60,
+  "ignoredAppIDs": [],
   "requestsMinPeriod": 1000
 }

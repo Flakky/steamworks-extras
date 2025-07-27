@@ -11,6 +11,10 @@ const initSettings = () => {
     document.getElementById('chart_max_breakdown').value = result.chartMaxBreakdown || defaultSettings.chartMaxBreakdown;
     document.getElementById('update_period').value = result.statsUpdateInterval || defaultSettings.statsUpdateInterval;
     document.getElementById('requests_period').value = result.requestsMinPeriod || defaultSettings.requestsMinPeriod;
+
+    // Handle ignored AppIDs - convert array to comma-separated string for display
+    const ignoredAppIDs = result.ignoredAppIDs || defaultSettings.ignoredAppIDs;
+    document.getElementById('ignored_app_ids').value = ignoredAppIDs.join(', ');
   });
 
   document.getElementById('save').addEventListener('click', saveSettings);
@@ -40,6 +44,7 @@ const saveSettings = () => {
   result.chartMaxBreakdown = document.getElementById('chart_max_breakdown').valueAsNumber;
   result.statsUpdateInterval = document.getElementById('update_period').valueAsNumber;
   result.requestsMinPeriod = document.getElementById('requests_period').valueAsNumber;
+  result.ignoredAppIDs = document.getElementById('ignored_app_ids').value.split(',').map(id => id.trim()).filter(id => id.length > 0);
 
   getBrowser().storage.local.set(result, () => {
     alert('Settings saved!');
@@ -49,6 +54,12 @@ const saveSettings = () => {
 const generateCacheTable = async () => {
   const data = await getBrowser().storage.local.get('appIDs');
   const appIDs = data.appIDs || [];
+
+  // Filter out ignored AppIDs for cache table
+  const ignoredData = await getBrowser().storage.local.get('ignoredAppIDs');
+  const ignoredAppIDs = ignoredData.ignoredAppIDs || [];
+  const filteredAppIDs = appIDs.filter(appID => !ignoredAppIDs.includes(appID));
+
   const table = document.querySelector('#cache table tbody');
 
   const pagesCreationDateResult = await getBrowser().storage.local.get("pagesCreationDate");
@@ -98,7 +109,7 @@ const generateCacheTable = async () => {
     table.deleteRow(1);
   }
 
-  appIDs.forEach(async (appID, index) => {
+  filteredAppIDs.forEach(async (appID, index) => {
     const row = document.createElement('tr');
 
     const cell = document.createElement('td');

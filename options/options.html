@@ -115,6 +115,13 @@
                             background. Updates are also triggered when you open your getBrowser().</td>
                     </tr>
                     <tr>
+                        <td class="table_label"><label for="ignored_app_ids">Ignored AppIDs:</label>
+                        </td>
+                        <td class="table_value"><textarea id="ignored_app_ids" rows="3" cols="30" placeholder="Enter AppIDs separated by commas (e.g., 123456, 789012)"></textarea>
+                        </td>
+                        <td class="description">AppIDs to ignore when fetching data and displaying in reports. Separate multiple AppIDs with commas.</td>
+                    </tr>
+                    <tr>
                         <td class="table_label"><label for="requests_period">Min requests interval:</label>
                         </td>
                         <td class="table_value"><input type="number" min=0 max=10000 value=1000 id="requests_period">
