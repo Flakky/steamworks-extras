@@ -155,5 +155,4 @@ const initVersion = () => {
   document.getElementById('ext_version').textContent = version;
 }
 
-
 document.addEventListener('DOMContentLoaded', initSettings);

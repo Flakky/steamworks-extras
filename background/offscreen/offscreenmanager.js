@@ -29,7 +29,7 @@ const initOffscreen = async () => {
 }
 
 const processParsedDOM = (message) => {
-  console.debug('Steamworks extras: Processing parsed DOM message: ', message);
+  console.debug('Processing parsed DOM message: ', message);
   
   if(message.request !== 'parsedDOM'
     || message.id === undefined

@@ -144,15 +144,15 @@ const processNext = () => {
 
   if (processingAction === undefined) return;
 
-  console.debug(`Steamworks extras: Processing next action (${processingAction.getType()}) in queue:`, processingAction);
+  console.debug(`Processing next action (${processingAction.getType()}) in queue:`, processingAction);
 
   processingAction.execute()
     .then(() => {
-      console.log(`Steamworks extras: Action executed (${getQueueLength()} left) `, processingAction);
+      console.log(`Action executed (${getQueueLength()} left) `, processingAction);
     })
     .catch((e) => {
       failedActions.push(processingAction);
-      console.warn(`Steamworks extras: Action failed to execute (${getQueueLength()} left) `, processingAction, e);
+      console.warn(`Action failed to execute (${getQueueLength()} left) `, processingAction, e);
     })
     .finally(() => {
       processingAction = null;

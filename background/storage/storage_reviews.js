@@ -34,11 +34,9 @@ class StorageActionGetReviews extends StorageAction {
 const getReviewsData = async (appID, dateStart, dateEnd, returnLackData) => {
   await waitForDatabaseReady();
 
-  console.log(`Steamworks extras: Requesting reviews data for app ${appID}`);
+  console.debug(`Requesting reviews data for app ${appID}`);
 
   let records = await readData(appID, 'Reviews');
-
-  console.log(`Steamworks extras: Reviews data found in DB:`, records);
 
   if (dateStart && dateEnd) {
     const filteredRecords = records.filter(item => {
@@ -111,7 +109,7 @@ const requestAllReviewsData = async (appID) => {
     }
   }
 
-  console.log(`Steamworks extras: Reviews result: `, reviews);
+  console.debug(`Reviews result: `, reviews);
 
   await clearData(appID, 'Reviews');
 

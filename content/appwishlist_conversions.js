@@ -3,7 +3,7 @@ let wishlists = undefined;
 let conversionsChart = undefined;
 
 const initConversionsChart = async () => {
-  console.log("Steamworks extras: Init wishlist conversions");
+  console.log("Init wishlist conversions");
 
   createConversionsChartBlock();
 
@@ -25,8 +25,8 @@ const initConversionsChart = async () => {
     true
   );
 
-  console.log("Steamworks extras: Wishlist conversions data loaded", wishlistConversions);
-  console.log("Steamworks extras: Wishlist data loaded", wishlists);
+  console.log("Wishlist conversions data loaded", wishlistConversions);
+  console.log("Wishlist data loaded", wishlists);
 
   createConversionsChart();
   updateConversionsChart();
@@ -71,7 +71,7 @@ const updateConversionsChart = () => {
   let labels = getLabelsForConversionsChart();
 
   let conversionsData = getConversionRates(labels);
-  console.log("Steamworks extras: Rates for conversions chart", conversionsData);
+  console.log("Rates for conversions chart", conversionsData);
 
   const {dateStart, dateEnd} = getDateRangeOfCurrentPage();
 

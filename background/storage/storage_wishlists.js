@@ -21,7 +21,7 @@ class StorageActionRequestRegionalWishlists extends StorageAction {
   }
 
   async process() {
-    await requestWishlistRegionalData(this.appID, this.date);
+    return await requestWishlistRegionalData(this.appID, this.date);
   }
 
   getType() {
@@ -71,7 +71,7 @@ const getWishlistData = async (appID, dateStart, dateEnd, returnLackData) => {
 }
 
 const requestAllWishlistData = async (appID) => {
-  console.debug(`Steamworks extras: Requesting all wishlist data for app ${appID}`);
+  console.debug(`Requesting all wishlist data for app ${appID}`);
 
   const pageCreationDate = await bghelpers.getPageCreationDate(appID);
 
@@ -98,14 +98,12 @@ const requestAllWishlistData = async (appID) => {
 
   const htmlText = await response.text();
 
-  console.log(htmlText);
-
   if (htmlText === undefined || htmlText === '') {
-    throw new Error(`Steamworks extras: Received no response instead of CSV while requesting wishlist data`);
+    throw new Error(`Received no response instead of CSV while requesting wishlist data`);
   }
 
   if (htmlText.includes('<html')) {
-    throw new Error('Steamworks extras: Received HTML response instead of CSV while requesting wishlist data');
+    throw new Error('Received HTML response instead of CSV while requesting wishlist data');
   }
 
   let lines = htmlText.split('\n');
@@ -114,7 +112,7 @@ const requestAllWishlistData = async (appID) => {
 
   // Ensure that we have lines to process
   if (lines.length === 0) {
-    console.debug(`Steamworks extras: No wishlists data found in CSV`);
+    console.debug(`No wishlists data found in CSV`);
     return;
   }
 
@@ -123,8 +121,6 @@ const requestAllWishlistData = async (appID) => {
   lines = helpers.csvTextToArray(csvString);
 
   const headers = lines[0].map(header => header.trim());
-
-  console.debug(lines);
 
   // Map each line to an object using the headers as keys
   let wishlistActions = lines.slice(1).map(line => {
@@ -138,13 +134,15 @@ const requestAllWishlistData = async (appID) => {
   });
 
   await mergeData(appID, 'Wishlists', wishlistActions);
+
+  return wishlistActions;
 }
 
 const requestWishlistRegionalData = async (appID, date) => {
   const pageCreationDate = await bghelpers.getPageCreationDate(appID);
 
   if (date < pageCreationDate) {
-    console.error(`Steamworks extras: Cannot request wishlist data for date ${date} because it is before page creation date`);
+    console.error(`Cannot request wishlist data for date ${date} because it is before page creation date`);
   }
 
   const formattedDate = helpers.dateToString(date);
@@ -163,7 +161,7 @@ const requestWishlistRegionalData = async (appID, date) => {
   const data = await bghelpers.parseDataFromPage(url, 'parseWishlistData');
 
   if (typeof data !== 'object' || Object.keys(data).length === 0) {
-    console.debug(`Steamworks extras: No wishlist data found for date ${formattedDate}. Writing empty data`);
+    console.debug(`No wishlist data found for date ${formattedDate}. Writing empty data`);
 
     // Make sure empty dates also get saved with 'World' so we do not request it again
 
@@ -185,7 +183,7 @@ const requestWishlistRegionalData = async (appID, date) => {
     return acc;
   }, {});
 
-  console.debug(`Steamworks extras: Wishlist result for app ${appID} for date ${formattedDate}: `, formattedData);
+  console.debug(`Wishlist result for app ${appID} for date ${formattedDate}: `, formattedData);
 
   formattedData['Date'] = helpers.dateToString(date);
 

@@ -5,7 +5,7 @@ let chartColors = undefined;
 let refundStats = {};
 
 const init = async () => {
-    console.log("Steamworks extras: Init refunds page");
+    console.log("Init refunds page");
 
     settings = await getBrowser().storage.local.get(defaultSettings);
 
@@ -40,7 +40,7 @@ const requestAppID = async () => {
     const packageID = getPackageID();
 
     const packageIDsMap = await helpers.sendMessageAsync({ request: 'getPackageIDs' });
-    console.log('Steamworks extras: Package IDs map: ', packageIDsMap);
+    console.log('Package IDs map: ', packageIDsMap);
 
     let foundAppID = undefined;
     for (const [appId, packageIds] of Object.entries(packageIDsMap)) {
@@ -51,13 +51,13 @@ const requestAppID = async () => {
     }
 
     if (!foundAppID) {
-        console.error('Steamworks extras: App ID not found');
+        console.error('App ID not found');
         return;
     }
 
     appID = foundAppID;
 
-    console.log('Steamworks extras: App ID: ', appID);
+    console.log('App ID: ', appID);
 }
 
 const getPackageID = () => {
@@ -79,10 +79,10 @@ const getAppID = () => {
 
 const requestSales = async () => {
 
-    console.log('Steamworks extras: Requesting sales data...');
+    console.log('Requesting sales data...');
 
     salesAllTime = await helpers.sendMessageAsync({ request: 'getData', type: 'Sales', appId: getAppID() });
-    console.debug('Steamworks extras: Sales data received: ', salesAllTime);
+    console.debug('Sales data received: ', salesAllTime);
 }
 
 const readChartColors = () => {
@@ -120,7 +120,7 @@ const fetchRefundStats = async (range) => {
     type: 'RefundStats' 
     });
 
-    console.log('Steamworks extras: Refund stats response: ', response);
+    console.log('Refund stats response: ', response);
     
     if (response && response.units && response.grossUnits) {
         refundStats[range] = response;

@@ -40,7 +40,7 @@ const requestWishlistConversionsData = async (appID) => {
   const formattedStartDate = helpers.dateToString(startDate);
   const formattedEndDate = helpers.dateToString(endDate);
 
-  console.log(`Steamworks extras: Request wishlist conversions in CSV between ${formattedStartDate} and ${formattedEndDate}`);
+  console.debug(`Request wishlist conversions in CSV between ${formattedStartDate} and ${formattedEndDate}`);
 
   const URL = `https://partner.steampowered.com/report_csv.php?file=SteamWishlistCohorts_${appID}_${formattedStartDate}_to_${formattedEndDate}&params=query=QueryWishlistCohortForCSV^appID=${appID}^dateStart=${formattedStartDate}^dateEnd=${formattedEndDate}^interpreter=WishlistCohortReportInterpreter`;
 
@@ -54,11 +54,11 @@ const requestWishlistConversionsData = async (appID) => {
   const htmlText = await response.text();
 
   if (htmlText === undefined || htmlText === '') {
-    throw new Error(`Steamworks extras: Received no response instead of CSV while requesting wishlist conversions data`);
+    throw new Error(`Received no response instead of CSV while requesting wishlist conversions data`);
   }
 
   if (htmlText.includes('<html')) {
-    throw new Error('Steamworks extras: Received HTML response instead of CSV while requesting wishlist conversions data');
+    throw new Error('Received HTML response instead of CSV while requesting wishlist conversions data');
   }
 
   let lines = htmlText.split('\n');
@@ -67,7 +67,7 @@ const requestWishlistConversionsData = async (appID) => {
 
   // Ensure that we have lines to process
   if (lines.length === 0) {
-    console.log(`Steamworks extras: No wishlist conversions data found in CSV`);
+    console.warn(`No wishlist conversions data found in CSV`);
     return [];
   }
 
@@ -101,9 +101,11 @@ const requestWishlistConversionsData = async (appID) => {
   result.length = 0;
   result.push(...filteredResult);
 
-  console.log(`Steamworks extras: Wishlist conversions CSV result:`, result);
+  console.debug(`Wishlist conversions CSV result:`, result);
 
   await writeData(appID, 'WishlistConversions', result);
+
+  return result;
 }
 
 const getAllWishlistConversionsData = async (appID) => {
@@ -111,7 +113,7 @@ const getAllWishlistConversionsData = async (appID) => {
   let records = await readData(appID, 'WishlistConversions');
 
   if (records.length === 0) {
-    console.log(`Steamworks extras: No wishlist conversions data found in DB. Requesting from server...`);
+    console.debug(`No wishlist conversions data found in DB. Requesting from server...`);
     await requestWishlistConversionsData(appID);
     records = await readData(appID, 'WishlistConversions');
   }

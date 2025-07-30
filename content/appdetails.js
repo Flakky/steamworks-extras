@@ -6,8 +6,8 @@ let salesAllTime = undefined;
 let chartColors = undefined;
 
 const init = async () => {
-  console.log("Steamworks extras: Init");
-
+  console.log('Init');
+  
   settings = await getBrowser().storage.local.get(defaultSettings);
 
   readChartColors();
@@ -129,7 +129,7 @@ const updateSummaryRowUnderExtend = (index, title, description, calculation) => 
 
   if (settings.showPercentages) AddPercentageToRevenue(sumElem, calculatedAmount.share, 2);
 
-  console.log(`Steamworks extras: Updated summary row: ${title} - ${revenueString}`);
+  console.log(`Updated summary row: ${title} - ${revenueString}`);
 }
 
 const updateFinalRevenueRow = (index, calculation) => {
@@ -189,7 +189,7 @@ const updateFinalRevenueRow = (index, calculation) => {
 
   if (settings.showPercentages) AddPercentageToRevenue(sumElem, calculatedAmount.share, 2);
 
-  console.log("Steamworks extras: Updated final revenue");
+  console.log("Updated final revenue");
 }
 
 const getRevenueMap = (gross, net, usGross) => {
@@ -377,7 +377,7 @@ const addRefundDataLink = () => {
 
   refundDescCell.innerHTML += ` (<a href="https://partner.steampowered.com/package/refunds/${packageId}/">Refund data</a>)`;
 
-  console.log("Steamworks extras: Added refund data link");
+  console.log("Added refund data link");
 }
 
 const getDateRangeOfCurrentPage = () => {
@@ -411,10 +411,10 @@ const getDateRangeOfCurrentPage = () => {
 const requestSales = async () => {
   const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
 
-  console.log('Steamworks extras: Requesting sales data...');
+  console.log('Requesting sales data...');
 
   salesAllTime = await helpers.sendMessageAsync({ request: 'getData', type: 'Sales', appId: getAppID() });
-  console.debug('Steamworks extras: Sales data received: ', salesAllTime);
+  console.debug('Sales data received: ', salesAllTime);
 
   // Filter to current date range
   salesForDateRange = salesAllTime.filter(item => {
@@ -432,9 +432,9 @@ const requestSales = async () => {
   .filter(item => item["Country"] === "United States")
   .reduce((sum, item) => sum + (item["Gross Steam Sales (USD)"] || 0), 0);
   
-  console.debug('Steamworks extras: Sales data for range: ', salesForDateRange);
-  console.debug('Steamworks extras: US sales data: ', usRevenue);
-  console.debug('Steamworks extras: US sales data for range: ', usRevenueForDateRange);
+  console.debug('Sales data for range: ', salesForDateRange);
+  console.debug('US sales data: ', usRevenue);
+  console.debug('US sales data for range: ', usRevenueForDateRange);
 
   createSalesChart();
   updateSalesChart(chartSplit, chartValueType);
