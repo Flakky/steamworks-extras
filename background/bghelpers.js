@@ -33,26 +33,24 @@ bghelpers.getAppPackageIDs = async (appID) => {
  * Returns the package IDs of a given appID.
  *
  * @param {string} appID - AppID of the game
- * @param {boolean} useBackgroundScript - [Optional] If true, the function will use the background script to get the data. Otherwise, it will fetch the data from the URL.
  * @returns {Array} - Package IDs
  */
-bghelpers.getPackageIDs = async (appID, useBackgroundScript) => {
-  const url = `https://partner.steamgames.com/apps/landing/${appID}`;
+bghelpers.getPackageIDs = async (appID) => {
+  const url = `https://store.steampowered.com/api/appdetails?appids=${appID}`;
 
   console.log(`Fetching package IDs from URL: ${url}`);
 
-  let htmlText;
-  if (useBackgroundScript) {
-    htmlText = await helpers.sendMessageAsync({ request: 'makeRequest', url: url });
-  } else {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('Network response was not ok');
-    htmlText = await response.text();
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('Network response was not ok');
+
+  const data = await response.json();
+  const appData = data[appID];
+
+  if(!appData || !appData.success || !appData.data || !appData.data.packages){
+    throw new Error('Package IDs request returned no data');
   }
 
-  const packageIDs = await parseDOM(htmlText, 'parsePackageID');
-
-  return packageIDs;
+  return appData.data.packages;
 }
 
 /**

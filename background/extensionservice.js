@@ -370,7 +370,7 @@ const initIDs = async () => {
 
   let packageIDs = {};
   for (const appID of filteredAppIDs) {
-    const IDs = await getPackageIDs(appID);
+    const IDs = await parsePackageIDs(appID);
 
     packageIDs[appID] = IDs;
   }
