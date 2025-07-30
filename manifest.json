@@ -136,7 +136,6 @@
   "background": {
     "scripts": [
       "shared/log.js",
-      "background/servicelogger.js",
       "data/defaultsettings.js",
       "scripts/helpers.js",
       "background/offscreen/offscreenmanager.js",

@@ -6,7 +6,6 @@ if (typeof browser == "undefined") {
 
   importScripts('../data/defaultsettings.js');
   importScripts('../shared/log.js');
-  importScripts('servicelogger.js');
   importScripts('../scripts/helpers.js');
   importScripts('offscreen/offscreenmanager.js');
   importScripts('../scripts/parser.js');
