@@ -65,7 +65,7 @@ const getPackageID = () => {
     try {
         const match = url.match(/\/package\/refunds\/(\d+)/);
         if (match && match[1]) {
-            return match[1];
+            return Number(match[1]);
         }
     } catch (e) {
         console.error('Failed to extract package ID from URL:', e);
