@@ -19,6 +19,7 @@ class StorageAction {
     this.minimalExecutionTime = settings.minimalExecutionTime;
     this.timedout = false;
     this.completed = false;
+    this.error = null;
   }
 
   addAndWait(insertFirst = false) {
@@ -33,17 +34,21 @@ class StorageAction {
     const promise = this.getPromise();
 
     this.timeoutHandle = setTimeout(() => { this.timeout() }, this.executeTimeout * 1000);
-    
+
     // Minimal execution timer
-    if(this.minimalExecutionTime > 0) {
+    if (this.minimalExecutionTime > 0) {
+      this.minimalTimerComplete = false;
       this.minimalTimerHandle = setTimeout(() => {
         this.minimalTimerComplete = true;
         if (this.completed && !this.timedout) {
-          this.resolve(this.result);
+          if (this.error !== null) {
+            this.reject(this.error);
+          } else {
+            this.resolve(this.result);
+          }
         }
       }, this.minimalExecutionTime);
-    }
-    else {
+    } else {
       this.minimalTimerComplete = true;
     }
 
@@ -58,12 +63,17 @@ class StorageAction {
             if (this.minimalTimerComplete) {
               this.resolve(r);
             }
+            // else: wait for minimalTimerHandle to fire and resolve there
           }
         })
         .catch(e => {
           this.completed = true;
+          this.error = e;
           if (!this.timedout) {
-            this.reject(e);
+            if (this.minimalTimerComplete) {
+              this.reject(e);
+            }
+            // else: wait for minimalTimerHandle to fire and reject there
           }
         })
         .finally(() => {
@@ -72,8 +82,12 @@ class StorageAction {
     }
     catch (e) {
       this.completed = true;
+      this.error = e;
       if (this.reject !== undefined) {
-        this.reject(e);
+        if (this.minimalTimerComplete) {
+          this.reject(e);
+        }
+        // else: wait for minimalTimerHandle to fire and reject there
       }
     }
 
