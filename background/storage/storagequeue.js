@@ -129,6 +129,14 @@ const getActionsOfType = (type) => {
   return queue.filter(action => action.getType() === type);
 }
 
+const getActionsByAppID = (appID) => {
+  return queue.filter(action => action.appID === appID);
+}
+
+const getActionsByAppIDAndType = (appID, type) => {
+  return queue.filter(action => action.appID === appID && action.getType() === type);
+}
+
 const getFailedActions = () => {
   return failedActions;
 }

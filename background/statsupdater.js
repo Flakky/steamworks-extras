@@ -22,29 +22,98 @@ self.onmessage = (event) => {
 }
 
 const updateStats = async (appIDs) => {
-
+  console.log(`Updating stats for apps:`, appIDs);
   try {
+      // First handle requests which we can request at once, then daily
     for (const appID of appIDs) {
-      await fetchAllData(appID);
+      fetchSalesData(appID);
     }
+    for (const appID of appIDs) {
+      fetchReviewsData(appID);
+    }
+    for (const appID of appIDs) {
+      fetchWishlistConversionsData(appID);
+    }
+    for (const appID of appIDs) {
+      fetchGeneralWishlistsData(appID);
+    }
+
+    fetchDailyData(appIDs);
   }
   catch (error) {
     console.error('Error while updating stats: ', error);
   }
 }
 
-const fetchAllData = async (appID) => {
-
-  console.log(`Fetching data for appID: ${appID}`);
-
-  fetchSalesData(appID);
-  fetchReviewsData(appID);
-  fetchWishlistConversionsData(appID);
-  await fetchTrafficData(appID);
-  await fetchWishlistsData(appID);
+const fetchSalesData = (appID) => {
+  // We do not check for missing dates because we can request all sales data at once
+  addToQueue(new StorageActionRequestSales(appID));
 }
 
-const fetchTrafficData = async (appID) => {
+const fetchReviewsData = (appID) => {
+  // We do not check for missing dates because reviews cannot be requested for certain dates.
+  // We can request all reviews with couple requests in a single action
+  addToQueue(new StorageActionRequestReviews(appID));
+}
+
+const fetchWishlistConversionsData = (appID) => {
+  // We do not check for missing dates because we can request all conversions data at once
+  addToQueue(new StorageActionRequestWishlistConversions(appID));
+}
+
+const fetchGeneralWishlistsData = async (appID) => {
+  const requestAllWishlists = new StorageActionRequestWishlists(appID);
+  await requestAllWishlists.addAndWait(true);
+}
+
+const fetchDailyData = async (appIDs) => {
+  const missingWishlistDates = [];
+  const missingTrafficDates = [];
+
+  for (const appID of appIDs) {
+    const wishlistDates = await getMissingDatesForWishlists(appID);
+    for (const date of wishlistDates) {
+      missingWishlistDates.push({ appid: appID, date });
+    }
+    const trafficDates = await getMissingDatesForTraffic(appID);
+    for (const date of trafficDates) {
+      missingTrafficDates.push({ appid: appID, date });
+    }
+  }
+
+  // We sort dates in descending order because we want to request the most recent dates first so the user can use it
+  missingWishlistDates.sort((a, b) => new Date(b.date) - new Date(a.date));
+  missingTrafficDates.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const actionSettings = await makeActionSettings();
+
+  for (const date of missingWishlistDates) {
+    addToQueue(new StorageActionRequestRegionalWishlists(date.appid, date.date, actionSettings));
+  }
+  for (const date of missingTrafficDates) {
+    addToQueue(new StorageActionRequestTraffic(date.appid, date.date, actionSettings));
+  }
+}
+
+const updateStatsStatus = () => {
+  const queueLength = queue.filter(item => item.getType().includes("Request")).length;
+  console.debug(`Queue length:`, queueLength);
+  if (queueLength > 0) {
+    setExtentionStatus(11, { queueLength: queueLength });
+  }
+  else {
+    setExtentionStatus(0);
+  }
+}
+
+const makeActionSettings = async () => {
+  const extSettings = await getBrowser().storage.local.get(Object.keys(defaultSettings));
+  const actionSettings = new StorageActionSettings();
+  actionSettings.minimalExecutionTime = extSettings.requestsMinPeriod || 1000;
+  return actionSettings;
+}
+
+const getMissingDatesForTraffic = async (appID) => {
   const pageCreationDate = await bghelpers.getPageCreationDate(appID);
 
   const dates = helpers.getDateRangeArray(pageCreationDate, helpers.getDateNoOffset(), true, false);
@@ -79,35 +148,12 @@ const fetchTrafficData = async (appID) => {
     });
   }
 
-  console.debug(`Missing traffic dates for app ${appID}:`, missingDates);
+  missingDates = filterDatesByRequestedDates(appID, 'RequestTraffic', missingDates);
 
-  const actionSettings = await makeActionSettings();
-
-  for (const date of missingDates) {
-    addToQueue(new StorageActionRequestTraffic(appID, date, actionSettings));
-  }
+  return missingDates;
 }
 
-const fetchSalesData = (appID) => {
-  // We do not check for missing dates because we can request all sales data at once
-  addToQueue(new StorageActionRequestSales(appID));
-}
-
-const fetchReviewsData = (appID) => {
-  // We do not check for missing dates because reviews cannot be requested for certain dates.
-  // We can request all reviews with couple requests in a single action
-  addToQueue(new StorageActionRequestReviews(appID));
-}
-
-const fetchWishlistConversionsData = (appID) => {
-  // We do not check for missing dates because we can request all conversions data at once
-  addToQueue(new StorageActionRequestWishlistConversions(appID));
-}
-
-const fetchWishlistsData = async (appID) => {
-  const requestAllWishlists = new StorageActionRequestWishlists(appID);
-  await requestAllWishlists.addAndWait(true);
-
+const getMissingDatesForWishlists = async (appID) => {
   const pageCreationDate = await bghelpers.getPageCreationDate(appID);
 
   const dates = helpers.getDateRangeArray(pageCreationDate, helpers.getDateNoOffset(), true, false);
@@ -152,29 +198,25 @@ const fetchWishlistsData = async (appID) => {
     });
   }
 
-  console.debug(`Missing wishlist dates for app ${appID}:`, missingDates);
+  missingDates = filterDatesByRequestedDates(appID, 'RequestRegionalWishlists', missingDates);
 
-  const actionSettings = await makeActionSettings();
-
-  for (const date of missingDates) {
-    addToQueue(new StorageActionRequestRegionalWishlists(appID, date, actionSettings));
-  }
+  return missingDates;
 }
 
-const updateStatsStatus = () => {
-  const queueLength = queue.filter(item => item.getType().includes("Request")).length;
-  console.debug(`Queue length:`, queueLength);
-  if (queueLength > 0) {
-    setExtentionStatus(11, { queueLength: queueLength });
-  }
-  else {
-    setExtentionStatus(0);
-  }
-}
+const filterDatesByRequestedDates = (appID, requestType, dates) => {
 
-const makeActionSettings = async () => {
-  const extSettings = await getBrowser().storage.local.get(Object.keys(defaultSettings));
-  const actionSettings = new StorageActionSettings();
-  actionSettings.minimalExecutionTime = extSettings.requestsMinPeriod || 1000;
-  return actionSettings;
+  const relevantRequests = getActionsByAppIDAndType(appID, requestType);
+
+  const requestedDatesSet = new Set(
+    relevantRequests.map(req => {
+      return typeof req.date === 'string' ? req.date : helpers.dateToString(req.date);
+    })
+  );
+
+  const missingDates = dates.filter(date => {
+    const dateString = helpers.dateToString(date);
+    return !requestedDatesSet.has(dateString);
+  });
+
+  return missingDates;
 }
