@@ -1,0 +1,160 @@
+body {
+  background-color: #0e141bcc;
+  padding: 0;
+  margin: 0;
+  font-family: "Motiva Sans", Sans-serif;
+}
+
+label {
+  color: #ffffff;
+}
+
+h1 {
+  color: #ffffff;
+}
+
+#header {
+  background-color: #000000;
+  display: flex;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#header img {
+  float: left;
+  width: 50px;
+  height: 50px;
+}
+
+#header h1 {
+  line-height: 0.8em;
+  margin-left: 20px;
+}
+
+#content {
+  padding: 20px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.content_block {
+  background-color: #242424;
+  padding: 20px;
+  margin: 20px;
+  width: 1000px;
+}
+
+.content_block h3 {
+  color: #ffffff;
+  font-weight: bold;
+  font-size: 1.2em;
+  width: 100%;
+  text-align: center;
+  margin: auto;
+  display: block;
+  line-height: 1.8em;
+}
+
+.table_category_title {
+  color: #ffffff;
+}
+
+table {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0px;
+}
+
+td,
+th {
+  width: 100%;
+  padding: 5px;
+}
+
+tr {
+  width: 100%;
+  border-top: 1px solid #424242;
+}
+
+th {
+  background-color: #424242;
+  font-weight: bold;
+  font-size: 1em;
+  text-align: center;
+  line-height: 1.8em;
+}
+
+.table_label {
+  width: 250px;
+  text-align: end;
+  font-weight: bold;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.description {
+  color: #8b969c;
+  font-size: 12px;
+  font-weight: lighter;
+}
+
+.description a {
+  color: #8b969c;
+}
+
+.table_value {
+  width: 120px;
+}
+
+.table_value input {
+  width: 100%;
+  background-color: #333;
+  color: #ffffff;
+  border: 0px;
+  height: 20px;
+  margin: 0;
+}
+
+.table_value textarea {
+  background-color: #333;
+  color: #ffffff;
+  border: 0px;
+  margin: 0;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 12px;
+  width: 100%;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.table_value textarea::-webkit-scrollbar {
+  display: none;
+}
+
+#cache table {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#cache td,
+#cache th {
+  width: 100%;
+  padding: 5px;
+  border: 1px solid #424242;
+}
+
+#cache .table_label {
+  width: 250px;
+}
+
+#cache .description {
+  text-align: center;
+}

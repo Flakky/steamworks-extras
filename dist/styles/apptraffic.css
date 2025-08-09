@@ -1,0 +1,12 @@
+#extras_chart {
+  background-color: #101112;
+  padding: 10px;
+}
+
+#extra_trafficChart {
+  margin-top: 10px;
+}
+
+#chart_presets button {
+  margin: 0 5px 0 0;
+}

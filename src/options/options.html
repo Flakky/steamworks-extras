@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="../styles/partner_steampowered_shared.css">
+    <link rel="stylesheet" href="../styles/options.css">
+
+    <script src="../shared/log.js"></script>
+    <script src="../scripts/helpers.js"></script>
+    <script src="../data/defaultsettings.js"></script>
+    <script src="../shared/statusblock.js"></script>
+    <script src="options.js"></script>
+
+    <title>Steamworks extra reports Settings</title>
+</head>
+
+<body>
+    <div id="header">
+        <img src="../assets/icon-128.png">
+        <h1>Steamworks extra reports Settings</h1>
+    </div>
+    <div id="content">
+        <div id="settings_block" class="content_block">
+            <h3>Settings</h3>
+            <table>
+                <tbody>
+                    <tr>
+                        <th class="table_label">Tax and payments setup</th>
+                        <th class="table_value"></th>
+                        <th class="description"></th>
+                    </tr>
+                    <tr>
+                        <td class="table_label"><label for="us_sales_tax">US sales Tax (in %):</label></td>
+                        <td class="table_value"><input type="number" min=0 max=100 value=0 id="us_sales_tax"></td>
+                        <td class="description">Extra tax that is deducted from US sales.</td>
+                    </tr>
+                    <tr>
+                        <td class="table_label"><label for="gross_royalties">Royalties from Gross (in %):</label></td>
+                        <td class="table_value"><input type="number" min=0 max=100 value=0 id="gross_royalties"></td>
+                        <td class="description">Extra royalties you pay from Gross. For example: 5% - Unreal Engine for
+                            Revenue > 1m$</td>
+                    </tr>
+                    <tr>
+                        <td class="table_label"><label for="net_royalties">Revenue royalties (in %):</label></td>
+                        <td class="table_value"><input type="number" min=0 max=100 value=0 id="net_royalties"></td>
+                        <td class="description">Royalties you pay after Net and gross royalties. For example your
+                            publisher
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="table_label"><label for="other_royalties">Other royalties from the rest (in
+                                %):</label>
+                        </td>
+                        <td class="table_value"><input type="number" min=0 max=100 value=0 id="other_royalties"></td>
+                        <td class="description">Any other payments you make from what's left but before your local
+                            taxes.
+                            For example other team member dividents before your local taxes</td>
+                    </tr>
+                    <tr>
+                        <td class="table_label"><label for="local_tax">Your local Tax (in %):</label></td>
+                        <td class="table_value"><input type="number" min=0 max=100 value=0 id="local_tax"></td>
+                        <td class="description">Your local income tax</td>
+                    </tr>
+                    <tr>
+                        <td class="table_label"><label for="extra_royalties_after_tax">Extra royalties after tax (in
+                                %):</label></td>
+                        <td class="table_value"><input type="number" min=0 max=100 value=0
+                                id="extra_royalties_after_tax">
+                        </td>
+                        <td class="description">What you might pay after income tax. For example extra divident tax</td>
+                    </tr>
+                    <tr>
+                        <th class="table_label">UI settings</th>
+                        <th class="table_value"></th>
+                        <th class="description"></th>
+                    </tr>
+                    <tr>
+                        <td class="table_label"><label for="show_zero_revenues">Show revenues w/o deductions:</label>
+                        </td>
+                        <td class="table_value"><input type="checkbox" defaultValue="false" id="show_zero_revenues">
+                        </td>
+                        <td class="description">Show revenues in the summary table that do not have deductions and are
+                            equal
+                            to the previous revenue flow step.</td>
+                    </tr>
+                    <tr>
+                        <td class="table_label"><label for="show_percentages">Show revenue % from Gross:</label>
+                        </td>
+                        <td class="table_value"><input type="checkbox" defaultValue="false" id="show_percentages"></td>
+                        <td class="description">Show the revenue percentages from Gross near each revenue step.</td>
+                    </tr>
+                    <tr>
+                        <td class="table_label"><label for="chart_max_breakdown">Maximum breakdown on sales
+                                chart:</label>
+                        </td>
+                        <td class="table_value"><input type="number" min=5 max=100 value=10 id="chart_max_breakdown">
+                        </td>
+                        <td class="description">Maximum number of elements on sales chart. It will show only top
+                            elements.
+                            For example only 10 top gross countries.</td>
+                    </tr>
+                    <tr>
+                        <th class="table_label">Other settings</th>
+                        <th class="table_value"></th>
+                        <th class="description"></th>
+                    </tr>
+                    <tr>
+                        <td class="table_label"><label for="update_period">Game stats update interval:</label>
+                        </td>
+                        <td class="table_value"><input type="number" min=10 max=1440 value=60 id="update_period">
+                        </td>
+                        <td class="description">An interval (in minutes) to update stats about your games in the
+                            background. Updates are also triggered when you open your getBrowser().</td>
+                    </tr>
+                    <tr>
+                        <td class="table_label"><label for="ignored_app_ids">Ignored AppIDs:</label>
+                        </td>
+                        <td class="table_value"><textarea id="ignored_app_ids" rows="3" cols="30" placeholder="e.g. 123456, 789012"></textarea>
+                        </td>
+                        <td class="description">AppIDs to ignore when fetching data and displaying in reports. Separate multiple AppIDs with commas.</td>
+                    </tr>
+                    <tr>
+                        <td class="table_label"><label for="requests_period">Min requests interval:</label>
+                        </td>
+                        <td class="table_value"><input type="number" min=0 max=10000 value=1000 id="requests_period">
+                        </td>
+                        <td class="description">Minimum interval (in milliseconds) for requesting daily stats about your games in the background. 
+                            A higher value can help prevent Steam's DDoS protection from triggering. Lower values might speed up the stats collection process but could also trigger the protection.</td>
+                    </tr>
+                    <tr>
+                        <td class="table_value"><button id="save">Save</button></td>
+                        <td class="description"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="cache" class="content_block">
+            <h3>Cache & data</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="table_label">AppID</th>
+                        <th class="description">Sales</th>
+                        <th class="description">Wishlists</th>
+                        <th class="description">Reviews</th>
+                        <th class="description">Traffic</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <button id="clear_cache">Clear cache data</button>
+        </div>
+        <div id="info" class="content_block">
+            <h3>Extension info and links</h3>
+            <table>
+                <tr>
+                    <td class="table_label">Version:</td>
+                    <td class="description"><b id="ext_version">0.0</b></td>
+                </tr>
+                <tr>
+                    <td class="table_label">Extension in Chrome Web Store:</td>
+                    <td class="description"><a
+                            href="https://chromewebstore.google.com/detail/cdobnjfogldjaihapojppnopiaccgpag">https://chromewebstore.google.com/detail/cdobnjfogldjaihapojppnopiaccgpag</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="table_label">Github:</td>
+                    <td class="description"><a
+                            href="https://github.com/Flakky/steamworks-dev-chrome-ext">https://github.com/Flakky/steamworks-dev-chrome-ext</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="table_label">Discord:</td>
+                    <td class="description"><a href="https://discord.gg/k8BA8YSHQ6">https://discord.gg/k8BA8YSHQ6</a>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</body>
+
+</html>

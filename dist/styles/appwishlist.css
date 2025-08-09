@@ -1,0 +1,56 @@
+#extra_country_table {
+  width: 40%;
+  float: left;
+}
+
+#extra_country_table td:first-child {
+  text-align: center;
+}
+
+#extra_country_table tr:nth-child(2) {
+  font-weight: bold;
+}
+
+#extra_country_table td:nth-child(2) {
+  text-align: left;
+  font-weight: bold;
+}
+
+#extra_country_table td {
+  width: auto;
+}
+
+#extra_regions_table {
+  margin-right: 10px;
+  width: 40%;
+  float: right;
+}
+
+#extra_country_table_block>div {
+  scrollbar-color: #333 #555;
+  scrollbar-width: thin;
+  overflow: auto;
+  max-height: 400px;
+}
+
+#extra_country_table_block>div::-webkit-scrollbar {
+  width: 12px;
+}
+
+#extra_country_table_block>div::-webkit-scrollbar-track {
+  background: #555;
+}
+
+#extra_country_table_block>div::-webkit-scrollbar-thumb {
+  background-color: #333;
+  border-radius: 10px;
+  border: 3px solid #555;
+}
+
+#extra_conversions_block td:first-child {
+  width: 200px;
+}
+
+#extra_summary_block td:first-child {
+  width: 200px;
+}

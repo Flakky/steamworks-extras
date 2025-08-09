@@ -1,0 +1,105 @@
+#extra_sales_heatmap_block {
+  width: 700px;
+}
+
+#extras_sales_chart {
+  width: 100%;
+}
+
+#extras_sales_chart canvas {
+  margin-top: 10px;
+}
+
+.extra_revenue_percentage {
+  color: #8b969c;
+  font-size: 0.7em;
+}
+
+.extra_extend_title {
+  padding-left: 20px;
+}
+
+.extra_summary_review_positive {
+  color: #64EA4F;
+}
+
+.extra_summary_review_negative {
+  color: #ED4949;
+}
+
+#extras_sales_table table {
+  width: 100%;
+}
+
+#extras_sales_table {
+  width: 100%;
+  overflow-y: scroll;
+  max-height: 400px;
+  scrollbar-color: #333 #555;
+  scrollbar-width: thin;
+}
+
+#extras_sales_table td:first-child {
+  width: 30%;
+  font-weight: bold;
+}
+
+#extras_sales_table td:last-child {
+  width: 15%;
+}
+
+#extras_sales_table td {
+  width: 9%;
+}
+
+#extras_sales_table_header table {
+  width: 100%;
+}
+
+#extras_sales_table_header {
+  margin-top: 10px;
+}
+
+#extras_sales_table_header table th:first-child {
+  width: 30%;
+}
+
+#extras_sales_table_header table th:last-child {
+  width: 15%;
+}
+
+#extras_sales_table_header table th {
+  width: 9%;
+}
+
+#extras_sales_table>div::-webkit-scrollbar {
+  width: 12px;
+}
+
+#extras_sales_table>div::-webkit-scrollbar-track {
+  background: #555;
+}
+
+#extras_sales_table>div::-webkit-scrollbar-thumb {
+  background-color: #333;
+  border-radius: 10px;
+  border: 3px solid #555;
+}
+
+#extras_reviews_table {
+  width: 100%;
+}
+
+#extras_reviews_table tr:first-child {
+  font-weight: bold;
+}
+
+#extras_reviews_table td:first-child {
+  text-align: left;
+  font-weight: bold;
+}
+
+#extras_reviews_table td {
+  width: auto;
+  text-align: right;
+}

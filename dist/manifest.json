@@ -1,0 +1,170 @@
+{
+  "manifest_version": 3,
+  "name": "Steamworks Extras",
+  "version": "2.5.2",
+  "author": "Alex Blintsov",
+  "homepage_url": "https://steamextras.com",
+  "permissions": [
+    "storage",
+    "offscreen"
+  ],
+  "host_permissions": [
+    "https://store.steampowered.com/*",
+    "https://partner.steampowered.com/*",
+    "https://partner.steamgames.com/*",
+    "http://127.0.0.1:3000/*",
+    "http://localhost:3000/*",
+    "https://127.0.0.1:3000/*",
+    "https://localhost:3000/*",
+    "https://steamcommunity.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "http://127.0.0.1:3000/*",
+        "http://localhost:3000/*",
+        "https://127.0.0.1:3000/*",
+        "https://localhost:3000/*"
+      ],
+      "js": [
+        "shared/log.js",
+        "scripts/helpers.js",
+        "data/defaultsettings.js",
+        "content/site.js"
+      ]
+    },
+    {
+      "matches": [
+        "https://partner.steampowered.com/app/details/*"
+      ],
+      "js": [
+        "shared/log.js",
+        "scripts/chart.umd.min.js",
+        "shared/statusblock.js",
+        "scripts/helpers.js",
+        "data/defaultsettings.js",
+        "content/pageblocks.js",
+        "content/appdetails_reviews.js",
+        "content/appdetails_saleschart.js",
+        "content/appdetails_salestable.js",
+        "content/appdetails.js"
+      ],
+      "css": [
+        "styles/partner_steampowered_shared.css",
+        "styles/appdetails.css"
+      ]
+    },
+    {
+      "matches": [
+        "https://partner.steamgames.com/apps/navtrafficstats/*"
+      ],
+      "js": [
+        "shared/log.js",
+        "scripts/chart.umd.min.js",
+        "shared/statusblock.js",
+        "scripts/helpers.js",
+        "data/defaultsettings.js",
+        "content/apptraffic.js"
+      ],
+      "css": [
+        "styles/partner_steampowered_shared.css",
+        "styles/apptraffic.css"
+      ]
+    },
+    {
+      "matches": [
+        "https://partner.steampowered.com/app/wishlist/*"
+      ],
+      "js": [
+        "shared/log.js",
+        "scripts/chart.umd.min.js",
+        "shared/statusblock.js",
+        "scripts/helpers.js",
+        "data/defaultsettings.js",
+        "content/pageblocks.js",
+        "content/appwishlist_conversions.js",
+        "content/appwishlist.js"
+      ],
+      "css": [
+        "styles/partner_steampowered_shared.css",
+        "styles/appwishlist.css"
+      ]
+    },
+    {
+      "matches": [
+        "https://partner.steampowered.com/package/refunds/*"
+      ],
+      "js": [
+        "shared/log.js",
+        "scripts/chart.umd.min.js",
+        "shared/statusblock.js",
+        "scripts/helpers.js",
+        "data/defaultsettings.js",
+        "content/pageblocks.js",
+        "content/refunds_table.js",
+        "content/refunds_reasonstable.js",
+        "content/refunds_chart.js",
+        "content/refunds.js"
+      ],
+      "css": [
+        "styles/partner_steampowered_shared.css",
+        "styles/refunds.css"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "data/chartcolors.json",
+        "data/extensionstatuses.json",
+        "data/defaulsettings.js",
+        "background/offscreen/offscreen.html",
+        "background/offscreen/offscreen.js",
+        "assets/status_info.png",
+        "assets/status_warning.png",
+        "assets/status_error.png"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' http://localhost:3000; object-src 'self'"
+  },
+  "options_page": "options/options.html",
+  "background": {
+    "scripts": [
+      "shared/log.js",
+      "data/defaultsettings.js",
+      "scripts/helpers.js",
+      "background/offscreen/offscreenmanager.js",
+      "scripts/parser.js",
+      "background/bghelpers.js",
+      "background/status.js",
+      "background/storage/storage.js",
+      "background/storage/storagequeue.js",
+      "background/storage/storage_reviews.js",
+      "background/storage/storage_sales.js",
+      "background/storage/storage_traffic.js",
+      "background/storage/storage_wishlists.js",
+      "background/storage/storage_wishlistconversions.js",
+      "background/statsupdater.js",
+      "background/extensionservice.js"
+    ],
+    "service_worker": "background/extensionservice.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "ext@steamextras.com"
+    }
+  },
+  "icons": {
+    "16": "assets/icon-16.png",
+    "48": "assets/icon-48.png",
+    "128": "assets/icon-128.png"
+  }
+}
