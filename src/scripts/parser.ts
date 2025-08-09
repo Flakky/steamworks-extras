@@ -1,7 +1,7 @@
-let parser = {};
+let parser: any = {};
 
-parser.parseDocument = (htmlText, parseType) => {
-  let result = null;
+parser.parseDocument = (htmlText: string, parseType: string): { success: boolean; result: any } => {
+  let result: any = null;
   let success = true;
 
   try {
@@ -32,7 +32,7 @@ parser.parseDocument = (htmlText, parseType) => {
         break;
     }
   }
-  catch (error) {
+  catch (error: any) {
     success = false;
     result = error.toString();
   }
@@ -40,21 +40,21 @@ parser.parseDocument = (htmlText, parseType) => {
   return { success: success, result: result };
 }
 
-parser.parsePackageIDs = (doc) => {
+parser.parsePackageIDs = (doc: Document): any[] => {
   const table = doc.querySelector('.appLandingStorePackagesCtn');
   if (!table) {
     throw new Error('No table found');
   }
 
-  const packageIDs = [];
+  const packageIDs: any[] = [];
   const rows = table.querySelectorAll('.tr');
 
   if (rows.length === 0) {
     throw new Error('No rows found');
   }
 
-  rows.forEach(row => {
-    const link = row.querySelector('a[href^="https://partner.steamgames.com/store/packagelanding/"]');
+  rows.forEach((row: Element) => {
+    const link = row.querySelector('a[href^="https://partner.steamgames.com/store/packagelanding/"]') as HTMLAnchorElement | null;
     if (link) {
       const urlParts = link.href.split('/');
       const packageID = urlParts[urlParts.length - 1];
@@ -65,8 +65,8 @@ parser.parsePackageIDs = (doc) => {
   return packageIDs;
 }
 
-parser.parsePageCreationDate = (doc) => {
-  const startDateElem = doc.getElementById('start_date');
+parser.parsePageCreationDate = (doc: Document): Date => {
+  const startDateElem = doc.getElementById('start_date') as any;
 
   const startDate = startDateElem.value;
 
@@ -81,7 +81,7 @@ parser.parsePageCreationDate = (doc) => {
   return new Date(startDate);
 }
 
-parser.parseWishlistData = (doc) => {
+parser.parseWishlistData = (doc: Document): any => {
   const table = doc.querySelector('.grouping_table');
 
   if (!table) {
@@ -89,12 +89,12 @@ parser.parseWishlistData = (doc) => {
   }
 
   const rows = table.querySelectorAll('tr');
-  const wishlistRows = [];
+  const wishlistRows: Element[] = [];
 
-  rows.forEach(row => {
+  rows.forEach((row: Element) => {
     const cells = row.querySelectorAll('td');
-    cells.forEach(cell => {
-      if (cell.textContent.trim() === 'Wishlists') {
+    cells.forEach((cell: Element) => {
+      if ((cell.textContent || '').trim() === 'Wishlists') {
         wishlistRows.push(row);
       }
     });
@@ -104,16 +104,17 @@ parser.parseWishlistData = (doc) => {
     throw new Error('No wishlist rows found');
   }
 
-  let wishlists = {};
+  let wishlists: any = {};
 
-  wishlistRows.forEach(row => {
+  wishlistRows.forEach((row: Element) => {
     const cells = row.querySelectorAll('td');
-    let wishlistCount = 0;
+    let wishlistCount: any = 0;
     let country = '';
 
-    cells.forEach((cell, index) => {
-      if (cell.textContent.trim() === 'Wishlists') {
-        wishlistCount = cells[index + 1].textContent.trim();
+    cells.forEach((cell: Element, index: number) => {
+      const cellText = (cell.textContent || '').trim();
+      if (cellText === 'Wishlists') {
+        wishlistCount = (cells[index + 1] as Element).textContent?.trim() as any;
 
         if (typeof wishlistCount === 'string' && wishlistCount.startsWith('(') && wishlistCount.endsWith(')')) {
           wishlistCount = -parseInt(wishlistCount.slice(1, -1));
@@ -124,7 +125,7 @@ parser.parseWishlistData = (doc) => {
       if (index === 1) {
         const countryLink = cell.querySelector('a');
         if (countryLink) {
-          country = countryLink.textContent.trim();
+          country = (countryLink.textContent || '').trim();
         }
       }
     });
@@ -135,13 +136,15 @@ parser.parseWishlistData = (doc) => {
   return wishlists;
 }
 
-parser.parseAppIDs = (doc) => {
+parser.parseAppIDs = (doc: Document): any[] => {
   const links = doc.querySelectorAll('a[href*="partner.steampowered.com/app/details/"]');
-  const appIDs = [];
+  const appIDs: any[] = [];
 
-  links.forEach(link => {
-    if (!/demo$/i.test(link.textContent.trim())) {
-      const urlParts = link.href.split('/');
+  links.forEach((link: Element) => {
+    const linkText = (link.textContent || '').trim();
+    if (!/demo$/i.test(linkText)) {
+      const href = (link as HTMLAnchorElement).href;
+      const urlParts = href.split('/');
       const appIDIndex = urlParts.indexOf('details') + 1;
       if (appIDIndex > 0 && appIDIndex < urlParts.length) {
         appIDs.push(urlParts[appIDIndex]);
@@ -152,13 +155,13 @@ parser.parseAppIDs = (doc) => {
   return appIDs;
 }
 
-parser.parseFollowers = (doc) => {
+parser.parseFollowers = (doc: Document): number | void => {
   const groupPagingElement = doc.querySelector('.group_paging');
   if (!groupPagingElement) {
     throw new Error('No element with class "group_paging" found');
   }
 
-  const text = groupPagingElement.textContent;
+  const text = groupPagingElement.textContent || '';
   const match = text.match(/of\s+([\d,]+)\s+Members/);
 
   if (match) {
@@ -171,7 +174,7 @@ parser.parseFollowers = (doc) => {
   }
 }
 
-parser.parseRefundStats = (doc) => {
+parser.parseRefundStats = (doc: Document): any => {
   const contentCenter = doc.querySelector('.content_center');
   if (!contentCenter) {
     throw new Error('No element with class "content_center" found');
@@ -179,7 +182,7 @@ parser.parseRefundStats = (doc) => {
 
   const tables = contentCenter.querySelectorAll('table');
 
-  const table = tables[0];
+  const table = tables[0] as HTMLTableElement | undefined;
   if (!table) {
     throw new Error('No table found in content_center');
   }
@@ -189,16 +192,16 @@ parser.parseRefundStats = (doc) => {
     throw new Error('No rows found in table');
   }
 
-  let stats = {};
+  let stats: any = {};
 
-  rows.forEach(row => {
+  rows.forEach((row: Element) => {
     const cells = row.querySelectorAll('td');
 
     if (cells.length >= 3) {
-      const firstCellText = cells[0].textContent.trim();
-      const secondCellText = cells[1].textContent.trim();
-      const thirdCellText = cells[2].textContent.trim();
-      
+      const firstCellText = (cells[0].textContent || '').trim();
+      const secondCellText = (cells[1].textContent || '').trim();
+      const thirdCellText = (cells[2].textContent || '').trim();
+
       const value = parseFloat(secondCellText) || 0;
       const percentage = parseFloat(thirdCellText.replace(/,/g, '')) || 0;
 
@@ -214,51 +217,51 @@ parser.parseRefundStats = (doc) => {
   });
 
   if (tables.length >= 2) {
-    const reasonsTable = tables[1];
+    const reasonsTable = tables[1] as HTMLTableElement;
     const reasonRows = reasonsTable.querySelectorAll('tbody tr');
-    const refundReasons = [];
+    const refundReasons: any[] = [];
 
-    reasonRows.forEach(row => {
+    reasonRows.forEach((row: Element) => {
       const tds = row.querySelectorAll('td');
       if (tds.length >= 2) {
         const a = tds[0].querySelector('a');
         if (a && a.getAttribute('onclick')) {
-          const onclick = a.getAttribute('onclick');
+          const onclick = a.getAttribute('onclick') as string;
 
           // Extract category ID from onclick="Refund_LoadText( '723544', '115' ); return false;"
           const match = onclick.match(/Refund_LoadText\(\s*'[^']*',\s*'(\d+)'\s*\)/);
 
           if (match) {
             const id = parseInt(match[1], 10);
-            const category = a.textContent.trim();
-            const amountText = tds[1].textContent.replace(/,/g, '').trim();
+            const category = (a.textContent || '').trim();
+            const amountText = (tds[1].textContent || '').replace(/,/g, '').trim();
             const amount = parseInt(amountText, 10) || 0;
             refundReasons.push({ id, category, amount });
           }
         }
       }
     });
-    
+
     stats.refundReasons = refundReasons;
   }
 
   return stats;
 }
 
-parser.parseRefundComments = (doc) => {
-  const comments = [];
+parser.parseRefundComments = (doc: Document): any[] => {
+  const comments: any[] = [];
   const table = doc.querySelector('.refund_notes_table');
   if (table) {
     const rows = table.querySelectorAll('tr');
-    rows.forEach(row => {
-      const obj = {};
+    rows.forEach((row: Element) => {
+      const obj: any = {};
       const langElem = row.querySelector('.refund_note_language');
       const textElem = row.querySelector('.refund_note_text');
       if (langElem) {
-        obj.language = langElem.textContent.replace(/^\(|\)$/g, '').trim();
+        obj.language = (langElem.textContent || '').replace(/^\(|\)$/g, '').trim();
       }
       if (textElem) {
-        obj.text = textElem.textContent.trim();
+        obj.text = (textElem.textContent || '').trim();
       }
       if (obj.text) {
         comments.push(obj);
@@ -267,3 +270,5 @@ parser.parseRefundComments = (doc) => {
   }
   return comments;
 }
+
+

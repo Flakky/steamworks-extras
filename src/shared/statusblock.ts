@@ -1,6 +1,8 @@
-extensionStatuses = undefined
+let extensionStatuses: any = undefined;
 
-const createStatusBlock = () => {
+declare function getBrowser(): any;
+
+export const createStatusBlock = (): HTMLDivElement => {
   const statusBlock = createStatusBlockElement();
   statusBlock.classList.add('extra_floating_notification');
   document.body.appendChild(statusBlock);
@@ -8,7 +10,7 @@ const createStatusBlock = () => {
   return statusBlock;
 }
 
-const createStatusBlockElement = () => {
+export const createStatusBlockElement = (): HTMLDivElement => {
   console.log('Creating status block...');
 
   const statusBlock = document.createElement('div');
@@ -34,13 +36,13 @@ const createStatusBlockElement = () => {
   return statusBlock;
 }
 
-const addStatusBlockToPage = () => {
-  const statusBlock = createStatusBlock();
+export const addStatusBlockToPage = (): void => {
+  createStatusBlock();
   startUpdateStatus();
 }
 
-const startUpdateStatus = () => {
-  const statusElement = document.getElementById('extra_status');
+const startUpdateStatus = (): void => {
+  const statusElement = document.getElementById('extra_status') as HTMLDivElement;
   statusElement.style.display = 'none';
 
   readStatuses();
@@ -48,8 +50,8 @@ const startUpdateStatus = () => {
   setInterval(() => { updateStatus() }, 3000);
 }
 
-const updateStatus = () => {
-  getBrowser().runtime.sendMessage({ request: "getStatus" }, status => {
+const updateStatus = (): void => {
+  getBrowser().runtime.sendMessage({ request: "getStatus" }, (status: any) => {
     console.debug('Status:', status);
 
     if (!extensionStatuses) {
@@ -57,10 +59,10 @@ const updateStatus = () => {
       return;
     }
 
-    const statusElement = document.getElementById('extra_status');
-    const statusImage = document.getElementById('extra_status_icon');
-    const statusText = document.getElementById('extra_status_message');
-    const statusExtraText = document.getElementById('extra_status_extramessage');
+    const statusElement = document.getElementById('extra_status') as HTMLDivElement;
+    const statusImage = document.getElementById('extra_status_icon') as HTMLImageElement;
+    const statusText = document.getElementById('extra_status_message') as HTMLSpanElement;
+    const statusExtraText = document.getElementById('extra_status_extramessage') as HTMLParagraphElement;
 
     const statusInfo = extensionStatuses[`${status.code}`];
 
@@ -84,11 +86,11 @@ const updateStatus = () => {
     }
 
     statusText.innerHTML = statusInfo.message;
-    statusExtraText.innerHTML = statusInfo.extramessage ? statusInfo.extramessage.replace(/\${(.*?)}/g, (match, p1) => status.extraData[p1] || '') : '';
+    statusExtraText.innerHTML = statusInfo.extramessage ? statusInfo.extramessage.replace(/\${(.*?)}/g, (_match: string, p1: string) => status.extraData[p1] || '') : '';
   });
 }
 
-const readStatuses = () => {
+const readStatuses = (): void => {
   console.log('Loading extension statuses...');
   const jsonFilePath = getBrowser().runtime.getURL('data/extensionstatuses.json');
 
@@ -106,3 +108,5 @@ const readStatuses = () => {
     }
   });
 }
+
+

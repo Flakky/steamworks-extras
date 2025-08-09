@@ -1,4 +1,4 @@
-const defaultSettings = {
+export const defaultSettings = {
   "usSalesTax": 0,
   "grossRoyalties": 0,
   "netRoyalties": 0,

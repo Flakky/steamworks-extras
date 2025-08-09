@@ -1,9 +1,13 @@
-let refundsChart = undefined;
-let chartSplit = "Total";
-let chartValueType = "Refund %";
+import * as helpers from '../scripts/helpers';
+import * as pageblocks from './pageblocks';
+import Chart from 'chart.js/auto';
 
-const createRefundsChartBlock = () => {
-  const contentBlock = createFlexContentBlock('Refunds chart', 'extra_refunds_chart_block');
+let refundsChart: any = undefined;
+let chartSplit: string = "Total";
+let chartValueType: string = "Refund %";
+
+export const createRefundsChartBlock = (): void => {
+  const contentBlock = pageblocks.createFlexContentBlock('Refunds chart', 'extra_refunds_chart_block');
 
   const chartBlockElem = document.createElement('div');
   chartBlockElem.id = 'extras_refunds_chart';
@@ -11,13 +15,13 @@ const createRefundsChartBlock = () => {
   contentBlock.appendChild(chartBlockElem);
 };
 
-const createRefundsChart = () => {
+export const createRefundsChart = (): void => {
   const chartBlockElem = document.createElement('div');
   chartBlockElem.id = 'extras_refunds_chart';
 
-  setFlexContentBlockContent('extra_refunds_chart_block', chartBlockElem);
+  pageblocks.setFlexContentBlockContent('extra_refunds_chart_block', chartBlockElem);
 
-  const createChartSelect = (options, name, defaultValue, onSelect) => {
+  const createChartSelect = (options: string[], name: string, defaultValue: string, onSelect: (select: HTMLSelectElement) => void) => {
     const nameElem = document.createElement("b");
     nameElem.textContent = `${name}: `;
     nameElem.classList.add('extra_chart_select_name');
@@ -31,7 +35,7 @@ const createRefundsChart = () => {
       selectElem.appendChild(optionElement);
     });
 
-    selectElem.value = defaultValue;
+    (selectElem as any).value = defaultValue;
 
     selectElem.addEventListener("change", () => { onSelect(selectElem); });
 
@@ -63,15 +67,15 @@ const createRefundsChart = () => {
   });
 
   const canvas = document.createElement('canvas');
-  canvas.id = 'refundsChart';
-  canvas.width = 800;
-  canvas.height = 400;
+  (canvas as any).id = 'refundsChart';
+  (canvas as any).width = 800;
+  (canvas as any).height = 400;
 
   chartBlockElem.appendChild(canvas);
 
-  const data = {};
+  const data: any = {};
 
-  const config = {
+  const config: any = {
     type: 'line',
     data: data,
     options: {
@@ -88,7 +92,7 @@ const createRefundsChart = () => {
   updateRefundsChart(chartSplit, chartValueType);
 }
 
-const updateRefundsChart = (split, valueType) => {
+const updateRefundsChart = (split: string, valueType: string): void => {
   if (!refundsChart) return;
 
   if (typeof salesAllTime === "undefined" || !Array.isArray(salesAllTime)) {
@@ -97,11 +101,11 @@ const updateRefundsChart = (split, valueType) => {
   }
 
   // Group data by split and month
-  const groupMap = {};
+  const groupMap: any = {};
 
-  salesAllTime.forEach(element => {
+  salesAllTime.forEach((element: any) => {
     let groupKey = element[split];
-    
+
     // If grouping by Total, use "Total" as key
     if (split === 'Total') {
       groupKey = "Total";
@@ -136,9 +140,9 @@ const updateRefundsChart = (split, valueType) => {
   });
 
   // Get all unique months across all groups
-  const allMonths = new Set();
-  Object.values(groupMap).forEach(groupData => {
-    Object.keys(groupData).forEach(month => {
+  const allMonths = new Set<string>();
+  Object.values(groupMap).forEach((groupData: any) => {
+    Object.keys(groupData).forEach((month: string) => {
       if (month !== "Unknown") {
         allMonths.add(month);
       }
@@ -149,8 +153,8 @@ const updateRefundsChart = (split, valueType) => {
   const sortedMonths = Array.from(allMonths).sort();
 
   // Calculate refund percentages and prepare data
-  const processedData = {};
-  Object.entries(groupMap).forEach(([groupKey, monthData]) => {
+  const processedData: any = {};
+  Object.entries(groupMap).forEach(([groupKey, monthData]: [string, any]) => {
     processedData[groupKey] = {
       months: sortedMonths,
       values: sortedMonths.map(month => {
@@ -165,38 +169,38 @@ const updateRefundsChart = (split, valueType) => {
   });
 
   // Filter only top entries by total value
-  const entriesWithSum = Object.entries(processedData).map(([key, value]) => {
-    let sum;
+  const entriesWithSum = Object.entries(processedData).map(([key, value]: any) => {
+    let sum: number;
     if (valueType === "Refund %") {
       const groupMonthData = groupMap[key] || {};
-      sum = sortedMonths.reduce((acc, month) => {
+      sum = sortedMonths.reduce((acc: number, month: string) => {
         const data = groupMonthData[month] || { grossUnits: 0 };
         return acc + (parseFloat(data.grossUnits) || 0);
       }, 0);
     } else {
-      sum = value.values.reduce((acc, cur) => acc + cur, 0);
+      sum = value.values.reduce((acc: number, cur: number) => acc + cur, 0);
     }
     return { key, value, sum };
   });
 
-  entriesWithSum.sort((a, b) => b.sum - a.sum);
+  entriesWithSum.sort((a: any, b: any) => b.sum - a.sum);
 
   const top10Entries = entriesWithSum.slice(0, settings.chartMaxBreakdown);
 
-  const top10EntriesObject = top10Entries.reduce((obj, entry) => {
+  const top10EntriesObject = top10Entries.reduce((obj: any, entry: any) => {
     obj[entry.key] = entry.value;
     return obj;
-  }, {});
+  }, {} as any);
 
   // Fill chart data set
-  const datasets = [];
+  const datasets: any[] = [];
 
-  for (const [key, value] of Object.entries(top10EntriesObject)) {
+  for (const [key, value] of Object.entries(top10EntriesObject) as any) {
     const color = chartColors[key] || `rgb(${55 + Math.round(Math.random() * 200)}, ${55 + Math.round(Math.random() * 200)}, ${55 + Math.round(Math.random() * 200)})`;
 
     datasets.push({
       label: key,
-      data: value.values,
+      data: (value as any).values,
       fill: false,
       borderColor: color,
       tension: 0

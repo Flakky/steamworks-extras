@@ -1,22 +1,25 @@
-let refundsTableSplit = "Country";
-let refundsTableValueType = "Chargeback/Returns (USD)";
+import * as helpers from '../scripts/helpers';
+import * as pageblocks from './pageblocks';
 
-const refundsTableColumns = [
+let refundsTableSplit: string = "Country";
+let refundsTableValueType: string = "Chargeback/Returns (USD)";
+
+const refundsTableColumns: any[] = [
   { key: "GrossUnitsSold", label: "Sales" },
   { key: "Chargeback/Returns", label: "Refunds" },
   { key: "RefundsPercent", label: "Refunds %" },
 ];
 
-const createRefundsTableBlock = () => {
-  createFlexContentBlock('Refunds table', 'extras_refunds_table_block');
+export const createRefundsTableBlock = (): void => {
+  pageblocks.createFlexContentBlock('Refunds table', 'extras_refunds_table_block');
 };
 
-const createRefundsTable = () => {
+export const createRefundsTable = (): void => {
   const tableBlockElem = document.createElement('div');
 
-  setFlexContentBlockContent('extras_refunds_table_block', tableBlockElem);
+  pageblocks.setFlexContentBlockContent('extras_refunds_table_block', tableBlockElem);
 
-  const createTableSelect = (options, name, defaultValue, onSelect) => {
+  const createTableSelect = (options: string[], name: string, defaultValue: string, onSelect: (select: HTMLSelectElement) => void) => {
     const nameElem = document.createElement("b");
     nameElem.textContent = `${name}: `;
     nameElem.classList.add('extra_chart_select_name');
@@ -30,7 +33,7 @@ const createRefundsTable = () => {
       selectElem.appendChild(optionElement);
     });
 
-    selectElem.value = defaultValue;
+    (selectElem as any).value = defaultValue;
 
     selectElem.addEventListener("change", () => { onSelect(selectElem); });
 
@@ -68,14 +71,14 @@ const createRefundsTable = () => {
     th.textContent = col.label;
     headerRow.appendChild(th);
   });
-  
+
   // Wrapper is for margin because tables do not support margin in browsers
   const wrapperDiv = document.createElement('div');
   wrapperDiv.id = 'extras_refunds_table_header';
   wrapperDiv.appendChild(headerTableElem);
 
   tableBlockElem.appendChild(wrapperDiv);
-  
+
   // Div for scrollable table
   const tableContainerElem = document.createElement('div');
   tableContainerElem.id = 'extras_refunds_table';
@@ -87,8 +90,8 @@ const createRefundsTable = () => {
   updateRefundsTable(refundsTableSplit);
 }
 
-const updateRefundsTable = (split) => {
-  const tableElem = document.querySelector('#extras_refunds_table table');
+const updateRefundsTable = (split: string): void => {
+  const tableElem = document.querySelector('#extras_refunds_table table') as HTMLTableElement | null;
   if (!tableElem) return;
 
   tableElem.innerHTML = "";
@@ -102,11 +105,11 @@ const updateRefundsTable = (split) => {
   }
 
   // Group data by split
-  const groupMap = {};
+  const groupMap: any = {};
 
-  salesAllTime.forEach(element => {
+  salesAllTime.forEach((element: any) => {
     let groupKey = element[split];
-    
+
     // If grouping by Month, extract YYYY-MM from Date
     if (split === 'Month' && element['Date']) {
       const dateObj = new Date(element['Date']);
@@ -132,7 +135,7 @@ const updateRefundsTable = (split) => {
   });
 
   // Prepare group array with Refunds %
-  const groupArr = Object.entries(groupMap).map(([key, values]) => {
+  const groupArr = Object.entries(groupMap).map(([key, values]: any) => {
     const refunds = values["Chargeback/Returns"] || 0;
     const grossUnits = values["GrossUnitsSold"] || 0;
     const refundsPercent = grossUnits > 0 ? (refunds / grossUnits) * 100 : 0;
@@ -141,21 +144,21 @@ const updateRefundsTable = (split) => {
       "GrossUnitsSold": grossUnits,
       "Chargeback/Returns": refunds,
       "RefundsPercent": refundsPercent,
-    };
+    } as any;
   });
 
   // Sort
   if (split === "Month") {
-    groupArr.sort((a, b) => new Date(b.key) - new Date(a.key));
+    (groupArr as any).sort((a: any, b: any) => new Date(b.key) as any - (new Date(a.key) as any));
   } else {
-    groupArr.sort((a, b) => b["GrossUnitsSold"] - a["GrossUnitsSold"]);
+    (groupArr as any).sort((a: any, b: any) => b["GrossUnitsSold"] - a["GrossUnitsSold"]);
   }
 
   // Calculate total row
-  const totalGrossUnits = groupArr.reduce((sum, row) => sum + (row["GrossUnitsSold"] || 0), 0);
-  const totalRefunds = groupArr.reduce((sum, row) => sum + (row["Chargeback/Returns"] || 0), 0);
+  const totalGrossUnits = (groupArr as any).reduce((sum: number, row: any) => sum + (row["GrossUnitsSold"] || 0), 0);
+  const totalRefunds = (groupArr as any).reduce((sum: number, row: any) => sum + (row["Chargeback/Returns"] || 0), 0);
   const totalRefundsPercent = totalGrossUnits > 0 ? (totalRefunds / totalGrossUnits) * 100 : 0;
-  const totalRow = {
+  const totalRow: any = {
     key: "Total",
     "GrossUnitsSold": totalGrossUnits,
     "Chargeback/Returns": totalRefunds,
@@ -163,14 +166,14 @@ const updateRefundsTable = (split) => {
   };
 
   // Update the first column label in the header (outside the scrollable table)
-  const firstTh = document.querySelector('#extras_refunds_table_header table thead th');
+  const firstTh = document.querySelector('#extras_refunds_table_header table thead th') as HTMLTableCellElement | null;
   if (firstTh) {
     firstTh.textContent = split;
   }
 
   const tbody = tableElem.createTBody();
 
-  const insertRefundsTableRow = (tbody, rowData) => {
+  const insertRefundsTableRow = (tbody: HTMLTableSectionElement, rowData: any) => {
     const tr = tbody.insertRow();
     const tdKey = tr.insertCell();
     tdKey.textContent = rowData.key;
@@ -183,18 +186,20 @@ const updateRefundsTable = (split) => {
 
         const percent = rowData[col.key];
         const { r, g, b } = getRefundPercentageColor(percent);
-        td.style.color = `rgb(${r},${g},${b})`;
-        
+        (td.style as any).color = `rgb(${r},${g},${b})`;
+
       } else {
         td.textContent = helpers.numberWithCommas(Math.round(rowData[col.key]));
         td.setAttribute('align', 'right');
       }
     });
-    
+
   }
 
   insertRefundsTableRow(tbody, totalRow);
-  groupArr.forEach(row => {
+  (groupArr as any).forEach((row: any) => {
     insertRefundsTableRow(tbody, row);
   });
 }
+
+

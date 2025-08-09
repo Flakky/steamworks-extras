@@ -1,10 +1,12 @@
+import * as helpers from '../scripts/helpers';
+
 /**
  * Creates a flexible content block with a title and appends it to the main content area
- * @param {string} title - The title to display in the content block
- * @param {string} id - The unique identifier for the content block
- * @returns {HTMLElement} The created content block element
+ * @param title - The title to display in the content block
+ * @param id - The unique identifier for the content block
+ * @returns The created content block element
  */
-const createFlexContentBlock = (title, id, addToContent = true) => {
+export const createFlexContentBlock = (title: string, id: string, addToContent: boolean = true): HTMLDivElement => {
   const newBlockElem = document.createElement('div');
   newBlockElem.id = id;
   newBlockElem.classList.add('extra_content_block');
@@ -18,46 +20,43 @@ const createFlexContentBlock = (title, id, addToContent = true) => {
   loaderDiv.classList.add('loader');
   newBlockElem.appendChild(loaderDiv);
 
-  if(addToContent) getCustomContentBlock().appendChild(newBlockElem);
+  if (addToContent) getCustomContentBlock()?.appendChild(newBlockElem);
 
   return newBlockElem;
 }
 
 /**
  * Sets the content of a flex content block by its ID
- * @param {string} id - The unique identifier of the content block
- * @param {string|HTMLElement} content - The content to set (can be text or HTML element)
+ * @param id - The unique identifier of the content block
+ * @param content - The content to set (can be text or HTML element)
  */
-const setFlexContentBlockContent = (id, content) => {
+export const setFlexContentBlockContent = (id: string, content: string | HTMLElement): void => {
   const blockElement = document.getElementById(id);
-  setFlexContentBlockContentElem(blockElement, content);
+  setFlexContentBlockContentElem(blockElement as HTMLElement | null, content);
 }
 
 /**
  * Sets the content of a flex content block by its element
- * @param {HTMLElement} blockElement - The content block element
- * @param {string|HTMLElement} content - The content to set (can be text or HTML element)
+ * @param blockElement - The content block element
+ * @param content - The content to set (can be text or HTML element)
  */
-const setFlexContentBlockContentElem = (blockElement, content) => {
+export const setFlexContentBlockContentElem = (blockElement: HTMLElement | null, content: string | HTMLElement): void => {
   if (!blockElement) {
     console.warn(`Content block element not found`);
     return;
   }
 
-  // Remove the loader if it exists
   const loader = blockElement.querySelector('.loader');
   if (loader) {
     loader.remove();
   }
 
-  // Clear existing content except the title
   const title = blockElement.querySelector('h2');
   blockElement.innerHTML = '';
   if (title) {
     blockElement.appendChild(title);
   }
 
-  // Add the new content
   if (typeof content === 'string') {
     blockElement.innerHTML += content;
   } else if (content instanceof HTMLElement) {
@@ -71,7 +70,7 @@ const setFlexContentBlockContentElem = (blockElement, content) => {
  * Creates the main custom content structure with toolbar and content areas
  * Inserts the structure after the header toolbar in the document body
  */
-const createCustomContentBlock = () => {
+export const createCustomContentBlock = (): void => {
   const newBlockElem = document.createElement('div');
   newBlockElem.id = 'extra_main_block';
 
@@ -89,16 +88,16 @@ const createCustomContentBlock = () => {
 
 /**
  * Creates a toolbar block with navigation links organized in dropdown menus
- * @param {string} appID - The Steam app ID to use in the navigation links
- * @returns {HTMLElement} The created toolbar block element
+ * @param appID - The Steam app ID to use in the navigation links
+ * @returns The created toolbar block element
  */
-const createToolbarBlock = (appID) => {
+export const createToolbarBlock = (appID: string | number): HTMLDivElement => {
   const newLinksBlockElem = document.createElement('div');
   newLinksBlockElem.classList.add('extra_content_block');
   newLinksBlockElem.id = 'extra_links_block';
 
   const toolbarBlock = getExtraToolbarBlock();
-  toolbarBlock.appendChild(newLinksBlockElem);
+  toolbarBlock?.appendChild(newLinksBlockElem);
 
   const dateUrlParams = new URLSearchParams(window.location.search);
   const dateStart = dateUrlParams.get('dateStart');
@@ -154,7 +153,6 @@ const createToolbarBlock = (appID) => {
       dropdownContent.appendChild(anchor);
     });
 
-    // Assemble the dropdown
     dropdown.appendChild(button);
     dropdown.appendChild(dropdownContent);
     toolbar.appendChild(dropdown);
@@ -168,13 +166,14 @@ const createToolbarBlock = (appID) => {
 /**
  * Creates a new date range selection block and appends it to the content block
  * Will only work if the date range selection block is on a page
- * @returns {HTMLElement} The new date range container element
+ * @returns The new date range container element
  */
-const moveDateRangeSelectionToTop = () => {
+export const moveDateRangeSelectionToTop = (): HTMLDivElement => {
   const toolbarBlock = getExtraToolbarBlock();
 
-  const periodSelectBlock = document.getElementsByClassName('PeriodLinks')[0];
+  const periodSelectBlock = document.getElementsByClassName('PeriodLinks')[0] as HTMLElement;
   const periodSelectWholeBlock = helpers.findParentByTag(periodSelectBlock, 'div');
+  if (!periodSelectWholeBlock) throw new Error('Period select whole block not found');
 
   const newDateRangeContainerElem = document.createElement('div');
   newDateRangeContainerElem.classList.add('extra_content_block');
@@ -182,7 +181,7 @@ const moveDateRangeSelectionToTop = () => {
 
   newDateRangeContainerElem.appendChild(periodSelectWholeBlock);
 
-  toolbarBlock.appendChild(newDateRangeContainerElem);
+  toolbarBlock?.appendChild(newDateRangeContainerElem);
 
   return newDateRangeContainerElem;
 }
@@ -190,42 +189,44 @@ const moveDateRangeSelectionToTop = () => {
 /**
  * Moves the game title to the top of the toolbar block
  */
-const moveGameTitle = () => {
+export const moveGameTitle = (): void => {
   const toolbarBlock = getExtraToolbarBlock();
 
   const titleElem = document.getElementsByTagName('h1')[0];
 
-  toolbarBlock.insertBefore(titleElem, toolbarBlock.firstChild);
+  toolbarBlock?.insertBefore(titleElem, toolbarBlock.firstChild);
 }
 
 /**
  * Hides the original main block with all the content which has not been moved to blocks
  */
-const hideOriginalMainBlock = () => {
-  const elem = document.getElementsByClassName('ContentWrapper')[0];
+export const hideOriginalMainBlock = (): void => {
+  const elem = document.getElementsByClassName('ContentWrapper')[0] as HTMLElement;
   elem.style.display = 'none';
 }
 
 /**
  * Gets the main custom block element
- * @returns {HTMLElement|null} The main custom block element
+ * @returns The main custom block element
  */
-const getCustomMainBlock = () => {
+export const getCustomMainBlock = (): HTMLElement | null => {
   return document.getElementById('extra_main_block');
 }
 
 /**
  * Gets the main content block element where flexible content blocks are appended
- * @returns {HTMLElement|null} The main content block element
+ * @returns The main content block element
  */
-const getCustomContentBlock = () => {
+export const getCustomContentBlock = (): HTMLElement | null => {
   return document.getElementById('extra_main_content_block');
 }
 
 /**
  * Gets the toolbar block element for additional controls and navigation
- * @returns {HTMLElement|null} The toolbar block element
+ * @returns The toolbar block element
  */
-const getExtraToolbarBlock = () => {
+export const getExtraToolbarBlock = (): HTMLElement | null => {
   return document.getElementById('extra_toolbar_block');
 }
+
+

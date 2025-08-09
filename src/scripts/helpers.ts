@@ -1,14 +1,4 @@
-let helpers = {}
-
-const getBrowser = () => {
-  if (typeof browser !== 'undefined') {
-    return browser;
-  } else if (typeof chrome !== 'undefined') {
-    return chrome;
-  } else {
-    throw new Error('No browser API found');
-  }
-}
+import { getBrowser } from '../shared/browser';
 
 /**
  * Returns number splitted with commas as thousands separators
@@ -20,7 +10,7 @@ const getBrowser = () => {
  * // returns 123,456,789
  * numberWithCommas(123456789);
  */
-helpers.numberWithCommas = (x) => {
+export const numberWithCommas = (x: number): string => {
   // https://stackoverflow.com/questions/2901102/how-to-format-a-number-with-commas-as-thousands-separators
   return Math.floor(x).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
 }
@@ -35,7 +25,7 @@ helpers.numberWithCommas = (x) => {
  * // returns true
  * isStringEmpty(' ');
  */
-helpers.isStringEmpty = (str) => {
+export const isStringEmpty = (str: string | null | undefined): boolean => {
   return str === null || str === undefined || str.trim() === '';
 }
 
@@ -51,11 +41,11 @@ helpers.isStringEmpty = (str) => {
  * // returns {...}
  * findElementByText('td', 'Hello World', document);
  */
-helpers.findElementByText = (tag, text, doc = undefined) => {
+export const findElementByText = (tag: string, text: string, doc: Document | undefined = undefined): Element | undefined => {
   const elements = doc ? doc.getElementsByTagName(tag) : document.getElementsByTagName(tag);
 
-  for (let element of elements) {
-    if (element.textContent.trim() === text) {
+  for (const element of Array.from(elements)) {
+    if ((element.textContent as string).trim() === text) {
       return element;
     }
   }
@@ -76,7 +66,7 @@ helpers.findElementByText = (tag, text, doc = undefined) => {
  * // returns table element which contains td cell
  * findParentByTag(myTableTDCellElem, 'table');
  */
-helpers.findParentByTag = (element, tagName) => {
+export const findParentByTag = (element: any, tagName: string): Element | undefined => {
 
   tagName = tagName.toUpperCase();
 
@@ -90,7 +80,7 @@ helpers.findParentByTag = (element, tagName) => {
   return undefined;
 }
 
-helpers.tryConvertStringToNumber = (str) => {
+export const tryConvertStringToNumber = (str: string): number | string => {
   // First, attempt to convert to a number
   const number = Number(str);
 
@@ -112,7 +102,7 @@ helpers.tryConvertStringToNumber = (str) => {
  * // returns '2020-01-20'
  * await dateToString(new Date('2020-01-20'));
  */
-helpers.dateToString = (date) => {
+export const dateToString = (date: Date): string => {
   return date.toISOString().split('T')[0];
 }
 
@@ -129,13 +119,13 @@ helpers.dateToString = (date) => {
  * // returns ['2020-01-20', '2020-01-21', '2020-01-22']
  * getDateRangeArray(new Date('2020-01-20'), new Date('2020-01-22'));
  */
-helpers.getDateRangeArray = (dateStart, dateEnd, reverse, outputDateStrings) => {
-  const days = [];
+export const getDateRangeArray = (dateStart: Date, dateEnd: Date, reverse?: boolean, outputDateStrings?: boolean): Array<Date | string> => {
+  const days: Array<Date | string> = [];
 
   let day = new Date(dateStart);
   while (day <= dateEnd) {
     if (outputDateStrings) {
-      const formattedDate = helpers.dateToString(day);
+      const formattedDate = dateToString(day);
       days.push(formattedDate);
     }
     else days.push(new Date(day))
@@ -162,22 +152,22 @@ helpers.getDateRangeArray = (dateStart, dateEnd, reverse, outputDateStrings) => 
  * // returns 123456
  * await getCountryRevenue(000000, 'United States', Date('2020-01-20'), Date('2021-05-20')));
  */
-helpers.getCountryRevenue = async (appID, country, dateStart, dateEnd) => {
+export const getCountryRevenue = async (appID: string, country: string, dateStart?: Date, dateEnd?: Date): Promise<number> => {
 
   const startDate = dateStart || new Date(2010, 0, 1);
   const endDate = dateEnd || new Date();
 
-  const formattedStartDate = helpers.dateToString(startDate);
-  const formattedEndDate = helpers.dateToString(endDate);
+  const formattedStartDate = dateToString(startDate);
+  const formattedEndDate = dateToString(endDate);
 
-  let result = await helpers.sendMessageAsync({ request: 'getData', type: 'Sales', appId: appID, dateStart: formattedStartDate, dateEnd: formattedEndDate, returnLackData: true });
+  let result: any = await sendMessageAsync({ request: 'getData', type: 'Sales', appId: appID, dateStart: formattedStartDate, dateEnd: formattedEndDate, returnLackData: true });
 
   if (result === undefined) throw new Error(`Was not able to get sales data for appID ${appID}`);
 
-  result = result.filter(item => item["Country"] === country);
+  result = result.filter((item: any) => item["Country"] === country);
 
   let revenue = 0;
-  result.forEach(item => {
+  result.forEach((item: any) => {
     revenue += item["Gross Steam Sales (USD)"];
   });
 
@@ -187,16 +177,16 @@ helpers.getCountryRevenue = async (appID, country, dateStart, dateEnd) => {
 }
 
 /**
- * Corrects a given date range to be a full day. 
+ * Corrects a given date range to be a full day.
  *
  * @param {Date} startDate - Start date of the range
  * @param {Date} endDate - End date of the range
- * 
+ *
  * @example
  * // returns 2025-01-01 00:00:00 and 2025-01-02 23:59:59
  * correctDateRange(new Date('2025-01-01'), new Date('2025-01-02'));
  */
-helpers.correctDateRange = (dateStart, dateEnd) => {
+export const correctDateRange = (dateStart: Date, dateEnd: Date): { dateStart: Date, dateEnd: Date } => {
   dateStart = new Date(Date.UTC(
     dateStart.getUTCFullYear(),
     dateStart.getUTCMonth(),
@@ -214,7 +204,7 @@ helpers.correctDateRange = (dateStart, dateEnd) => {
   return { dateStart: dateStart, dateEnd: dateEnd };
 }
 
-helpers.getDateNoOffset = () => {
+export const getDateNoOffset = (): Date => {
   const now = new Date(Date.now());
   return now;
 }
@@ -224,7 +214,7 @@ helpers.getDateNoOffset = () => {
  *
  * @returns {Date} - Corrected today's date
  */
-helpers.getCalculationToday = () => {
+export const getCalculationToday = (): Date => {
   const now = new Date(Date.now());
   if (now.getUTCHours() < 7) now.setUTCDate(now.getUTCDate() - 1); // Steam still stands on the previous day until 7am UTC
   return now;
@@ -238,7 +228,7 @@ helpers.getCalculationToday = () => {
  * @param {Date} endDate - End date of the range
  * @returns {boolean} - True if the date is in the range, false otherwise
  */
-helpers.isDateInRange = (date, startDate, endDate) => {
+export const isDateInRange = (date: Date, startDate: Date, endDate: Date): boolean => {
   const start = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getUTCDate());
   const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getUTCDate(), 23, 59, 59, 999);
   const target = new Date(date.getFullYear(), date.getMonth(), date.getUTCDate(), 12, 0, 0, 0); // To be sure the date is inside start and end
@@ -252,7 +242,7 @@ helpers.isDateInRange = (date, startDate, endDate) => {
  * @param {string} dateString - Date string in format "YYYY-MM-DD"
  * @returns {Date} - Date object
  */
-helpers.dateFromString = (dateString) => {
+export const dateFromString = (dateString: string): Date => {
   const [year, month, day] = dateString.split('-').map(Number);
   return new Date(Date.UTC(year, month - 1, day));
 }
@@ -264,7 +254,7 @@ helpers.dateFromString = (dateString) => {
  * @param {string} strDelimiter - [Optional] Delimiter. Default is comma
  * @returns {Array} - Array of arrays
  */
-helpers.csvTextToArray = (strData, strDelimiter) => {
+export const csvTextToArray = (strData: string, strDelimiter?: string): any[] => {
   // https://www.bennadel.com/blog/1504-ask-ben-parsing-csv-strings-with-javascript-exec-regular-expression-command.htm
 
   // Check to see if the delimiter is defined. If not,
@@ -289,11 +279,11 @@ helpers.csvTextToArray = (strData, strDelimiter) => {
 
   // Create an array to hold our data. Give the array
   // a default empty first row.
-  var arrData = [[]];
+  var arrData: any[] = [[]];
 
   // Create an array to hold our individual pattern
   // matching groups.
-  var arrMatches = null;
+  var arrMatches: RegExpExecArray | null = null;
 
 
   // Keep looping over the regular expression matches
@@ -341,7 +331,7 @@ helpers.csvTextToArray = (strData, strDelimiter) => {
 
     // Now that we have our value string, let's add
     // it to the data array.
-    arrData[arrData.length - 1].push(helpers.tryConvertStringToNumber(strMatchedValue));
+    arrData[arrData.length - 1].push(tryConvertStringToNumber(strMatchedValue));
   }
 
   // Return the parsed data.
@@ -354,7 +344,7 @@ helpers.csvTextToArray = (strData, strDelimiter) => {
  * @param {string} type - Type of the data to get
  * @param {string} appId - AppID of the game
  * @param {string} dateStart - Start date of the range
- * @param {string} dateEnd - End date of the range  
+ * @param {string} dateEnd - End date of the range
  * @param {boolean} returnLackData - [Optional] If true, the function will return data even if some of it is not available. Otherwise, it will return undefined if some data is not available.
  * @returns {Promise} - Promise with the response
  *
@@ -362,8 +352,8 @@ helpers.csvTextToArray = (strData, strDelimiter) => {
  * // returns data from storage
  * await getDataFromStorage('Sales', 123456, new Date('2020-01-20'), new Date('2020-01-22'), true);
  */
-helpers.getDataFromStorage = async (type, appId, dateStart, dateEnd, returnLackData) => {
-  const result = await helpers.sendMessageAsync({ request: 'getData', type: type, appId: appId, dateStart: dateStart, dateEnd: dateEnd, returnLackData: returnLackData });
+export const getDataFromStorage = async (type: string, appId: string | number, dateStart?: any, dateEnd?: any, returnLackData?: boolean): Promise<any> => {
+  const result = await sendMessageAsync({ request: 'getData', type: type, appId: appId, dateStart: dateStart, dateEnd: dateEnd, returnLackData: returnLackData });
   console.debug(`returning "${type}" data from background: `, result);
   return result;
 }
@@ -375,7 +365,7 @@ helpers.getDataFromStorage = async (type, appId, dateStart, dateEnd, returnLackD
  * @param {string} text - Text of the message
  * @returns {object} - DOM Element
  */
-helpers.createMessageBlock = (type, text) => {
+export const createMessageBlock = (type: 'error' | 'warning', text: string): HTMLDivElement => {
   const block = document.createElement('div');
   const title = document.createElement('b');
 
@@ -407,7 +397,7 @@ helpers.createMessageBlock = (type, text) => {
  * @param {string} text - Text of the message
  * @returns {object} - DOM Element
  */
-helpers.createMessageText = (type, text) => {
+export const createMessageText = (type: 'error' | 'warning', text: string): HTMLParagraphElement => {
   const block = document.createElement('p');
   const title = document.createElement('b');
 
@@ -433,16 +423,16 @@ helpers.createMessageText = (type, text) => {
   return block;
 }
 
-helpers.selectChartColor = (chartColors, tag) => {
+export const selectChartColor = (chartColors: any, tag: string): string => {
   if (chartColors && chartColors[tag]) return chartColors[tag];
 
   return `rgb(${30 + Math.round(Math.random() * 225)}, ${30 + Math.round(Math.random() * 225)}, ${30 + Math.round(Math.random() * 225)})`;
 }
 
-helpers.getDOMLocal = async (url) => {
+export const getDOMLocal = async (url: string): Promise<Document> => {
   const response = await fetch(url);
 
-  if (!response.ok) throw new Error('Network response was not ok', url);
+  if (!response.ok) throw new (Error as any)('Network response was not ok', url);
 
   const htmlText = await response.text();
 
@@ -458,9 +448,9 @@ helpers.getDOMLocal = async (url) => {
  * @param {object} message - Message to send. Must contain 'request' property in order to be recognized.
  * @returns {Promise} - Promise with the response
  */
-helpers.sendMessageAsync = (message) => {
+export const sendMessageAsync = (message: any): Promise<any> => {
   return new Promise((resolve, reject) => {
-    getBrowser().runtime.sendMessage(message, (response) => {
+    getBrowser().runtime.sendMessage(message, (response: any) => {
       if (getBrowser().runtime.lastError) {
         reject(getBrowser().runtime.lastError);
       } else {

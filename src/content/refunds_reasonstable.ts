@@ -1,15 +1,18 @@
-const createReasonsTableBlock = () => {
-  createFlexContentBlock('Refund reasons', 'extras_reasons_block');
+import * as helpers from '../scripts/helpers';
+import * as pageblocks from './pageblocks';
+
+export const createReasonsTableBlock = (): void => {
+  pageblocks.createFlexContentBlock('Refund reasons', 'extras_reasons_block');
 };
 
-const createReasonsTable = () => {
+export const createReasonsTable = (packageID: number, refundStats: Array<any>): void => {
   const tableBlockElem = document.createElement('div');
 
-  setFlexContentBlockContent('extras_reasons_block', tableBlockElem);
+  pageblocks.setFlexContentBlockContent('extras_reasons_block', tableBlockElem);
 
   // Create table element
   const tableElem = document.createElement('table');
-  tableElem.id = 'extras_reasons_table';
+  (tableElem as any).id = 'extras_reasons_table';
 
   // Create table header
   const thead = tableElem.createTHead();
@@ -24,14 +27,14 @@ const createReasonsTable = () => {
 
   headers.forEach(header => {
     const th = document.createElement('th');
-    th.textContent = header.text;
+    th.textContent = (header as any).text;
     headerRow.appendChild(th);
   });
 
 
-  const reasonsLifetime = (refundStats[0] && refundStats[0].refundReasons) || {};
-  const reasonsLastWeek = (refundStats[1] && refundStats[1].refundReasons) || {};
-  const reasonsLastMonth = (refundStats[2] && refundStats[2].refundReasons) || {};
+  const reasonsLifetime = (refundStats[0] && refundStats[0].refundReasons) || [];
+  const reasonsLastWeek = (refundStats[1] && refundStats[1].refundReasons) || [];
+  const reasonsLastMonth = (refundStats[2] && refundStats[2].refundReasons) || [];
 
   console.log('Reasons: ', refundStats);
   console.log('Reasons lifetime: ', reasonsLifetime);
@@ -39,18 +42,18 @@ const createReasonsTable = () => {
   console.log('Reasons last month: ', reasonsLastMonth);
 
   // Get all unique reasons
-  const allReasons = new Set([
-    ...(reasonsLifetime.map(r => r.category)),
-    ...(reasonsLastWeek.map(r => r.category)),
-    ...(reasonsLastMonth.map(r => r.category))
+  const allReasons = new Set<string>([
+    ...(reasonsLifetime.map((r: any) => r.category)),
+    ...(reasonsLastWeek.map((r: any) => r.category)),
+    ...(reasonsLastMonth.map((r: any) => r.category))
   ]);
 
   console.log('All reasons: ', allReasons);
 
   // Get total refunds for each period
-  const totalLifetime = reasonsLifetime.reduce((a, b) => a + (b.amount || 0), 0);
-  const totalLastWeek = reasonsLastWeek.reduce((a, b) => a + (b.amount || 0), 0);
-  const totalLastMonth = reasonsLastMonth.reduce((a, b) => a + (b.amount || 0), 0);
+  const totalLifetime = reasonsLifetime.reduce((a: number, b: any) => a + (b.amount || 0), 0);
+  const totalLastWeek = reasonsLastWeek.reduce((a: number, b: any) => a + (b.amount || 0), 0);
+  const totalLastMonth = reasonsLastMonth.reduce((a: number, b: any) => a + (b.amount || 0), 0);
 
   console.log('Total lifetime: ', totalLifetime);
   console.log('Total last week: ', totalLastWeek);
@@ -59,10 +62,10 @@ const createReasonsTable = () => {
   // Create table body
   const tbody = tableElem.createTBody();
 
-  allReasons.forEach(reason => {
+  allReasons.forEach((reason: string) => {
     const row = tbody.insertRow();
 
-    const reasonObj = reasonsLifetime.find(r => r.category === reason);
+    const reasonObj = reasonsLifetime.find((r: any) => r.category === reason) || { category: reason };
 
     console.log('Reason: ', reason);
 
@@ -72,21 +75,21 @@ const createReasonsTable = () => {
     link.href = "#";
     link.style.cursor = "pointer";
     link.textContent = `► ${reason}`;
-    link.onclick = (event) => requestRefundCommentsAndShow(event, reasonObj, row);
+    link.onclick = (event) => requestRefundCommentsAndShow(event, packageID, reasonObj, row);
     tdReason.appendChild(link);
 
     // Refunds last week
-    const valLastWeek = (reasonsLastWeek.find(r => r.category === reason) || {}).amount || 0;
+    const valLastWeek = ((reasonsLastWeek.find((r: any) => r.category === reason) || {}).amount || 0);
     const tdLastWeek = row.insertCell();
     tdLastWeek.innerHTML = `${valLastWeek} <span class="extras_refunds_percentage">(${(valLastWeek / totalLastWeek * 100).toFixed(2)}%)</span>`;
 
     // Refunds last month
-    const valLastMonth = (reasonsLastMonth.find(r => r.category === reason) || {}).amount || 0;
+    const valLastMonth = ((reasonsLastMonth.find((r: any) => r.category === reason) || {}).amount || 0);
     const tdLastMonth = row.insertCell();
     tdLastMonth.innerHTML = `${valLastMonth} <span class="extras_refunds_percentage">(${(valLastMonth / totalLastMonth * 100).toFixed(2)}%)</span>`;
 
     // Lifetime refunds
-    const valLifetime = (reasonsLifetime.find(r => r.category === reason) || {}).amount || 0;
+    const valLifetime = ((reasonsLifetime.find((r: any) => r.category === reason) || {}).amount || 0);
     const tdLifetime = row.insertCell();
     tdLifetime.innerHTML = `${valLifetime} <span class="extras_refunds_percentage">(${(valLifetime / totalLifetime * 100).toFixed(2)}%)</span>`;
   });
@@ -94,17 +97,17 @@ const createReasonsTable = () => {
   tableBlockElem.appendChild(tableElem);
 }
 
-const requestRefundCommentsAndShow = async (event, reasonObj, row) => {
+export const requestRefundCommentsAndShow = async (event: any, packageID: number, reasonObj: any, row: HTMLTableRowElement): Promise<void> => {
   event.preventDefault();
 
-  const link = row.cells[0].querySelector('a');
+  const link = row.cells[0].querySelector('a') as HTMLAnchorElement | null;
 
-  if (row.nextSibling && row.nextSibling.classList.contains('reason-details-row')) {
-    row.parentNode.removeChild(row.nextSibling);
-    link.textContent = `► ${reasonObj.category}`;
+  if ((row.nextSibling as any) && (row.nextSibling as HTMLElement).classList.contains('reason-details-row')) {
+    row.parentNode?.removeChild(row.nextSibling as Node);
+    if (link) link.textContent = `► ${reasonObj.category}`;
   }
   else{
-    link.textContent = `▼ ${reasonObj.category}`;
+    if (link) link.textContent = `▼ ${reasonObj.category}`;
     const detailsRow = document.createElement('tr');
     detailsRow.classList.add('reason-details-row');
 
@@ -121,14 +124,14 @@ const requestRefundCommentsAndShow = async (event, reasonObj, row) => {
     tdComments.appendChild(commentsDiv);
     detailsRow.appendChild(tdComments);
 
-    row.parentNode.insertBefore(detailsRow, row.nextSibling);
+    row.parentNode?.insertBefore(detailsRow, row.nextSibling);
 
-    const comments = await getRefundComments(reasonObj.id);
+    const comments = await getRefundComments(packageID, reasonObj.id);
 
     commentsDiv.removeChild(loader); // Remove loader
 
     if (comments && comments.length > 0) {
-      comments.forEach(comment => {
+      comments.forEach((comment: any) => {
         const commentDiv = document.createElement('div');
         commentDiv.className = 'refund-comment';
 
@@ -157,11 +160,10 @@ const requestRefundCommentsAndShow = async (event, reasonObj, row) => {
 
 }
 
-const getRefundComments = async (reasonID) => {
-  const packageID = getPackageID();
+const getRefundComments = async (packageID: number, reasonID: number): Promise<any[]> => {
   const response = await fetch(`https://partner.steampowered.com/package/AjaxRefundText/${packageID}/?packageid=${packageID}&help_issueid=${reasonID}`, {
     credentials: 'include'
-  });
+  } as RequestInit);
 
   console.log('Response: ', response);
 
@@ -172,7 +174,7 @@ const getRefundComments = async (reasonID) => {
   const data = await response.json();
 
   console.log('Data: ', data);
-  
+
   const result = await helpers.sendMessageAsync({
     request: 'parseDOM',
     htmlText: data.html,
@@ -180,6 +182,8 @@ const getRefundComments = async (reasonID) => {
   });
 
   console.log('Result: ', result);
- 
+
   return result;
 }
+
+
