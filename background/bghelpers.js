@@ -46,7 +46,7 @@ bghelpers.getPackageIDs = async (appID) => {
   const data = await response.json();
   const appData = data[appID];
 
-  if(!appData || !appData.success || !appData.data){
+  if(!appData){
     throw new Error('Package IDs request returned no data');
   }
 
