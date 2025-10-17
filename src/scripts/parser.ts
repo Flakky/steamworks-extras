@@ -27,6 +27,9 @@ parser.parseDocument = (htmlText: string, parseType: string): { success: boolean
       case 'RefundStats':
         result = parser.parseRefundStats(doc);
         break;
+      case 'parsePageID':
+        result = parser.parsePageID(doc);
+        break;
       case 'RefundComments':
         result = parser.parseRefundComments(doc);
         break;
@@ -242,6 +245,7 @@ parser.parseRefundStats = (doc: Document): any => {
       }
     });
 
+
     stats.refundReasons = refundReasons;
   }
 
@@ -271,4 +275,70 @@ parser.parseRefundComments = (doc: Document): any[] => {
   return comments;
 }
 
+parser.parsePageID = (doc) => {
+  const link = doc.querySelector('a[href*="https://partner.steamgames.com/admin/game/edit/"]');
+  if (link && link.href) {
+    const match = link.href.match(/https:\/\/partner\.steamgames\.com\/admin\/game\/edit\/(\d+)/);
+    if (match) {
+      return match[1];
+    }
+  }
+  throw new Error('No valid page ID link found');
+}
 
+
+parser.parsePageCreationDateFromHistory = (doc) => {
+  const parentDiv = doc.querySelector('#tab_publish_content');
+  if (!parentDiv) {
+    throw new Error('No div with id "tab_publish_content" found');
+  }
+  const landingTableDiv = parentDiv.querySelector('.landingTable');
+  if (!landingTableDiv) {
+    throw new Error('No div with class "landingTable" found inside #tab_publish_content');
+  }
+
+  const children = landingTableDiv.children;
+  if (!children || children.length === 0) {
+    throw new Error('No children found in landingTableDiv');
+  }
+  const lastElement = children[children.length - 1];
+
+  const thirdChild = lastElement.children && lastElement.children.length >= 3 ? lastElement.children[2] : null;
+
+  // INSERT_YOUR_CODE
+  if (!thirdChild) {
+    throw new Error('No third child found in lastElement');
+  }
+  const dateText = thirdChild.textContent.trim();
+  // Example: "1 Aug, 2022 @ 6:51am "
+  const dateMatch = dateText.match(/^(\d{1,2}) (\w+), (\d{4})/);
+  if (!dateMatch) {
+    throw new Error('Date format not recognized in thirdChild');
+  }
+  const day = dateMatch[1].padStart(2, '0');
+  const monthStr = dateMatch[2];
+  const year = dateMatch[3];
+
+  const monthMap = {
+    Jan: '01',
+    Feb: '02',
+    Mar: '03',
+    Apr: '04',
+    May: '05',
+    Jun: '06',
+    Jul: '07',
+    Aug: '08',
+    Sep: '09',
+    Oct: '10',
+    Nov: '11',
+    Dec: '12'
+  };
+
+  const month = monthMap[monthStr];
+  if (!month) {
+    throw new Error('Month not recognized: ' + monthStr);
+  }
+
+  const formattedDate = `${year}-${month}-${day}`;
+  return formattedDate;
+}
