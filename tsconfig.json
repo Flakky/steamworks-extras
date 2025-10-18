@@ -14,7 +14,7 @@
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,
     "allowJs": false,
-    "lib": ["ES2020", "DOM"],
+    "lib": ["ES2020", "DOM", "WebWorker"],
     "types": ["chrome"]
   },
   "include": ["src/**/*.ts"],

@@ -1,6 +1,6 @@
 import { DateRangeAction, DateAction, StorageAction, StorageActionSettings } from './storageaction';
 import { isDateInRange, getDateRangeArray, csvTextToArray, dateToString } from '../../scripts/helpers';
-import { waitForDatabaseReady, readData, mergeData, writeData } from './storage';
+import { waitForDatabaseReady, readData, mergeData, writeData } from './db';
 import { getPageCreationDate, parseDataFromPage } from '../bghelpers';
 
 export class StorageActionRequestWishlists extends StorageAction {

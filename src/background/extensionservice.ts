@@ -2,9 +2,11 @@ import { getBrowser } from '../shared/browser';
 import { defaultSettings } from '../data/defaultsettings';
 import { extensionStatus, setExtentionStatus } from './status';
 
+declare var browser: typeof chrome | undefined;
+
 if (typeof browser == "undefined") {
   // Chrome does not support the browser namespace yet.
-  globalThis.browser = chrome;
+  (globalThis as any).browser = chrome;
 
   console.log('Importing scripts');
 
@@ -43,123 +45,6 @@ getBrowser().runtime.onInstalled.addListener(async () => {
   });
 });
 
-getBrowser().runtime.onMessage.addListener((message: any, sender: any, sendResponse: (response: any) => void) => {
-  console.debug(`Background message: `, message);
-
-  switch (message.request) {
-    case "showOptions":
-      {
-        (async () => {
-          showOptions();
-          sendResponse();
-        })(); break;
-      };
-    case "makeRequest":
-      {
-        (async () => {
-          const response = await makeRequest(message.url, message.params);
-          sendResponse(response);
-        })(); break;
-      };
-    case "getAppIDs":
-      {
-        (async () => {
-          const response = await getAppIDs();
-          sendResponse(response);
-        })(); break;
-      };
-    case "getPackageIDs":
-      {
-        (async () => {
-          let result = await getBrowser().storage.local.get("packageIDs");
-
-          sendResponse(result.packageIDs);
-        })(); break;
-      };
-    case "getPageCreationDates":
-      {
-        (async () => {
-          let result = await getBrowser().storage.local.get("pagesCreationDate");
-
-          sendResponse(result);
-        })(); break;
-      };
-    case "getQueueLenght":
-      {
-        (async () => {
-          const length = await getQueueLength();
-          sendResponse(length);
-        })(); break;
-      };
-    case "getStatus":
-      {
-        (async () => {
-          const status = await getStatus();
-          sendResponse(status);
-        })(); break;
-      };
-    case "getLogs":
-      {
-        sendResponse(logs); 
-        break;
-      };
-    case "getData":
-      {
-        (async () => {
-          const data = await getDataFromDB(message.type, message.appId, message.dateStart, message.dateEnd, message.returnLackData);
-          console.debug(`Returning "${message.type}" data from background: `, data);
-          sendResponse(data);
-        })(); break;
-      };
-    case "parseDOM":
-      {
-        (async () => {
-          const data = message.htmlText ? await parseDOM(message.htmlText, message.type) : await bghelpers.parseDataFromPage(message.url, message.type);
-          console.debug(`Returning DOM parsed "${message.type}" data from background: `, data);
-          sendResponse(data);
-        })(); break;
-      };
-    case "parsedDOM":
-      {
-        processParsedDOM(message);
-        break;
-      }
-    case "updateStats":
-      {
-        (async () => {
-          const appIDs = await getAppIDs();
-          updateStats(appIDs);
-          updateStatsStatus();
-          return appIDs;
-        })(); break;
-      };
-    default:
-      {
-        console.debug(`Unknown request "${message.request}" from background`);
-        sendResponse({ error: "Unknown request" });
-        return false;
-      }
-  }
-  return true;
-});
-
-getBrowser().runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
-  if (!sender.url.includes("localhost") && !sender.url.includes("127.0.0.1")) {
-    sendResponse({ error: "Unauthorized external message request" });
-    return;
-  }
-
-  console.debug(`External message: `, message);
-
-  (async () => {
-    switch (message.request) {
-      case "getData": {
-        sendResponse(await getDataFromDB(message.type, message.appId, message.dateStart, message.dateEnd));
-      }
-    }
-  })();
-});
-
 const showOptions = () => {
   console.log('Show options')
   getBrowser().runtime.openOptionsPage();
@@ -167,40 +52,6 @@ const showOptions = () => {
 
 const getStatus = () => {
   return extensionStatus;
-}
-
-const getDataFromDB = async (type: string, appId: string, dateStart: Date, dateEnd: Date, returnLackData = true): Promise<any> => {
-
-  const startDate = dateStart ? new Date(dateStart) : undefined;
-  const endDate = dateEnd ? new Date(dateEnd) : undefined;
-
-  switch (type) {
-    case "Traffic": {
-      const action = new StorageActionGetTraffic(appId, startDate, endDate, returnLackData);
-      const result = await action.addAndWait(true);
-      return result;
-    }
-    case "Sales": {
-      const action = new StorageActionGetSales(appId, startDate, endDate, returnLackData);
-      const result = await action.addAndWait(true);
-      return result;
-    }
-    case "Reviews": {
-      const action = new StorageActionGetReviews(appId, startDate, endDate, returnLackData);
-      const result = await action.addAndWait(true);
-      return result;
-    }
-    case "Wishlists": {
-      const action = new StorageActionGetWishlists(appId, startDate, endDate, returnLackData);
-      const result = await action.addAndWait(true);
-      return result;
-    }
-    case "WishlistConversions": {
-      const action = new StorageActionGetWishlistConversions(appId, startDate, endDate, returnLackData);
-      const result = await action.addAndWait(true);
-      return result;
-    }
-  }
 }
 
 const makeRequest = async (url: string, params: RequestInit): Promise<string> => {
@@ -450,7 +301,7 @@ const init = async () => {
   await initStorageForAppIDs(appIDs);
 
   console.log("Extension service initiated");
-  
+
   startUpdatingStats(appIDs);
 }
 

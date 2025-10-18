@@ -1,6 +1,6 @@
 import { DateRangeAction, StorageAction, StorageActionSettings } from './storageaction';
 import { isDateInRange, getDateRangeArray, csvTextToArray, dateToString } from '../../scripts/helpers';
-import { waitForDatabaseReady, readData, clearData, writeData } from './storage';
+import { waitForDatabaseReady, readData, clearData, writeData } from './db';
 import { getPageCreationDate, getAppPackageIDs } from '../bghelpers';
 
 export class StorageActionRequestSales extends StorageAction {
