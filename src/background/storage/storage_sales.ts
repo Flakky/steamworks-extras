@@ -1,11 +1,12 @@
+import { DateRangeAction, StorageAction, StorageActionSettings } from './storageaction';
+import { isDateInRange, getDateRangeArray, csvTextToArray, dateToString } from '../../scripts/helpers';
+import { waitForDatabaseReady, readData, clearData, writeData } from './storage';
+import { getPageCreationDate, getAppPackageIDs } from '../bghelpers';
+
 class StorageActionRequestSales extends StorageAction {
-  constructor(appID, settings = new StorageActionSettings()) {
-    super(settings);
-    this.appID = appID;
-  }
 
   async process() {
-    return await requestSalesData(this.appID);
+    await requestSalesData(this.getAppID());
   }
 
   getType() {
@@ -13,17 +14,20 @@ class StorageActionRequestSales extends StorageAction {
   }
 }
 
-class StorageActionGetSales extends StorageAction {
-  constructor(appID, dateStart, dateEnd, returnLackData, settings = new StorageActionSettings()) {
-    super(settings);
-    this.appID = appID;
+class StorageActionGetSales extends StorageAction  implements DateRangeAction {
+  dateStart: Date;
+  dateEnd: Date;
+  returnLackData: boolean;
+
+  constructor( appID: string, dateStart: Date, dateEnd: Date, returnLackData: boolean, settings = new StorageActionSettings()) {
+    super(appID, settings);
     this.dateStart = dateStart;
     this.dateEnd = dateEnd;
     this.returnLackData = returnLackData;
   }
 
   async process() {
-    return await getSalesData(this.appID, this.dateStart, this.dateEnd, this.returnLackData);
+    return await getSalesData(this.getAppID(), this.dateStart, this.dateEnd, this.returnLackData);
   }
 
   getType() {
@@ -31,18 +35,18 @@ class StorageActionGetSales extends StorageAction {
   }
 }
 
-const requestSalesData = async (appID) => {
-  const pageCreationDate = await bghelpers.getPageCreationDate(appID);
+const requestSalesData = async (appID: string) => {
+  const pageCreationDate = await getPageCreationDate(appID, false) as Date;
 
   const startDate = pageCreationDate;
   const endDate = new Date();
 
-  const formattedStartDate = helpers.dateToString(startDate);
-  const formattedEndDate = helpers.dateToString(endDate);
+  const formattedStartDate = dateToString(startDate);
+  const formattedEndDate = dateToString(endDate);
 
   console.debug(`Request sales in CSV between ${formattedStartDate} and ${formattedEndDate}`);
 
-  const packageIDs = await bghelpers.getAppPackageIDs(appID);
+  const packageIDs = await getAppPackageIDs(appID);
 
   console.debug(`Package IDs found for app ${appID}:`, packageIDs);
 
@@ -93,9 +97,9 @@ const requestSalesData = async (appID) => {
 
   const csvString = lines.join('\n');
 
-  lines = helpers.csvTextToArray(csvString);
+  lines = csvTextToArray(csvString);
 
-  const headers = lines[0].map(header => header.trim());
+  const headers = lines[0].map((header: string) => header.trim());
 
   // Map each line to an object using the headers as keys
   let index = 0;
@@ -118,7 +122,7 @@ const requestSalesData = async (appID) => {
   return result;
 }
 
-const getAllSalesData = async (appID) => {
+const getAllSalesData = async (appID: string) => {
   await waitForDatabaseReady();
   let records = await readData(appID, 'Sales');
 
@@ -131,20 +135,20 @@ const getAllSalesData = async (appID) => {
   return records;
 }
 
-const getSalesData = async (appID, dateStart, dateEnd, returnLackData) => {
+const getSalesData = async (appID: string, dateStart: Date, dateEnd: Date, returnLackData: boolean) => {
   await waitForDatabaseReady();
 
   let records = await readData(appID, 'Sales');
 
   if (dateStart && dateEnd) {
-    const filteredRecords = records.filter(item => {
+    const filteredRecords = records.filter((item: any) => {
       let date = new Date(item['Date']);
-      return helpers.isDateInRange(date, dateStart, dateEnd);
+      return isDateInRange(date, dateStart, dateEnd);
     });
 
     if (!returnLackData) {
-      const dateRange = helpers.getDateRangeArray(dateStart, dateEnd, false, true);
-      const datesWithData = [...new Set(filteredRecords.map(record => record['Date']))];
+      const dateRange = getDateRangeArray(dateStart, dateEnd, false, true);
+      const datesWithData = [...new Set(filteredRecords.map((record: any) => record['Date']))];
 
       const allDatesHaveData = dateRange.every(date => datesWithData.includes(date));
 

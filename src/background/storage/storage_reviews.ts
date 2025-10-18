@@ -1,11 +1,11 @@
-class StorageActionRequestReviews extends StorageAction {
-  constructor(appID, settings = new StorageActionSettings()) {
-    super(settings);
-    this.appID = appID;
-  }
+import { DateRangeAction, StorageAction, StorageActionSettings } from './storageaction';
+import { isDateInRange, getDateRangeArray, dateToString } from '../../scripts/helpers';
+import { waitForDatabaseReady, readData, clearData, writeData } from './storage';
+
+export class StorageActionRequestReviews extends StorageAction {
 
   async process() {
-    return await requestAllReviewsData(this.appID);
+    await requestAllReviewsData(this.getAppID());
   }
 
   getType() {
@@ -13,17 +13,20 @@ class StorageActionRequestReviews extends StorageAction {
   }
 }
 
-class StorageActionGetReviews extends StorageAction {
-  constructor(appID, dateStart, dateEnd, returnLackData, settings = new StorageActionSettings()) {
-    super(settings);
-    this.appID = appID;
+export class StorageActionGetReviews extends StorageAction implements DateRangeAction {
+  dateStart: Date;
+  dateEnd: Date;
+  returnLackData: boolean;
+
+  constructor( appID: string, dateStart: Date, dateEnd: Date, returnLackData: boolean, settings = new StorageActionSettings()) {
+    super(appID, settings);
     this.dateStart = dateStart;
     this.dateEnd = dateEnd;
     this.returnLackData = returnLackData;
   }
 
   async process() {
-    return await getReviewsData(this.appID, this.dateStart, this.dateEnd, this.returnLackData);
+    await getReviewsData(this.getAppID(), this.dateStart, this.dateEnd, this.returnLackData);
   }
 
   getType() {
@@ -31,7 +34,7 @@ class StorageActionGetReviews extends StorageAction {
   }
 }
 
-const getReviewsData = async (appID, dateStart, dateEnd, returnLackData) => {
+const getReviewsData = async (appID: string, dateStart: Date, dateEnd: Date, returnLackData: boolean) => {
   await waitForDatabaseReady();
 
   console.debug(`Requesting reviews data for app ${appID}`);
@@ -39,14 +42,14 @@ const getReviewsData = async (appID, dateStart, dateEnd, returnLackData) => {
   let records = await readData(appID, 'Reviews');
 
   if (dateStart && dateEnd) {
-    const filteredRecords = records.filter(item => {
+    const filteredRecords = records.filter((item: any) => {
       const date = new Date(item['timestamp_created'] * 1000);
-      return helpers.isDateInRange(date, dateStart, dateEnd);
+      return isDateInRange(date, dateStart, dateEnd);
     });
 
     if (!returnLackData) {
-      const dateRange = helpers.getDateRangeArray(dateStart, dateEnd, false, true);
-      const datesWithData = [...new Set(filteredRecords.map(record => helpers.dateToString(new Date(record['timestamp_created'] * 1000))))];
+      const dateRange = getDateRangeArray(dateStart, dateEnd, false, true);
+      const datesWithData = [...new Set(filteredRecords.map((record: any) => dateToString(new Date(record['timestamp_created'] * 1000))))];
 
       const allDatesHaveData = dateRange.every(date => datesWithData.includes(date));
 
@@ -59,7 +62,7 @@ const getReviewsData = async (appID, dateStart, dateEnd, returnLackData) => {
   }
 }
 
-const requestAllReviewsData = async (appID) => {
+const requestAllReviewsData = async (appID: string) => {
   // Request documentation: https://partner.steamgames.com/doc/store/getreviews
 
   let cursor = '*'
@@ -67,14 +70,14 @@ const requestAllReviewsData = async (appID) => {
   let reviews = [];
 
   while (true) {
-    const request_data = {
+    const request_data: Record<string, string> = {
       'filter': 'recent',
       'language': 'all',
       'review_type': 'all',
       'purchase_type': 'all',
-      'num_per_page': 100,
-      'cursor': cursor,
-      'json': 1
+      'num_per_page': '100',
+      'cursor': 'cursor',
+      'json': '1'
     }
 
     const params = Object.keys(request_data)

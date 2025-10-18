@@ -1,5 +1,7 @@
+import { setExtentionStatus } from '../status';
 
-let gameStatsStorage;
+
+let gameStatsStorage: IDBDatabase | undefined;
 
 const tables = [
   { name: 'Reviews', key: 'recommendationid' },
@@ -12,19 +14,19 @@ const tables = [
 
 const MAX_RETRY_COUNT = 200;
 
-const initStorageForAppIDs = async (appIDs) => {
+export const initStorageForAppIDs = async (appIDs: string[]) => {
   for (const appID of appIDs) {
     try {
       await initGameStatsStorage(appID, 1);
     }
-    catch (e) {
-      console.error(`Error while initializing game stats storage for app ${appID}: `, e);
-      setExtensionStatus(103, { error: e.message });
+    catch (error) {
+      console.error(`Error while initializing game stats storage for app ${appID}: `, error);
+      setExtentionStatus(103, { error: error instanceof Error ? error.message : 'Unknown error' });
     }
   }
 }
 
-const initGameStatsStorage = (appID, index) => {
+const initGameStatsStorage = (appID: string, index: number): Promise<void> => {
   if (gameStatsStorage) {
     gameStatsStorage.close();
     gameStatsStorage = undefined;
@@ -43,7 +45,7 @@ const initGameStatsStorage = (appID, index) => {
       return;
     }
 
-    let request = indexedDB.open("SteamworksExtras_GameStatsStorage", index);
+    let request: IDBOpenDBRequest | undefined = indexedDB.open("SteamworksExtras_GameStatsStorage", index);
 
     request.onsuccess = (event) => {
       if (request === undefined) return;
@@ -51,7 +53,7 @@ const initGameStatsStorage = (appID, index) => {
 
       console.log(`Database opened with index ${index}`);
 
-      gameStatsStorage = event.target.result;
+      gameStatsStorage = (event.target as IDBOpenDBRequest).result;
 
       if (!gameStatsStorage) {
         console.debug(`Database is not valid for app ${appID} with index ${index}. Trying next index...`);
@@ -79,10 +81,10 @@ const initGameStatsStorage = (appID, index) => {
     }
 
     request.onupgradeneeded = (event) => {
-      if (request === undefined) return;
+      if (request === undefined || request === null) return;
       request = undefined;
 
-      gameStatsStorage = event.target.result;
+      gameStatsStorage = (event.target as IDBOpenDBRequest).result;
 
       console.debug(`Database update for app ${appID} with index ${index}`);
 
@@ -106,7 +108,7 @@ const initGameStatsStorage = (appID, index) => {
 
       console.debug(`Failed to open the database for app ${appID} with index ${index}:`, event);
 
-      gameStatsStorage = event.target.result;
+      gameStatsStorage = (event.target as IDBOpenDBRequest).result;
 
       if (gameStatsStorage) {
         gameStatsStorage.close();
@@ -118,7 +120,7 @@ const initGameStatsStorage = (appID, index) => {
   });
 }
 
-const isObjectStoreCorrect = (storage, storeName, expectedKeyPath) => {
+const isObjectStoreCorrect = (storage: IDBDatabase, storeName: string, expectedKeyPath: string | string[]) => {
   if (!storage.objectStoreNames.contains(storeName)) return false;
 
   const objectStore = storage.transaction(storeName, 'readonly').objectStore(storeName);
@@ -126,13 +128,15 @@ const isObjectStoreCorrect = (storage, storeName, expectedKeyPath) => {
   console.debug(`Checking object store "${storeName}" with key path "${objectStore.keyPath}" (Expected: "${expectedKeyPath}")`);
 
   if (Array.isArray(expectedKeyPath) && Array.isArray(objectStore.keyPath)) {
-    return expectedKeyPath.length === objectStore.keyPath.length &&
-      expectedKeyPath.every((key, index) => key === objectStore.keyPath[index]);
+    const keyPath = objectStore.keyPath as string[];
+
+    return expectedKeyPath.length === keyPath.length &&
+      expectedKeyPath.every((key, index) => key === keyPath[index]);
   }
   return objectStore.keyPath === expectedKeyPath;
 };
 
-const deleteDatabase = async () => {
+const deleteDatabase = async (): Promise<void> => {
   if (gameStatsStorage) {
     gameStatsStorage.close();
     gameStatsStorage = undefined;
@@ -146,9 +150,10 @@ const deleteDatabase = async () => {
       resolve();
     };
 
-    deleteRequest.onerror = (event) => {
-      console.error("Error deleting database:", event.target.error);
-      reject(event.target.error);
+    deleteRequest.onerror = (event: Event) => {
+      const target = (event.target as IDBOpenDBRequest)
+      console.error("Error deleting database:", target.error);
+      reject(target.error);
     };
 
     deleteRequest.onblocked = () => {
@@ -158,8 +163,8 @@ const deleteDatabase = async () => {
   });
 };
 
-const waitForDatabaseReady = () => {
-  const wait = (resolve) => {
+export const waitForDatabaseReady = (): Promise<void> => {
+  const wait = (resolve: () => void) => {
     setTimeout(() => {
       if (gameStatsStorage !== undefined && gameStatsStorage !== null && !gameStatsStorage.onversionchange) {
         resolve();
@@ -175,8 +180,13 @@ const waitForDatabaseReady = () => {
   });
 }
 
-const readData = (appID, type, key, indexed) => {
+export const readData = (appID: string, type: string, key: string | string[] | undefined = undefined, indexed: boolean = false): Promise<any> => {
   return new Promise((resolve, reject) => {
+    if (gameStatsStorage === undefined || gameStatsStorage === null) {
+      reject('Game stats storage is not initialized');
+      return;
+    }
+
     const dbName = `${appID}_${type}`;
     const transaction = gameStatsStorage.transaction(dbName, "readonly");
     const objectStore = transaction.objectStore(dbName);
@@ -186,7 +196,7 @@ const readData = (appID, type, key, indexed) => {
       request = objectStore.getAll();
     }
     else if (indexed) {
-      const index = objectStore.index(key);
+      const index = objectStore.index(key as any);
       request = index.get(key);
     }
     else {
@@ -194,34 +204,46 @@ const readData = (appID, type, key, indexed) => {
     }
 
     request.onsuccess = (event) => {
-      resolve(event.target.result);
+      resolve((event.target as IDBOpenDBRequest).result);
     };
 
     request.onerror = (event) => {
-      reject('Failed to read the database:', event.target.errorCode);
+      const target = (event.target as IDBOpenDBRequest)
+      reject(`Failed to read the database: ${target.error}`);
     };
   });
 }
 
-const readIndexedData = (appID, type, key) => {
+export const readIndexedData = (appID: string, type: string, key: string): Promise<any> => {
   return new Promise((resolve, reject) => {
+    if (gameStatsStorage === undefined || gameStatsStorage === null) {
+      reject('Game stats storage is not initialized');
+      return;
+    }
+
     const dbName = `${appID}_${type}`;
     const transaction = gameStatsStorage.transaction(dbName, "readonly");
     const objectStore = transaction.objectStore(dbName);
     const request = key === undefined ? objectStore.getAll() : objectStore.get(key);
 
     request.onsuccess = (event) => {
-      resolve(event.target.result);
+      resolve((event.target as IDBOpenDBRequest).result);
     };
 
     request.onerror = (event) => {
-      reject('Failed to read the database:', event.target.errorCode);
+      const target = (event.target as IDBOpenDBRequest)
+      reject(`Failed to read the database: ${target.error}`);
     };
   });
 }
 
-const writeData = (appID, type, data) => {
+export const writeData = (appID: string, type: string, data: any): Promise<void> => {
   return new Promise((resolve, reject) => {
+    if (gameStatsStorage === undefined || gameStatsStorage === null) {
+      reject('Game stats storage is not initialized');
+      return;
+    }
+
     const dbName = `${appID}_${type}`;
     const transaction = gameStatsStorage.transaction(dbName, "readwrite");
     const objectStore = transaction.objectStore(dbName);
@@ -246,22 +268,30 @@ const writeData = (appID, type, data) => {
     }
 
     transaction.onerror = (event) => {
-      reject('Failed to write to the database:', event.target.errorCode);
+      const target = (event.target as IDBOpenDBRequest)
+      reject(`Failed to write to the database: ${target.error}`);
     };
   });
 }
 
-const mergeData = (appID, type, newData) => {
+export const mergeData = (appID: string, type: string, newData: any): Promise<void> => {
   console.debug(`Merging data: `, newData);
-  const tableKey = tables.find(t => t.name === type).key;
-
+  
   return new Promise((resolve, reject) => {
+    
+    const tableType = tables.find(t => t.name === type);
+    if (!tableType) {
+      reject('Table type not found');
+      return;
+    }
+    const tableKey = tableType.key;
+
     if (Array.isArray(newData)) {
       readData(appID, type).then(existingData => {
         let mergedData = [];
 
         for (const data of newData) {
-          const existingRow = existingData.find((d) => {
+          const existingRow = existingData.find((d: any) => {
             if (Array.isArray(tableKey)) {
               return tableKey.every(key => d[key] === data[key]);
             }
@@ -291,24 +321,30 @@ const mergeData = (appID, type, newData) => {
   });
 }
 
-const clearData = (appID, type) => {
+export const clearData = (appID: string, type: string): Promise<void> => {
   return new Promise((resolve, reject) => {
+    if (gameStatsStorage === undefined || gameStatsStorage === null) {
+      reject('Game stats storage is not initialized');
+      return;
+    }
+
     const dbName = `${appID}_${type}`;
     const transaction = gameStatsStorage.transaction(dbName, "readwrite");
     const objectStore = transaction.objectStore(dbName);
     const request = objectStore.clear();
 
     request.onsuccess = (event) => {
-      resolve(event.target.result);
+      resolve();
     };
 
     request.onerror = (event) => {
-      reject('Failed to clear the database:', event.target.errorCode);
+      const target = (event.target as IDBOpenDBRequest)
+      reject(`Failed to clear the database: ${target.error}`);
     };
   });
 }
 
-const clearAllData = () => {
+export const clearAllData = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     if (gameStatsStorage) {
       gameStatsStorage.close();
@@ -322,8 +358,9 @@ const clearAllData = () => {
     };
 
     deleteRequest.onerror = function (event) {
-      console.error("Error deleting database:", event.target.error);
-      reject();
+      const target = (event.target as IDBOpenDBRequest)
+      console.error("Error deleting database:", target.error);
+      reject(target.error);
     };
 
     deleteRequest.onblocked = function (event) {

@@ -1,3 +1,7 @@
+import { getBrowser } from '../shared/browser';
+import { defaultSettings } from '../data/defaultsettings';
+import { extensionStatus, setExtentionStatus } from './status';
+
 if (typeof browser == "undefined") {
   // Chrome does not support the browser namespace yet.
   globalThis.browser = chrome;
@@ -22,7 +26,7 @@ if (typeof browser == "undefined") {
 }
 
 getBrowser().runtime.onInstalled.addListener(async () => {
-  getBrowser().storage.local.get(Object.keys(defaultSettings), (storedSettings) => {
+  getBrowser().storage.local.get(Object.keys(defaultSettings), (storedSettings: Record<string, any>) => {
     const settingsToStore = {};
 
     for (const key in defaultSettings) {
@@ -39,7 +43,7 @@ getBrowser().runtime.onInstalled.addListener(async () => {
   });
 });
 
-getBrowser().runtime.onMessage.addListener((message, sender, sendResponse) => {
+getBrowser().runtime.onMessage.addListener((message: any, sender: any, sendResponse: (response: any) => void) => {
   console.debug(`Background message: `, message);
 
   switch (message.request) {
@@ -165,7 +169,7 @@ const getStatus = () => {
   return extensionStatus;
 }
 
-const getDataFromDB = async (type, appId, dateStart, dateEnd, returnLackData = true) => {
+const getDataFromDB = async (type: string, appId: string, dateStart: Date, dateEnd: Date, returnLackData = true): Promise<any> => {
 
   const startDate = dateStart ? new Date(dateStart) : undefined;
   const endDate = dateEnd ? new Date(dateEnd) : undefined;
@@ -199,7 +203,7 @@ const getDataFromDB = async (type, appId, dateStart, dateEnd, returnLackData = t
   }
 }
 
-const makeRequest = async (url, params) => {
+const makeRequest = async (url: string, params: RequestInit): Promise<string> => {
   console.debug(`Make request to ${url}`);
 
   const response = await fetch(url, params);
@@ -214,7 +218,7 @@ const makeRequest = async (url, params) => {
   return responseText;
 }
 
-const parsePackageIDs = async (appID) => {
+const parsePackageIDs = async (appID: string): Promise<Record<string, any>> => {
   console.log('Parsing PackageIDs for appID: ', appID);
 
   let result = await getBrowser().storage.local.get("packageIDs");
@@ -316,14 +320,14 @@ const getAppIDs = async () => {
   return appIDs;
 }
 
-const parsePageCreationDate = async (appID) => {
+const parsePageCreationDate = async (appID: string): Promise<Date | undefined> => {
   console.log('Parsing page creation date for appID: ', appID);
 
   let result = await getBrowser().storage.local.get("pagesCreationDate");
   let pagesCreationDate = result.pagesCreationDate || {};
 
   const url = `https://partner.steamgames.com/apps/navtrafficstats/${appID}?attribution_filter=all&preset_date_range=lifetime`;
-  const pageCreationDate = await bghelpers.parseDataFromPage(url, 'parsePageCreationDate');
+  const pageCreationDate = await parseDataFromPage(url, 'parsePageCreationDate');
   const date = new Date(pageCreationDate);
 
   if (date === undefined || !(date instanceof Date)) return undefined;
@@ -337,7 +341,7 @@ const parsePageCreationDate = async (appID) => {
   return date;
 }
 
-const getPageCreationDate = async (appID) => {
+const getPageCreationDate = async (appID: string): Promise<Date | undefined> => {
   let result = await getBrowser().storage.local.get("pagesCreationDate");
 
   console.log(result);
@@ -420,7 +424,7 @@ const initPageCreationDatesWithRetry = async (interval = 5) => {
       success = true;
     } catch (error) {
       console.error('Error during initPageCreationDates:', error);
-      setExtentionStatus(102, { error: error.message });
+      setExtentionStatus(102, { error: error instanceof Error ? error.message : 'Unknown error' });
       await new Promise(resolve => setTimeout(resolve, interval * 1000));
     }
   }

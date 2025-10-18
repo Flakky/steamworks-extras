@@ -1,4 +1,6 @@
-let bghelpers = {}
+import { getBrowser } from '../shared/browser';
+import { dateToString } from '../scripts/helpers';
+
 
 /**
  * Returns the page creation date of a given appID.
@@ -7,11 +9,11 @@ let bghelpers = {}
  * @param {boolean} stringify - [Optional] If true, the date will be returned as a string
  * @returns {Date} - Page creation date
  */
-bghelpers.getPageCreationDate = async (appID, stringify) => {
+export const getPageCreationDate = async (appID: string, stringify: boolean = false): Promise<Date | string> => {
   const pagesCreationDate = await getBrowser().storage.local.get("pagesCreationDate");
   const pageCreationDate = new Date(pagesCreationDate.pagesCreationDate[appID]) || new Date(2014, 0, 0);
 
-  if (stringify) return helpers.dateToString(pageCreationDate);
+  if (stringify) return dateToString(pageCreationDate);
 
   return pageCreationDate;
 }
@@ -22,7 +24,7 @@ bghelpers.getPageCreationDate = async (appID, stringify) => {
  * @param {string} appID - AppID of the game
  * @returns {Array} - Package IDs
  */
-bghelpers.getAppPackageIDs = async (appID) => {
+export const getAppPackageIDs = async (appID: string): Promise<string[]> => {
   const PackageIDsResult = await getBrowser().storage.local.get("packageIDs");
   const packageIDs = PackageIDsResult.packageIDs[appID] || [];
 
@@ -35,7 +37,7 @@ bghelpers.getAppPackageIDs = async (appID) => {
  * @param {string} appID - AppID of the game
  * @returns {Array} - Package IDs
  */
-bghelpers.getPackageIDs = async (appID) => {
+export const getPackageIDs = async (appID: string): Promise<string[]> => {
   const url = `https://store.steampowered.com/api/appdetails?appids=${appID}`;
 
   console.log(`Fetching package IDs from URL: ${url}`);
@@ -64,7 +66,7 @@ bghelpers.getPackageIDs = async (appID) => {
  * @param {string} request - Request type. Must be a valid request type for the parser.parseDocument.
  * @returns {Promise} - Promise with the parsed data
  */
-bghelpers.parseDataFromPage = async (url, request) => {
+export const parseDataFromPage = async (url: string, request: string): Promise<any> => {
   console.debug(`Getting data "${request}" from URL: ${url}`);
 
   const response = await fetch(url);

@@ -1,4 +1,4 @@
-export const defaultSettings = {
+export const defaultSettings: Record<string, any> = {
   "usSalesTax": 0,
   "grossRoyalties": 0,
   "netRoyalties": 0,

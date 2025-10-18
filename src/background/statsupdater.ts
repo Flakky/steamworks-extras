@@ -1,4 +1,13 @@
-const startUpdatingStats = async (appIDs) => {
+import { getBrowser } from '../shared/browser';
+import { setExtentionStatus } from './status';
+import { getPageCreationDate } from './bghelpers';
+import { getDateRangeArray, getDateNoOffset, dateToString } from '../scripts/helpers';
+import { readData } from './storage/storage';
+import { DateAction, StorageActionSettings } from './storage/storageaction';
+import { StorageActionsQueue } from './storage/storagequeue';
+import { defaultSettings } from '../data/defaultsettings';
+
+const startUpdatingStats = async (appIDs: string[]) => {
   updateStats(appIDs);
 
   const updateIntervalObject = await getBrowser().storage.local.get(`statsUpdateInterval`);
@@ -15,13 +24,7 @@ const startUpdatingStats = async (appIDs) => {
   }, 3 * 1000);
 }
 
-self.onmessage = (event) => {
-  if (event.data === "updateStats") {
-    updateStats();
-  }
-}
-
-const updateStats = async (appIDs) => {
+const updateStats = async (appIDs: string[]) => {
   console.log(`Updating stats for apps:`, appIDs);
   try {
       // First handle requests which we can request at once, then daily
@@ -45,37 +48,37 @@ const updateStats = async (appIDs) => {
   }
 }
 
-const fetchSalesData = (appID) => {
+const fetchSalesData = (appID: string, queue: StorageActionsQueue) => {
   // We do not check for missing dates because we can request all sales data at once
-  addToQueue(new StorageActionRequestSales(appID));
+  queue.addToQueue(new StorageActionRequestSales(appID));
 }
 
-const fetchReviewsData = (appID) => {
+const fetchReviewsData = (appID: string, queue: StorageActionsQueue) => {
   // We do not check for missing dates because reviews cannot be requested for certain dates.
   // We can request all reviews with couple requests in a single action
-  addToQueue(new StorageActionRequestReviews(appID));
+  queue.addToQueue(new StorageActionRequestReviews(appID));
 }
 
-const fetchWishlistConversionsData = (appID) => {
+const fetchWishlistConversionsData = (appID: string, queue: StorageActionsQueue) => {
   // We do not check for missing dates because we can request all conversions data at once
-  addToQueue(new StorageActionRequestWishlistConversions(appID));
+  queue.addToQueue(new StorageActionRequestWishlistConversions(appID));
 }
 
-const fetchGeneralWishlistsData = async (appID) => {
+const fetchGeneralWishlistsData = async (appID: string, queue: StorageActionsQueue) => {
   const requestAllWishlists = new StorageActionRequestWishlists(appID);
-  await requestAllWishlists.addAndWait(true);
+  await queue.addToQueue(requestAllWishlists);
 }
 
-const fetchDailyData = async (appIDs) => {
+const fetchDailyData = async (appIDs: string[], queue: StorageActionsQueue) => {
   const missingWishlistDates = [];
   const missingTrafficDates = [];
 
   for (const appID of appIDs) {
-    const wishlistDates = await getMissingDatesForWishlists(appID);
+    const wishlistDates = await getMissingDatesForWishlists(appID, queue);
     for (const date of wishlistDates) {
       missingWishlistDates.push({ appid: appID, date });
     }
-    const trafficDates = await getMissingDatesForTraffic(appID);
+    const trafficDates = await getMissingDatesForTraffic(appID, queue);
     for (const date of trafficDates) {
       missingTrafficDates.push({ appid: appID, date });
     }
@@ -88,15 +91,15 @@ const fetchDailyData = async (appIDs) => {
   const actionSettings = await makeActionSettings();
 
   for (const date of missingWishlistDates) {
-    addToQueue(new StorageActionRequestRegionalWishlists(date.appid, date.date, actionSettings));
+    queue.addToQueue(new StorageActionRequestRegionalWishlists(date.appid, date.date, actionSettings));
   }
   for (const date of missingTrafficDates) {
-    addToQueue(new StorageActionRequestTraffic(date.appid, date.date, actionSettings));
+    queue.addToQueue(new StorageActionRequestTraffic(date.appid, date.date, actionSettings));
   }
 }
 
-const updateStatsStatus = () => {
-  const queueLength = queue.filter(item => item.getType().includes("Request")).length;
+const updateStatsStatus = (queue: StorageActionsQueue) => {
+  const queueLength = queue.getQueue().filter(item => item.getType().includes("Request")).length;
   console.debug(`Queue length:`, queueLength);
   if (queueLength > 0) {
     setExtentionStatus(11, { queueLength: queueLength });
@@ -113,10 +116,10 @@ const makeActionSettings = async () => {
   return actionSettings;
 }
 
-const getMissingDatesForTraffic = async (appID) => {
-  const pageCreationDate = await bghelpers.getPageCreationDate(appID);
+const getMissingDatesForTraffic = async (appID: string, queue: StorageActionsQueue) => {
+  const pageCreationDate = await getPageCreationDate(appID, false) as Date;
 
-  const dates = helpers.getDateRangeArray(pageCreationDate, helpers.getDateNoOffset(), true, false);
+  const dates = getDateRangeArray(pageCreationDate, getDateNoOffset(), true, false) as Date[];
 
   const trafficData = await readData(appID, 'Traffic');
 
@@ -133,9 +136,9 @@ const getMissingDatesForTraffic = async (appID) => {
         return true;
       }
 
-      const dateString = helpers.dateToString(date);
+      const dateString = dateToString(date);
 
-      const hasData = trafficData.some((data) => {
+      const hasData = trafficData.some((data: any) => {
         // If page category is not a string, then the data is not valid or skipped for some reason
         if (typeof data['PageCategory'] !== 'string') {
           return false;
@@ -148,28 +151,28 @@ const getMissingDatesForTraffic = async (appID) => {
     });
   }
 
-  missingDates = filterDatesByRequestedDates(appID, 'RequestTraffic', missingDates);
+  missingDates = filterDatesByRequestedDates(appID, 'RequestTraffic', missingDates, queue);
 
   return missingDates;
 }
 
-const getMissingDatesForWishlists = async (appID) => {
-  const pageCreationDate = await bghelpers.getPageCreationDate(appID);
+const getMissingDatesForWishlists = async (appID: string, queue: StorageActionsQueue) => {
+  const pageCreationDate = await getPageCreationDate(appID, false) as Date;
 
-  const dates = helpers.getDateRangeArray(pageCreationDate, helpers.getDateNoOffset(), true, false);
+  const dates = getDateRangeArray(pageCreationDate, getDateNoOffset(), true, false) as Date[];
 
   const wishlistsData = await readData(appID, 'Wishlists');
 
-  let missingDates = [];
+  let missingDates: Date[] = [];
 
   if (wishlistsData === undefined || wishlistsData.length == 0) {
     missingDates = dates;
   }
   else {
     missingDates = dates.filter(date => {
-      const dateString = helpers.dateToString(date);
+      const dateString = dateToString(date);
 
-      const hasData = wishlistsData.some((data) => {
+      const hasData = wishlistsData.some((data: any) => {
         const sameDate = data['Date'] === dateString;
         if (!sameDate) return false;
 
@@ -198,23 +201,23 @@ const getMissingDatesForWishlists = async (appID) => {
     });
   }
 
-  missingDates = filterDatesByRequestedDates(appID, 'RequestRegionalWishlists', missingDates);
+  missingDates = filterDatesByRequestedDates(appID, 'RequestRegionalWishlists', missingDates, queue);
 
   return missingDates;
 }
 
-const filterDatesByRequestedDates = (appID, requestType, dates) => {
+const filterDatesByRequestedDates = (appID: string, requestType: string, dates: Date[], queue: StorageActionsQueue) => {
 
-  const relevantRequests = getActionsByAppIDAndType(appID, requestType);
+  const relevantRequests = queue.getActionsByAppIDAndType(appID, requestType);
 
   const requestedDatesSet = new Set(
-    relevantRequests.map(req => {
-      return typeof req.date === 'string' ? req.date : helpers.dateToString(req.date);
+    relevantRequests.map((req: DateAction) => {
+      return dateToString(req.date);
     })
   );
 
   const missingDates = dates.filter(date => {
-    const dateString = helpers.dateToString(date);
+    const dateString = dateToString(date);
     return !requestedDatesSet.has(dateString);
   });
 

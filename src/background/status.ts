@@ -1,9 +1,9 @@
-extensionStatus = {
+export const extensionStatus = {
   code: 0,
   extraData: {}
 }
 
-setExtentionStatus = (statusCode, extraData = {}) => {
+export const setExtentionStatus = (statusCode: number, extraData: Record<string, any> = {}) => {
   extensionStatus.code = statusCode;
   extensionStatus.extraData = extraData;
 

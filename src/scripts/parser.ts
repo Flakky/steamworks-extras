@@ -275,19 +275,21 @@ parser.parseRefundComments = (doc: Document): any[] => {
   return comments;
 }
 
-parser.parsePageID = (doc) => {
+parser.parsePageID = (doc: Document): string => {
   const link = doc.querySelector('a[href*="https://partner.steamgames.com/admin/game/edit/"]');
-  if (link && link.href) {
-    const match = link.href.match(/https:\/\/partner\.steamgames\.com\/admin\/game\/edit\/(\d+)/);
-    if (match) {
-      return match[1];
-    }
+  if(!link) {
+    throw new Error('No valid page ID link found');
+  }
+  const href = (link as HTMLAnchorElement).href;
+  const match = href.match(/https:\/\/partner\.steamgames\.com\/admin\/game\/edit\/(\d+)/);
+  if (match) {
+    return match[1];
   }
   throw new Error('No valid page ID link found');
 }
 
 
-parser.parsePageCreationDateFromHistory = (doc) => {
+parser.parsePageCreationDateFromHistory = (doc: Document): string => {
   const parentDiv = doc.querySelector('#tab_publish_content');
   if (!parentDiv) {
     throw new Error('No div with id "tab_publish_content" found');
@@ -334,7 +336,7 @@ parser.parsePageCreationDateFromHistory = (doc) => {
     Dec: '12'
   };
 
-  const month = monthMap[monthStr];
+  const month = monthMap[monthStr as keyof typeof monthMap];
   if (!month) {
     throw new Error('Month not recognized: ' + monthStr);
   }
