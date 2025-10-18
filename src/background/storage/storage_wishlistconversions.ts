@@ -1,11 +1,11 @@
-class StorageActionRequestWishlistConversions extends StorageAction {
-  constructor(appID, settings = new StorageActionSettings()) {
-    super(settings);
-    this.appID = appID;
-  }
+import { DateRangeAction, StorageAction, StorageActionSettings } from './storageaction';
+import { isDateInRange, getDateRangeArray, csvTextToArray, dateToString } from '../../scripts/helpers';
+import { waitForDatabaseReady, readData, clearData, writeData } from './storage';
+import { getPageCreationDate } from '../bghelpers';
 
+export class StorageActionRequestWishlistConversions extends StorageAction {
   async process() {
-    return await requestWishlistConversionsData(this.appID);
+    await requestWishlistConversionsData(this.getAppID());
   }
 
   getType() {
@@ -13,17 +13,20 @@ class StorageActionRequestWishlistConversions extends StorageAction {
   }
 }
 
-class StorageActionGetWishlistConversions extends StorageAction {
-  constructor(appID, dateStart, dateEnd, returnLackData, settings = new StorageActionSettings()) {
-    super(settings);
-    this.appID = appID;
+export class StorageActionGetWishlistConversions extends StorageAction implements DateRangeAction {
+  dateStart: Date;
+  dateEnd: Date;
+  returnLackData: boolean;
+
+  constructor(appID: string, dateStart: Date, dateEnd: Date, returnLackData: boolean, settings = new StorageActionSettings()) {
+    super(appID, settings);
     this.dateStart = dateStart;
     this.dateEnd = dateEnd;
     this.returnLackData = returnLackData;
   }
 
   async process() {
-    return await getWishlistConversionsData(this.appID, this.dateStart, this.dateEnd, this.returnLackData);
+    return await getWishlistConversionsData(this.getAppID(), this.dateStart, this.dateEnd, this.returnLackData);
   }
 
   getType() {
@@ -31,14 +34,14 @@ class StorageActionGetWishlistConversions extends StorageAction {
   }
 }
 
-const requestWishlistConversionsData = async (appID) => {
-  const pageCreationDate = await bghelpers.getPageCreationDate(appID);
+const requestWishlistConversionsData = async (appID: string) => {
+  const pageCreationDate = await getPageCreationDate(appID, false) as Date;
 
   const startDate = pageCreationDate;
   const endDate = new Date();
 
-  const formattedStartDate = helpers.dateToString(startDate);
-  const formattedEndDate = helpers.dateToString(endDate);
+  const formattedStartDate = dateToString(startDate);
+  const formattedEndDate = dateToString(endDate);
 
   console.debug(`Request wishlist conversions in CSV between ${formattedStartDate} and ${formattedEndDate}`);
 
@@ -75,26 +78,26 @@ const requestWishlistConversionsData = async (appID) => {
 
   const csvString = lines.join('\n');
 
-  lines = helpers.csvTextToArray(csvString);
+  const objects: any[] = csvTextToArray(csvString);
 
-  const headers = lines[0].map(header => header.trim());
+  const headers = (objects[0] as string[]).map((header: string) => header.trim());
 
   // Map each line to an object using the headers as keys
   let index = 0;
-  const result = lines.slice(1).map(line => {
-    const object = {};
+  const result = objects
+    .slice(1)
+    .map((obj: any) => {
+      const object: any = {};
 
-    line.forEach((element, index) => {
-      if(headers[index] === 'DateLocal') {
-        object['Date'] = element;
-      }
-      else object[headers[index]] = element;
-    });
+      obj.forEach((element: any, i: number) => {
+        object[headers[i]] = element;
+      });
 
-    object.key = index++;
+      object.key = index++;
 
-    return object;
-  });
+      return object;
+    }
+  );
 
   // Remove every invalid record
   const filteredResult = result.filter(record => record['Date'] && record['MonthCohort']);
@@ -108,7 +111,7 @@ const requestWishlistConversionsData = async (appID) => {
   return result;
 }
 
-const getAllWishlistConversionsData = async (appID) => {
+const getAllWishlistConversionsData = async (appID: string) => {
   await waitForDatabaseReady();
   let records = await readData(appID, 'WishlistConversions');
 
@@ -121,20 +124,20 @@ const getAllWishlistConversionsData = async (appID) => {
   return records;
 }
 
-const getWishlistConversionsData = async (appID, dateStart, dateEnd, returnLackData) => {
+const getWishlistConversionsData = async (appID: string, dateStart: Date, dateEnd: Date, returnLackData: boolean) => {
   await waitForDatabaseReady();
 
   let records = await readData(appID, 'WishlistConversions');
 
   if (dateStart && dateEnd) {
-    const filteredRecords = records.filter(item => {
+    const filteredRecords = records.filter((item: any) => {
       let date = new Date(item['Date']);
-      return helpers.isDateInRange(date, dateStart, dateEnd);
+      return isDateInRange(date, dateStart, dateEnd);
     });
 
     if (!returnLackData) {
-      const dateRange = helpers.getDateRangeArray(dateStart, dateEnd, false, true);
-      const datesWithData = [...new Set(filteredRecords.map(record => record['Date']))];
+      const dateRange = getDateRangeArray(dateStart, dateEnd, false, true);
+      const datesWithData = [...new Set(filteredRecords.map((record: any) => record['Date']))];
 
       const allDatesHaveData = dateRange.every(date => datesWithData.includes(date));
 

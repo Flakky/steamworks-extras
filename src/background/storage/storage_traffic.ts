@@ -1,12 +1,18 @@
-class StorageActionRequestTraffic extends StorageAction {
-  constructor(appID, date, settings = new StorageActionSettings()) {
-    super(settings);
-    this.appID = appID;
+import { DateRangeAction, DateAction, StorageAction, StorageActionSettings } from './storageaction';
+import { isDateInRange, csvTextToArray, dateToString } from '../../scripts/helpers';
+import { waitForDatabaseReady, readData, writeData } from './storage';
+import { getPageCreationDate } from '../bghelpers';
+
+export class StorageActionRequestTraffic extends StorageAction implements DateAction {
+  date: Date;
+
+  constructor(appID: string, date: Date, settings = new StorageActionSettings()) {
+    super(appID,settings);
     this.date = date;
   }
 
   async process() {
-    return await requestTrafficData(this.appID, this.date);
+    await requestTrafficData(this.getAppID(), this.date);
   }
 
   getType() {
@@ -14,17 +20,20 @@ class StorageActionRequestTraffic extends StorageAction {
   }
 }
 
-class StorageActionGetTraffic extends StorageAction {
-  constructor(appID, dateStart, dateEnd, returnLackData, settings = new StorageActionSettings()) {
-    super(settings);
-    this.appID = appID;
+export class StorageActionGetTraffic extends StorageAction implements DateRangeAction {
+  dateStart: Date;
+  dateEnd: Date;
+  returnLackData: boolean;
+
+  constructor(appID: string, dateStart: Date, dateEnd: Date, returnLackData: boolean, settings = new StorageActionSettings()) {
+    super(appID, settings);
     this.dateStart = dateStart;
     this.dateEnd = dateEnd;
     this.returnLackData = returnLackData;
   }
 
   async process() {
-    return await getTrafficData(this.appID, this.dateStart, this.dateEnd, this.returnLackData);
+    return await getTrafficData(this.getAppID(), this.dateStart, this.dateEnd, this.returnLackData);
   }
 
   getType() {
@@ -32,14 +41,14 @@ class StorageActionGetTraffic extends StorageAction {
   }
 }
 
-const requestAllTrafficData = async (appID) => {
+const requestAllTrafficData = async (appID: string) => {
   console.debug(`Requesting all traffic data for app ${appID}`);
 
   let records = await readData(appID, 'Traffic');
 
-  const cachedDates = [...new Set(records.map(record => record['Date']))];
+  const cachedDates = [...new Set(records.map((record: any) => record['Date']))];
 
-  const pageCreationDate = await bghelpers.getPageCreationDate(appID);
+  const pageCreationDate = await getPageCreationDate(appID);
 
   console.debug(`Cached traffic dates:`, cachedDates)
 
@@ -52,8 +61,8 @@ const requestAllTrafficData = async (appID) => {
       return;
     }
 
-    if (date.getDate() < new Date() - 2 // We want to refresh first several days because new data may be available
-      && cachedDates.includes(helpers.dateToString(date))) {
+    if (date.getDate() < (new Date()).getDate() - 2 // We want to refresh first several days because new data may be available
+      && cachedDates.includes(dateToString(date))) {
 
       date.setDate(date.getDate() - 1);
       continue;
@@ -67,7 +76,7 @@ const requestAllTrafficData = async (appID) => {
   }
 }
 
-const getTrafficData = async (appID, dateStart, dateEnd, returnLackData) => {
+const getTrafficData = async (appID: string, dateStart: Date, dateEnd: Date, returnLackData: boolean) => {
   await waitForDatabaseReady();
 
   // TODO: Optimize reading data only for range from DB
@@ -75,24 +84,24 @@ const getTrafficData = async (appID, dateStart, dateEnd, returnLackData) => {
 
   let records = await readData(appID, 'Traffic');
 
-  const out = records.filter(item => {
+  const out = records.filter((item: any) => {
     const date = new Date(item['Date']);
 
-    return helpers.isDateInRange(date, dateStart, dateEnd);
+    return isDateInRange(date, dateStart, dateEnd);
   });
 
   return out;
 }
 
-const requestTrafficData = async (appID, date) => {
-  const pageCreationDate = await bghelpers.getPageCreationDate(appID);
+const requestTrafficData = async (appID: string, date: Date) => {
+  const pageCreationDate = await getPageCreationDate(appID);
 
   if (date < pageCreationDate) {
     console.error(`Cannot request traffic data for date ${date} because it is before page creation date`);
     return;
   }
 
-  const formattedDate = helpers.dateToString(date);
+  const formattedDate = dateToString(date);
 
 
   const URL = `https://partner.steamgames.com/apps/navtrafficstats/${appID}?attribution_filter=all&preset_date_range=custom&start_date=${formattedDate}&end_date=${formattedDate}&format=csv`;
@@ -120,22 +129,23 @@ const requestTrafficData = async (appID, date) => {
 
   const csvString = lines.join('\n');
 
-  lines = helpers.csvTextToArray(csvString);
+  const objects: any[] = csvTextToArray(csvString);
 
-  if (lines.length === 1) {
+  if (objects.length === 1) {
     console.debug(`No traffic results for ${formattedDate}`);
     return false;
   };
 
-  let headers = lines[0]
-    .map(header => header.trim())
-    .map(header => header.replace(' / ', ''));
+  let headers: string[] = (objects[0] as string[])
+    .map((header: string) => header.trim())
+    .map((header: string) => header.replace(' / ', ''));
 
-  let result = lines.slice(1)
-    .map(line => {
-      const object = {};
+  let result = objects
+    .slice(1)
+    .map((obj: any) => {
+      const object: any = {};
 
-      line.forEach((element, index) => {
+      obj.forEach((element: any, index: number) => {
         object['Date'] = formattedDate;
         object[headers[index].replace(' / ', '')] = element;
       });

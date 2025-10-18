@@ -3,45 +3,50 @@ import { setExtentionStatus } from './status';
 import { getPageCreationDate } from './bghelpers';
 import { getDateRangeArray, getDateNoOffset, dateToString } from '../scripts/helpers';
 import { readData } from './storage/storage';
-import { DateAction, StorageActionSettings } from './storage/storageaction';
+import { StorageAction, StorageActionSettings } from './storage/storageaction';
 import { StorageActionsQueue } from './storage/storagequeue';
 import { defaultSettings } from '../data/defaultsettings';
+import { StorageActionRequestSales } from './storage/storage_sales';
+import { StorageActionRequestReviews } from './storage/storage_reviews';
+import { StorageActionRequestWishlistConversions } from './storage/storage_wishlistconversions';
+import { StorageActionRequestWishlists, StorageActionRequestRegionalWishlists } from './storage/storage_wishlists';
+import { StorageActionRequestTraffic } from './storage/storage_traffic';
 
-const startUpdatingStats = async (appIDs: string[]) => {
-  updateStats(appIDs);
+export const startUpdatingStats = async (appIDs: string[], queue: StorageActionsQueue) => {
+  updateStats(appIDs, queue);
 
   const updateIntervalObject = await getBrowser().storage.local.get(`statsUpdateInterval`);
   const updateInterval = updateIntervalObject.statsUpdateInterval || 60;
   console.debug(`Stats update interval:`, updateInterval);
 
   setInterval(() => {
-    updateStats(appIDs);
+    updateStats(appIDs, queue);
   }, updateInterval * 60 * 1000);
 
-  updateStatsStatus();
+  updateStatsStatus(queue);
   setInterval(() => {
-    updateStatsStatus();
+    updateStatsStatus(queue);
   }, 3 * 1000);
 }
 
-const updateStats = async (appIDs: string[]) => {
+export const updateStats = async (appIDs: string[], queue: StorageActionsQueue) => {
   console.log(`Updating stats for apps:`, appIDs);
   try {
       // First handle requests which we can request at once, then daily
     for (const appID of appIDs) {
-      fetchSalesData(appID);
+      fetchSalesData(appID, queue);
     }
     for (const appID of appIDs) {
-      fetchReviewsData(appID);
+      fetchReviewsData(appID, queue);
     }
     for (const appID of appIDs) {
-      fetchWishlistConversionsData(appID);
+      fetchWishlistConversionsData(appID, queue);
     }
     for (const appID of appIDs) {
-      fetchGeneralWishlistsData(appID);
+      fetchGeneralWishlistsData(appID, queue);
     }
 
-    fetchDailyData(appIDs);
+    fetchDailyData(appIDs, queue);
   }
   catch (error) {
     console.error('Error while updating stats: ', error);
@@ -70,8 +75,8 @@ const fetchGeneralWishlistsData = async (appID: string, queue: StorageActionsQue
 }
 
 const fetchDailyData = async (appIDs: string[], queue: StorageActionsQueue) => {
-  const missingWishlistDates = [];
-  const missingTrafficDates = [];
+  const missingWishlistDates: { appid: string, date: Date }[] = [];
+  const missingTrafficDates: { appid: string, date: Date }[] = [];
 
   for (const appID of appIDs) {
     const wishlistDates = await getMissingDatesForWishlists(appID, queue);
@@ -85,8 +90,8 @@ const fetchDailyData = async (appIDs: string[], queue: StorageActionsQueue) => {
   }
 
   // We sort dates in descending order because we want to request the most recent dates first so the user can use it
-  missingWishlistDates.sort((a, b) => new Date(b.date) - new Date(a.date));
-  missingTrafficDates.sort((a, b) => new Date(b.date) - new Date(a.date));
+  missingWishlistDates.sort((a, b) => b.date.getTime() - a.date.getTime());
+  missingTrafficDates.sort((a, b) => b.date.getTime() - a.date.getTime());
 
   const actionSettings = await makeActionSettings();
 
@@ -211,8 +216,9 @@ const filterDatesByRequestedDates = (appID: string, requestType: string, dates: 
   const relevantRequests = queue.getActionsByAppIDAndType(appID, requestType);
 
   const requestedDatesSet = new Set(
-    relevantRequests.map((req: DateAction) => {
-      return dateToString(req.date);
+    relevantRequests.map((req: StorageAction) => {
+      if (!('date' in req) || req.date === undefined) return undefined;
+      return dateToString(req.date as Date);
     })
   );
 

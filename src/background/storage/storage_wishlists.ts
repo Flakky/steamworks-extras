@@ -1,11 +1,11 @@
-class StorageActionRequestWishlists extends StorageAction {
-  constructor(appID, settings = new StorageActionSettings()) {
-    super(settings);
-    this.appID = appID;
-  }
+import { DateRangeAction, DateAction, StorageAction, StorageActionSettings } from './storageaction';
+import { isDateInRange, getDateRangeArray, csvTextToArray, dateToString } from '../../scripts/helpers';
+import { waitForDatabaseReady, readData, mergeData, writeData } from './storage';
+import { getPageCreationDate, parseDataFromPage } from '../bghelpers';
 
+export class StorageActionRequestWishlists extends StorageAction {
   async process() {
-    return await requestAllWishlistData(this.appID);
+    await requestAllWishlistData(this.getAppID());
   }
 
   getType() {
@@ -13,15 +13,16 @@ class StorageActionRequestWishlists extends StorageAction {
   }
 }
 
-class StorageActionRequestRegionalWishlists extends StorageAction {
-  constructor(appID, date, settings = new StorageActionSettings()) {
-    super(settings);
-    this.appID = appID;
+export class StorageActionRequestRegionalWishlists extends StorageAction implements DateAction {
+  date: Date;
+
+  constructor(appID: string, date: Date, settings = new StorageActionSettings()) {
+    super(appID, settings);
     this.date = date;
   }
 
   async process() {
-    return await requestWishlistRegionalData(this.appID, this.date);
+    await requestWishlistRegionalData(this.getAppID(), this.date);
   }
 
   getType() {
@@ -29,17 +30,20 @@ class StorageActionRequestRegionalWishlists extends StorageAction {
   }
 }
 
-class StorageActionGetWishlists extends StorageAction {
-  constructor(appID, dateStart, dateEnd, returnLackData, settings = new StorageActionSettings()) {
-    super(settings);
-    this.appID = appID;
+export class StorageActionGetWishlists extends StorageAction implements DateRangeAction {
+  dateStart: Date;
+  dateEnd: Date;
+  returnLackData: boolean;
+
+  constructor(appID: string, dateStart: Date, dateEnd: Date, returnLackData: boolean, settings = new StorageActionSettings()) {
+    super(appID, settings);
     this.dateStart = dateStart;
     this.dateEnd = dateEnd;
     this.returnLackData = returnLackData;
   }
 
   async process() {
-    return await getWishlistData(this.appID, this.dateStart, this.dateEnd, this.returnLackData);
+    return await getWishlistData(this.getAppID(), this.dateStart, this.dateEnd, this.returnLackData);
   }
 
   getType() {
@@ -47,39 +51,39 @@ class StorageActionGetWishlists extends StorageAction {
   }
 }
 
-const getWishlistData = async (appID, dateStart, dateEnd, returnLackData) => {
+const getWishlistData = async (appID: string, dateStart: Date, dateEnd: Date, returnLackData: boolean) => {
   await waitForDatabaseReady();
 
   let records = await readData(appID, 'Wishlists');
 
   if (!returnLackData) {
-    let datesNoData = helpers.getDateRangeArray(dateStart, dateEnd, false, true);
+    let datesNoData = getDateRangeArray(dateStart, dateEnd, false, true);
 
     for (const record of records) {
-      datesNoData = datesNoData.filter(item => item !== record['Date']);
+      datesNoData = datesNoData.filter((item: any) => item !== record['Date']);
     }
 
     if (datesNoData.length > 0) return null;
   }
 
-  const out = records.filter(item => {
+  const out = records.filter((item: any) => {
     const date = new Date(item['Date']);
-    return helpers.isDateInRange(date, dateStart, dateEnd);
+    return isDateInRange(date, dateStart, dateEnd);
   });
 
   return out;
 }
 
-const requestAllWishlistData = async (appID) => {
+const requestAllWishlistData = async (appID: string) => {
   console.debug(`Requesting all wishlist data for app ${appID}`);
 
-  const pageCreationDate = await bghelpers.getPageCreationDate(appID);
+  const pageCreationDate = await getPageCreationDate(appID, false) as Date;
 
   const startDate = pageCreationDate;
   const endDate = new Date();
 
-  const formattedStartDate = helpers.dateToString(startDate);
-  const formattedEndDate = helpers.dateToString(endDate);
+  const formattedStartDate = dateToString(startDate);
+  const formattedEndDate = dateToString(endDate);
 
   const URL = `https://partner.steampowered.com/report_csv.php`;
 
@@ -118,18 +122,20 @@ const requestAllWishlistData = async (appID) => {
 
   const csvString = lines.join('\n');
 
-  lines = helpers.csvTextToArray(csvString);
+  const objects: any[] = csvTextToArray(csvString);
 
-  const headers = lines[0].map(header => header.trim());
+  const headers = (objects[0] as string[]).map((header: string) => header.trim());
 
   // Map each line to an object using the headers as keys
-  let wishlistActions = lines.slice(1).map(line => {
+  let wishlistActions = objects
+    .slice(1)
+    .map((obj: any) => {
     return {
-      'Date': line[headers.indexOf('DateLocal')],
-      'Adds': line[headers.indexOf('Adds')],
-      'Deletes': line[headers.indexOf('Deletes')],
-      'Gifts': line[headers.indexOf('Gifts')],
-      'Activations': line[headers.indexOf('PurchasesAndActivations')]
+      'Date': obj[headers.indexOf('DateLocal')],
+      'Adds': obj[headers.indexOf('Adds')],
+      'Deletes': obj[headers.indexOf('Deletes')],
+      'Gifts': obj[headers.indexOf('Gifts')],
+      'Activations': obj[headers.indexOf('PurchasesAndActivations')]
     };
   });
 
@@ -138,14 +144,14 @@ const requestAllWishlistData = async (appID) => {
   return wishlistActions;
 }
 
-const requestWishlistRegionalData = async (appID, date) => {
-  const pageCreationDate = await bghelpers.getPageCreationDate(appID);
+const requestWishlistRegionalData = async (appID: string, date: Date) => {
+  const pageCreationDate = await getPageCreationDate(appID, false) as Date;
 
   if (date < pageCreationDate) {
     console.error(`Cannot request wishlist data for date ${date} because it is before page creation date`);
   }
 
-  const formattedDate = helpers.dateToString(date);
+  const formattedDate = dateToString(date);
 
   let url = `https://partner.steampowered.com/region/`;
   const params = {
@@ -158,7 +164,7 @@ const requestWishlistRegionalData = async (appID, date) => {
   const queryString = new URLSearchParams(params).toString();
   url += `?${queryString}`;
 
-  const data = await bghelpers.parseDataFromPage(url, 'parseWishlistData');
+  const data = await parseDataFromPage(url, 'parseWishlistData');
 
   if (typeof data !== 'object' || Object.keys(data).length === 0) {
     console.debug(`No wishlist data found for date ${formattedDate}. Writing empty data`);
@@ -172,7 +178,7 @@ const requestWishlistRegionalData = async (appID, date) => {
     return dataToWrite;
   }
 
-  const formattedData = Object.keys(data).reduce((acc, country) => {
+  const formattedData = Object.keys(data).reduce((acc: any, country: string) => {
     let value = data[country];
     if (typeof value === 'string' && value.startsWith('(') && value.endsWith(')')) {
       value = -parseInt(value.slice(1, -1));
@@ -185,7 +191,7 @@ const requestWishlistRegionalData = async (appID, date) => {
 
   console.debug(`Wishlist result for app ${appID} for date ${formattedDate}: `, formattedData);
 
-  formattedData['Date'] = helpers.dateToString(date);
+  formattedData['Date'] = dateToString(date);
 
   await mergeData(appID, 'Wishlists', formattedData);
 

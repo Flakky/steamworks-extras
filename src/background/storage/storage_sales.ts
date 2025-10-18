@@ -3,7 +3,7 @@ import { isDateInRange, getDateRangeArray, csvTextToArray, dateToString } from '
 import { waitForDatabaseReady, readData, clearData, writeData } from './storage';
 import { getPageCreationDate, getAppPackageIDs } from '../bghelpers';
 
-class StorageActionRequestSales extends StorageAction {
+export class StorageActionRequestSales extends StorageAction {
 
   async process() {
     await requestSalesData(this.getAppID());
@@ -14,7 +14,7 @@ class StorageActionRequestSales extends StorageAction {
   }
 }
 
-class StorageActionGetSales extends StorageAction  implements DateRangeAction {
+export class StorageActionGetSales extends StorageAction  implements DateRangeAction {
   dateStart: Date;
   dateEnd: Date;
   returnLackData: boolean;
@@ -97,23 +97,26 @@ const requestSalesData = async (appID: string) => {
 
   const csvString = lines.join('\n');
 
-  lines = csvTextToArray(csvString);
+  const objects: any[] = csvTextToArray(csvString);
 
-  const headers = lines[0].map((header: string) => header.trim());
+  const headers = (objects[0] as string[]).map((header: string) => header.trim());
 
   // Map each line to an object using the headers as keys
   let index = 0;
-  const result = lines.slice(1).map(line => {
-    const object = {};
+  const result = objects
+    .slice(1)
+    .map((obj: any) => {
+      const object: any = {};
 
-    line.forEach((element, index) => {
-      object[headers[index]] = element;
-    });
+      obj.forEach((element: any, i: number) => {
+        object[headers[i]] = element;
+      });
 
-    object.key = index++;
+      object.key = index++;
 
-    return object;
-  });
+      return object;
+    }
+  );
 
   console.debug(`Sales CSV result:`, result);
 
