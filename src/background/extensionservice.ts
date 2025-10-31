@@ -1,6 +1,7 @@
 import { getBrowser } from '../shared/browser';
 import { defaultSettings } from '../data/defaultsettings';
 import { extensionStatus, setExtentionStatus } from './status';
+import { parseDataFromPage } from './bghelpers';
 
 declare var browser: typeof chrome | undefined;
 
@@ -76,7 +77,7 @@ const parsePackageIDs = async (appID: string): Promise<Record<string, any>> => {
 
   let packageIDs = result.packageIDs === undefined ? {} : result.packageIDs;
 
-  const IDs = await bghelpers.getPackageIDs(appID, false);
+  const IDs = await getPackageIDs(appID, false);
   console.debug('Package IDs for app ', appID, ': ', IDs);
 
   if (IDs === undefined || !Array.isArray(IDs)) {
@@ -147,7 +148,7 @@ const parseAppIDs = async () => {
   return mergedAppIDs;
 }
 
-const getAppIDs = async () => {
+const getAppIDs = async () : Promise<string[]> => {
   let result = await getBrowser().storage.local.get("appIDs");
 
   let appIDs = undefined;
@@ -162,10 +163,10 @@ const getAppIDs = async () => {
   }
 
   const ignoredResult = await getBrowser().storage.local.get("ignoredAppIDs");
-  const ignoredAppIDs = ignoredResult.ignoredAppIDs || [];
+  const ignoredAppIDs: string[] = ignoredResult.ignoredAppIDs || [];
 
   if (ignoredAppIDs.length > 0) {
-    appIDs = appIDs.filter(appID => !ignoredAppIDs.includes(appID));
+    appIDs = appIDs.filter((appID: string) => !ignoredAppIDs.includes(appID));
   }
 
   return appIDs;

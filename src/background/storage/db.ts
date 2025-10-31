@@ -1,6 +1,5 @@
 import { setExtentionStatus } from '../status';
 
-
 let gameStatsStorage: IDBDatabase | undefined;
 
 const tables = [

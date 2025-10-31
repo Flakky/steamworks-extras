@@ -1,6 +1,6 @@
 import { DateRangeAction, DateAction, StorageAction, StorageActionSettings } from './storageaction';
 import { isDateInRange, csvTextToArray, dateToString } from '../../scripts/helpers';
-import { waitForDatabaseReady, readData, writeData } from './storage';
+import { waitForDatabaseReady, readData, writeData } from './db';
 import { getPageCreationDate } from '../bghelpers';
 
 export class StorageActionRequestTraffic extends StorageAction implements DateAction {

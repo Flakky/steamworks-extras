@@ -2,7 +2,7 @@ import { getBrowser } from '../shared/browser';
 import { setExtentionStatus } from './status';
 import { getPageCreationDate } from './bghelpers';
 import { getDateRangeArray, getDateNoOffset, dateToString } from '../scripts/helpers';
-import { readData } from './storage/storage';
+import { readData } from './storage/db';
 import { StorageAction, StorageActionSettings } from './storage/storageaction';
 import { StorageActionsQueue } from './storage/storagequeue';
 import { defaultSettings } from '../data/defaultsettings';

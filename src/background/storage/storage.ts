@@ -4,6 +4,7 @@ import { StorageActionGetWishlistConversions } from './storage_wishlistconversio
 import { StorageActionGetWishlists } from './storage_wishlists';
 import { StorageActionGetTraffic } from './storage_traffic';
 import { StorageActionsQueue } from './storagequeue';
+import { StorageAction } from './storageaction';
 
 const getDataFromDB = async (queue: StorageActionsQueue, type: string, appId: string, dateStart: Date, dateEnd: Date, returnLackData = true): Promise<any> => {
 
