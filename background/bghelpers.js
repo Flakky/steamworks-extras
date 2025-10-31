@@ -40,7 +40,7 @@ bghelpers.getPackageIDs = async (appID) => {
 
   console.log(`Fetching package IDs from URL: ${url}`);
 
-  const response = await fetch(url);
+  const response = await fetch(url, { credentials: 'omit' });
   if (!response.ok) throw new Error('Network response was not ok');
 
   const data = await response.json();
