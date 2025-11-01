@@ -1,7 +1,13 @@
 import { getBrowser } from '../shared/browser';
 import { defaultSettings } from '../data/defaultsettings';
 import { extensionStatus, setExtentionStatus } from './status';
-import { parseDataFromPage } from './bghelpers';
+import { OffscreenManager, initOffscreen } from './offscreen/offscreenmanager';
+import { initIDsWithRetry, initPageCreationDatesWithRetry } from './gameids';
+import { StorageActionsQueue } from './storage/storagequeue';
+import { initStorageForAppIDs } from './storage/db';
+import { startUpdatingStats } from './statsupdater';
+import { initMessageListener } from './messagelistener';
+import { getAppIDs } from './bghelpers';
 
 declare var browser: typeof chrome | undefined;
 
@@ -30,7 +36,7 @@ if (typeof browser == "undefined") {
 
 getBrowser().runtime.onInstalled.addListener(async () => {
   getBrowser().storage.local.get(Object.keys(defaultSettings), (storedSettings: Record<string, any>) => {
-    const settingsToStore = {};
+    const settingsToStore: Record<string, any> = {};
 
     for (const key in defaultSettings) {
       if (storedSettings[key] === undefined) {
@@ -46,264 +52,33 @@ getBrowser().runtime.onInstalled.addListener(async () => {
   });
 });
 
-const showOptions = () => {
-  console.log('Show options')
-  getBrowser().runtime.openOptionsPage();
-}
-
-const getStatus = () => {
-  return extensionStatus;
-}
-
-const makeRequest = async (url: string, params: RequestInit): Promise<string> => {
-  console.debug(`Make request to ${url}`);
-
-  const response = await fetch(url, params);
-  if (!response.ok) throw new Error('Network response was not ok');
-
-  console.log(response);
-
-  const responseText = await response.text();
-
-  console.log(responseText);
-
-  return responseText;
-}
-
-const parsePackageIDs = async (appID: string): Promise<Record<string, any>> => {
-  console.log('Parsing PackageIDs for appID: ', appID);
-
-  let result = await getBrowser().storage.local.get("packageIDs");
-
-  let packageIDs = result.packageIDs === undefined ? {} : result.packageIDs;
-
-  const IDs = await getPackageIDs(appID, false);
-  console.debug('Package IDs for app ', appID, ': ', IDs);
-
-  if (IDs === undefined || !Array.isArray(IDs)) {
-    console.error(`Could not parse package IDs for app ${appID}`);
-    return undefined;
-  }
-
-  packageIDs[appID] = IDs;
-
-  await getBrowser().storage.local.set({ packageIDs: packageIDs });
-
-  console.log(`Package IDs have been updated for app ${appID}: `, packageIDs);
-
-  return packageIDs;
-}
-
-const getPackageIDs = async (appID) => {
-  let result = await getBrowser().storage.local.get("packageIDs");
-
-  let packageIDs = undefined;
-  if (result === undefined
-    || result.packageIDs === undefined
-    || result.packageIDs[appID] === undefined) {
-    packageIDs = await parsePackageIDs(appID)
-  }
-  else {
-    packageIDs = result.packageIDs[appID];
-  }
-
-  return packageIDs;
-}
-
-const parseAppIDs = async () => {
-  console.log('Parsing AppIDs');
-
-  const appIDs = await bghelpers.parseDataFromPage('https://partner.steampowered.com/nav_games.php', 'parseAppIDs');
-
-  console.debug('All AppIDs from partner panel: ', appIDs);
-
-  const nonRedirectedAppIDs = [];
-
-  for (const appID of appIDs) {
-    try {
-      const response = await fetch(`https://store.steampowered.com/app/${appID}`, { redirect: 'manual' });
-
-      console.log(`Checking appID ${appID} for redirection: `, response.status);
-
-      if (response.status === 200) {
-        nonRedirectedAppIDs.push(appID);
-      }
-    } catch (error) {
-      console.error(`Error fetching appID ${appID}:`, error);
-    }
-  }
-
-  console.debug('Non-redirected AppIDs:', nonRedirectedAppIDs);
-
-  let currentAppIDs = await getBrowser().storage.local.get("appIDs");
-
-  currentAppIDs = currentAppIDs.appIDs || [];
-  const mergedAppIDs = [...new Set([...currentAppIDs, ...nonRedirectedAppIDs])];
-
-
-  await getBrowser().storage.local.set({ appIDs: mergedAppIDs });
-
-  console.log('AppIDs: ', mergedAppIDs);
-
-  return mergedAppIDs;
-}
-
-const getAppIDs = async () : Promise<string[]> => {
-  let result = await getBrowser().storage.local.get("appIDs");
-
-  let appIDs = undefined;
-
-  if (result === undefined
-    || result.appIDs === undefined
-    || result.appIDs.length === 0) {
-    appIDs = await parseAppIDs()
-  }
-  else {
-    appIDs = result.appIDs;
-  }
-
-  const ignoredResult = await getBrowser().storage.local.get("ignoredAppIDs");
-  const ignoredAppIDs: string[] = ignoredResult.ignoredAppIDs || [];
-
-  if (ignoredAppIDs.length > 0) {
-    appIDs = appIDs.filter((appID: string) => !ignoredAppIDs.includes(appID));
-  }
-
-  return appIDs;
-}
-
-const parsePageCreationDate = async (appID: string): Promise<Date | undefined> => {
-  console.log('Parsing page creation date for appID: ', appID);
-
-  let result = await getBrowser().storage.local.get("pagesCreationDate");
-  let pagesCreationDate = result.pagesCreationDate || {};
-
-  const url = `https://partner.steamgames.com/apps/navtrafficstats/${appID}?attribution_filter=all&preset_date_range=lifetime`;
-  const pageCreationDate = await parseDataFromPage(url, 'parsePageCreationDate');
-  const date = new Date(pageCreationDate);
-
-  if (date === undefined || !(date instanceof Date)) return undefined;
-
-  pagesCreationDate[appID] = date.toISOString();
-
-  await getBrowser().storage.local.set({ 'pagesCreationDate': pagesCreationDate });
-
-  console.log(`Page creation date for ${appID}: `, date);
-
-  return date;
-}
-
-const getPageCreationDate = async (appID: string): Promise<Date | undefined> => {
-  let result = await getBrowser().storage.local.get("pagesCreationDate");
-
-  console.log(result);
-
-  let creationDate = undefined;
-
-  if (result === undefined
-    || result.pagesCreationDate === undefined
-    || result.pagesCreationDate[appID] === undefined) {
-    creationDate = await parsePageCreationDate(appID);
-  }
-  else {
-    creationDate = result.pagesCreationDate[appID];
-  }
-
-  return creationDate;
-}
-
-const initIDs = async () => {
-  console.log('Init AppIDs and PackageIDs');
-
-  const appIDs = await parseAppIDs();
-  if (!Array.isArray(appIDs) || appIDs.length === 0) {
-    console.error('No appIDs found');
-    return false;
-  }
-
-  // Get filtered appIDs (excluding ignored ones) for package ID initialization
-  const filteredAppIDs = await getAppIDs();
-
-  let packageIDs = {};
-  for (const appID of filteredAppIDs) {
-    const IDs = await parsePackageIDs(appID);
-
-    packageIDs[appID] = IDs;
-  }
-
-  console.log('AppIDs and PackageIDs have been initialized.', filteredAppIDs, packageIDs);
-
-  return true;
-}
-
-const initIDsWithRetry = async (interval = 5) => {
-  let success = false;
-  while (!success) {
-    try {
-      success = await initIDs();
-    } catch (error) {
-      console.error('Error during initIDs:', error);
-    }
-    if (!success) {
-      console.log(`Retry initializing in ${interval} seconds...`);
-      setExtentionStatus(101);
-      await new Promise(resolve => setTimeout(resolve, interval * 1000));
-    }
-  }
-}
-
-const initPageCreationDates = async () => {
-  console.log('Init PageCreationDates');
-
-  const appIDs = await getAppIDs();
-  if (appIDs.length === 0) {
-    console.error('No appIDs found.');
-    return;
-  }
-
-  for (const appID of appIDs) {
-    await getPageCreationDate(appID);
-  }
-
-  console.log('PageCreationDates have been initialized.');
-}
-
-const initPageCreationDatesWithRetry = async (interval = 5) => {
-  let success = false;
-  while (!success) {
-    try {
-      await initPageCreationDates();
-      success = true;
-    } catch (error) {
-      console.error('Error during initPageCreationDates:', error);
-      setExtentionStatus(102, { error: error instanceof Error ? error.message : 'Unknown error' });
-      await new Promise(resolve => setTimeout(resolve, interval * 1000));
-    }
-  }
-}
-
 const init = async () => {
   console.log('Init');
 
   setExtentionStatus(10);
 
   await initOffscreen();
+  const offscreenManager = new OffscreenManager();
 
-  await initIDsWithRetry();
+  await initIDsWithRetry(5, offscreenManager);
 
-  const appIDs = await getAppIDs();
+  const appIDs = await getAppIDs(false);
   if (appIDs.length === 0) {
     console.error('No appIDs found.');
     return;
   }
 
-  await initPageCreationDatesWithRetry();
+  await initPageCreationDatesWithRetry(5, offscreenManager);
+
+  const queue = new StorageActionsQueue();
 
   await initStorageForAppIDs(appIDs);
 
+  await initMessageListener({ offscreenManager, queue });
+
   console.log("Extension service initiated");
 
-  startUpdatingStats(appIDs);
+  startUpdatingStats(appIDs, {queue, offscreenManager});
 }
 
 init().catch(error => {

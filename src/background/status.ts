@@ -9,3 +9,7 @@ export const setExtentionStatus = (statusCode: number, extraData: Record<string,
 
   console.debug(`Steamworks extras: New extension status: ${statusCode}`);
 }
+
+export const getStatus = () => {
+  return extensionStatus;
+}

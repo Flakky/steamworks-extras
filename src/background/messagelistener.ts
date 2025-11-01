@@ -1,11 +1,18 @@
 import { getBrowser } from '../shared/browser';
+import { OffscreenManager, OffscreenParseResponse } from './offscreen/offscreenmanager';
 import { StorageActionsQueue } from './storage/storagequeue';
+import { parseDataFromPage, getAppIDs, makeRequest } from './bghelpers';
+import { updateStats, updateStatsStatus } from './statsupdater';
+import { getStatus } from './status';
+import { getDataFromDB } from './storage/storage';
 
 class InitMessageListenerContext {
     queue: StorageActionsQueue;
+    offscreenManager: OffscreenManager;
 
-    constructor(queue: StorageActionsQueue) {
+    constructor(queue: StorageActionsQueue, offscreenManager: OffscreenManager) {
         this.queue = queue;
+        this.offscreenManager = offscreenManager;
     }
 }
 
@@ -17,7 +24,7 @@ export const initMessageListener = (context: InitMessageListenerContext) => {
         case "showOptions":
             {
             (async () => {
-                showOptions();
+                getBrowser().runtime.openOptionsPage();
                 sendResponse({});
             })(); break;
             };
@@ -65,11 +72,6 @@ export const initMessageListener = (context: InitMessageListenerContext) => {
                 sendResponse(status);
             })(); break;
             };
-        case "getLogs":
-            {
-            sendResponse(logs);
-            break;
-            };
         case "getData":
             {
             (async () => {
@@ -81,22 +83,24 @@ export const initMessageListener = (context: InitMessageListenerContext) => {
         case "parseDOM":
             {
             (async () => {
-                const data = message.htmlText ? await parseDOM(message.htmlText, message.type) : await parseDataFromPage(message.url, message.type);
+                const data = message.htmlText 
+                ? await context.offscreenManager.parseDOM(message.htmlText, message.type) 
+                : await parseDataFromPage(message.url, message.type, context.offscreenManager);
                 console.debug(`Returning DOM parsed "${message.type}" data from background: `, data);
                 sendResponse(data);
             })(); break;
             };
         case "parsedDOM":
             {
-            processParsedDOM(message);
+            context.offscreenManager.processParsedDOM(message as OffscreenParseResponse);
             break;
             }
         case "updateStats":
             {
             (async () => {
                 const appIDs = await getAppIDs();
-                updateStats(appIDs);
-                updateStatsStatus();
+                updateStats(appIDs, {queue: context.queue, offscreenManager: context.offscreenManager});
+                updateStatsStatus(context.queue);
                 return appIDs;
             })(); break;
             };

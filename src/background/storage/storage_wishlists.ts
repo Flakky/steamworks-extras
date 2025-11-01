@@ -2,6 +2,7 @@ import { DateRangeAction, DateAction, StorageAction, StorageActionSettings } fro
 import { isDateInRange, getDateRangeArray, csvTextToArray, dateToString } from '../../scripts/helpers';
 import { waitForDatabaseReady, readData, mergeData, writeData } from './db';
 import { getPageCreationDate, parseDataFromPage } from '../bghelpers';
+import { OffscreenManager } from '../offscreen/offscreenmanager';
 
 export class StorageActionRequestWishlists extends StorageAction {
   async process() {
@@ -15,14 +16,16 @@ export class StorageActionRequestWishlists extends StorageAction {
 
 export class StorageActionRequestRegionalWishlists extends StorageAction implements DateAction {
   date: Date;
+  offscreenManager: OffscreenManager;
 
-  constructor(appID: string, date: Date, settings = new StorageActionSettings()) {
+  constructor(appID: string, date: Date, offscreenManager: OffscreenManager, settings = new StorageActionSettings()) {
     super(appID, settings);
     this.date = date;
+    this.offscreenManager = offscreenManager;
   }
 
   async process() {
-    await requestWishlistRegionalData(this.getAppID(), this.date);
+    await requestWishlistRegionalData(this.getAppID(), this.date, this.offscreenManager);
   }
 
   getType() {
@@ -144,7 +147,7 @@ const requestAllWishlistData = async (appID: string) => {
   return wishlistActions;
 }
 
-const requestWishlistRegionalData = async (appID: string, date: Date) => {
+const requestWishlistRegionalData = async (appID: string, date: Date, offscreenManager: OffscreenManager) => {
   const pageCreationDate = await getPageCreationDate(appID, false) as Date;
 
   if (date < pageCreationDate) {
@@ -164,7 +167,7 @@ const requestWishlistRegionalData = async (appID: string, date: Date) => {
   const queryString = new URLSearchParams(params).toString();
   url += `?${queryString}`;
 
-  const data = await parseDataFromPage(url, 'parseWishlistData');
+  const data = await parseDataFromPage(url, 'parseWishlistData', offscreenManager);
 
   if (typeof data !== 'object' || Object.keys(data).length === 0) {
     console.debug(`No wishlist data found for date ${formattedDate}. Writing empty data`);

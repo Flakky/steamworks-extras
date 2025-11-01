@@ -1,5 +1,6 @@
 import { getBrowser } from '../shared/browser';
 import { dateToString } from '../scripts/helpers';
+import { OffscreenManager } from './offscreen/offscreenmanager';
 
 
 /**
@@ -42,7 +43,7 @@ export const getPackageIDs = async (appID: string): Promise<string[]> => {
 
   console.log(`Fetching package IDs from URL: ${url}`);
 
-  const response = await fetch(url);
+  const response = await fetch(url, { credentials: 'omit' });
   if (!response.ok) throw new Error('Network response was not ok');
 
   const data = await response.json();
@@ -60,13 +61,37 @@ export const getPackageIDs = async (appID: string): Promise<string[]> => {
 }
 
 /**
+ * Returns the app IDs.
+ *
+ * @returns {Array} - App IDs
+ */
+export const getAppIDs = async (includeIgnored: boolean = false) : Promise<string[]> => {
+  let result = await getBrowser().storage.local.get("appIDs");
+
+  let appIDs = result.appIDs || [];
+
+  if (includeIgnored) {
+    return appIDs;
+  }
+
+  const ignoredResult = await getBrowser().storage.local.get("ignoredAppIDs");
+  const ignoredAppIDs: string[] = ignoredResult.ignoredAppIDs || [];
+
+  if (ignoredAppIDs.length > 0) {
+    appIDs = appIDs.filter((appID: string) => !ignoredAppIDs.includes(appID));
+  }
+
+  return appIDs;
+}
+
+/**
  * Parses data from a given URL.
  *
  * @param {string} url - URL to parse data from
  * @param {string} request - Request type. Must be a valid request type for the parser.parseDocument.
  * @returns {Promise} - Promise with the parsed data
  */
-export const parseDataFromPage = async (url: string, request: string): Promise<any> => {
+export const parseDataFromPage = async (url: string, request: string, offscreenManager: OffscreenManager): Promise<any> => {
   console.debug(`Getting data "${request}" from URL: ${url}`);
 
   const response = await fetch(url);
@@ -75,9 +100,24 @@ export const parseDataFromPage = async (url: string, request: string): Promise<a
 
   const htmlText = await response.text();
 
-  const parsedData = await parseDOM(htmlText, request);
+  const parsedData = await offscreenManager.parseDOM(htmlText, request);
 
   console.debug(`Data result from parsing for "${request}": `, parsedData);
 
   return parsedData;
+}
+
+export const makeRequest = async (url: string, params: RequestInit): Promise<string> => {
+  console.debug(`Make request to ${url}`);
+
+  const response = await fetch(url, params);
+  if (!response.ok) throw new Error('Network response was not ok');
+
+  console.log(response);
+
+  const responseText = await response.text();
+
+  console.log(responseText);
+
+  return responseText;
 }

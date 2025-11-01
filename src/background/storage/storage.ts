@@ -6,7 +6,7 @@ import { StorageActionGetTraffic } from './storage_traffic';
 import { StorageActionsQueue } from './storagequeue';
 import { StorageAction } from './storageaction';
 
-const getDataFromDB = async (queue: StorageActionsQueue, type: string, appId: string, dateStart: Date, dateEnd: Date, returnLackData = true): Promise<any> => {
+export const getDataFromDB = async (queue: StorageActionsQueue, type: string, appId: string, dateStart: Date, dateEnd: Date, returnLackData = true): Promise<any> => {
 
     const startDate = dateStart ? dateStart : new Date();
     const endDate = dateEnd ? dateEnd : new Date();

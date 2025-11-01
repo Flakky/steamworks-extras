@@ -127,7 +127,7 @@ export class StorageAction {
     getType() { return 'StorageAction'; }
   
     toString() {
-      return `StorageAction: ${this.getType()}`;
+      return `StorageAction [${this.appID}]: ${this.getType()}`;
     }
 }
 

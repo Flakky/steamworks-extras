@@ -11,45 +11,67 @@ import { StorageActionRequestReviews } from './storage/storage_reviews';
 import { StorageActionRequestWishlistConversions } from './storage/storage_wishlistconversions';
 import { StorageActionRequestWishlists, StorageActionRequestRegionalWishlists } from './storage/storage_wishlists';
 import { StorageActionRequestTraffic } from './storage/storage_traffic';
+import { OffscreenManager } from './offscreen/offscreenmanager';
 
-export const startUpdatingStats = async (appIDs: string[], queue: StorageActionsQueue) => {
-  updateStats(appIDs, queue);
+class UpdateStatsContext {
+  queue: StorageActionsQueue;
+  offscreenManager: OffscreenManager;
+
+  constructor(queue: StorageActionsQueue, offscreenManager: OffscreenManager) {
+    this.queue = queue;
+    this.offscreenManager = offscreenManager;
+  }
+}
+
+export const startUpdatingStats = async (appIDs: string[], context: UpdateStatsContext) => {
+  updateStats(appIDs, context);
 
   const updateIntervalObject = await getBrowser().storage.local.get(`statsUpdateInterval`);
   const updateInterval = updateIntervalObject.statsUpdateInterval || 60;
   console.debug(`Stats update interval:`, updateInterval);
 
   setInterval(() => {
-    updateStats(appIDs, queue);
+    updateStats(appIDs, context);
   }, updateInterval * 60 * 1000);
 
-  updateStatsStatus(queue);
+  updateStatsStatus(context.queue);
   setInterval(() => {
-    updateStatsStatus(queue);
+    updateStatsStatus(context.queue);
   }, 3 * 1000);
 }
 
-export const updateStats = async (appIDs: string[], queue: StorageActionsQueue) => {
+export const updateStats = async (appIDs: string[], context: UpdateStatsContext) => {
   console.log(`Updating stats for apps:`, appIDs);
   try {
       // First handle requests which we can request at once, then daily
     for (const appID of appIDs) {
-      fetchSalesData(appID, queue);
+      fetchSalesData(appID, context.queue);
     }
     for (const appID of appIDs) {
-      fetchReviewsData(appID, queue);
+      fetchReviewsData(appID, context.queue);
     }
     for (const appID of appIDs) {
-      fetchWishlistConversionsData(appID, queue);
+      fetchWishlistConversionsData(appID, context.queue);
     }
     for (const appID of appIDs) {
-      fetchGeneralWishlistsData(appID, queue);
+      fetchGeneralWishlistsData(appID, context.queue);
     }
 
-    fetchDailyData(appIDs, queue);
+    fetchDailyData(appIDs, context.queue, context.offscreenManager);
   }
   catch (error) {
     console.error('Error while updating stats: ', error);
+  }
+}
+
+export const updateStatsStatus = (queue: StorageActionsQueue) => {
+  const queueLength = queue.getQueue().filter(item => item.getType().includes("Request")).length;
+  console.debug(`Queue length:`, queueLength);
+  if (queueLength > 0) {
+    setExtentionStatus(11, { queueLength: queueLength });
+  }
+  else {
+    setExtentionStatus(0);
   }
 }
 
@@ -74,7 +96,7 @@ const fetchGeneralWishlistsData = async (appID: string, queue: StorageActionsQue
   await queue.addToQueue(requestAllWishlists);
 }
 
-const fetchDailyData = async (appIDs: string[], queue: StorageActionsQueue) => {
+const fetchDailyData = async (appIDs: string[], queue: StorageActionsQueue, offscreenManager: OffscreenManager) => {
   const missingWishlistDates: { appid: string, date: Date }[] = [];
   const missingTrafficDates: { appid: string, date: Date }[] = [];
 
@@ -96,21 +118,10 @@ const fetchDailyData = async (appIDs: string[], queue: StorageActionsQueue) => {
   const actionSettings = await makeActionSettings();
 
   for (const date of missingWishlistDates) {
-    queue.addToQueue(new StorageActionRequestRegionalWishlists(date.appid, date.date, actionSettings));
+    queue.addToQueue(new StorageActionRequestRegionalWishlists(date.appid, date.date, offscreenManager));
   }
   for (const date of missingTrafficDates) {
     queue.addToQueue(new StorageActionRequestTraffic(date.appid, date.date, actionSettings));
-  }
-}
-
-const updateStatsStatus = (queue: StorageActionsQueue) => {
-  const queueLength = queue.getQueue().filter(item => item.getType().includes("Request")).length;
-  console.debug(`Queue length:`, queueLength);
-  if (queueLength > 0) {
-    setExtentionStatus(11, { queueLength: queueLength });
-  }
-  else {
-    setExtentionStatus(0);
   }
 }
 
