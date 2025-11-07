@@ -1,6 +1,6 @@
-let extensionStatuses: any = undefined;
+import { getBrowser } from './browser';
 
-declare function getBrowser(): any;
+let extensionStatuses: any = undefined;
 
 export const createStatusBlock = (): HTMLDivElement => {
   const statusBlock = createStatusBlockElement();
@@ -41,7 +41,7 @@ export const addStatusBlockToPage = (): void => {
   startUpdateStatus();
 }
 
-const startUpdateStatus = (): void => {
+export const startUpdateStatus = (): void => {
   const statusElement = document.getElementById('extra_status') as HTMLDivElement;
   statusElement.style.display = 'none';
 
@@ -50,7 +50,7 @@ const startUpdateStatus = (): void => {
   setInterval(() => { updateStatus() }, 3000);
 }
 
-const updateStatus = (): void => {
+export const updateStatus = (): void => {
   getBrowser().runtime.sendMessage({ request: "getStatus" }, (status: any) => {
     console.debug('Status:', status);
 
