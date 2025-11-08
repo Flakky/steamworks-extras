@@ -1,6 +1,4 @@
-import { createFlexContentBlock, setFlexContentBlockContentElem, setFlexContentBlockContent, createMessageText } from "../pageblocks";
-import { getDateRangeArray, dateToString, selectChartColor } from "../../scripts/helpers";
-import { getCurrentURL, getDateRangeFromURL } from "../site";
+import { createFlexContentBlock, setFlexContentBlockContentElem, createMessageText } from "../pageblocks";
 
 export const moveTotalTableToNewBlock = (doc: Document) => {
   const contentBlock = createFlexContentBlock(doc, 'Lifetime Overview', 'extra_lifetime_table_block');

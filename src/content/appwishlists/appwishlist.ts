@@ -1,7 +1,7 @@
 import { getCurrentURL, getDateRangeFromURL, getDefaultSettings, readChartColors } from "../site";
-import { createCustomContentBlock, createToolbarBlock, hideOriginalMainBlock, moveDateRangeSelectionToTop, moveGameTitle, createMessageText } from "../pageblocks";
+import { createCustomContentBlock, createToolbarBlock, hideOriginalMainBlock, moveDateRangeSelectionToTop, moveGameTitle } from "../pageblocks";
 import { addStatusBlockToPage } from "../../shared/statusblock";
-import { getDataFromStorage, sendMessageAsync } from "../../scripts/helpers";
+import { getDataFromStorage } from "../../scripts/helpers";
 import {
   moveTotalTableToNewBlock,
   fixLifetimeLayout,

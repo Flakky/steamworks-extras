@@ -1,6 +1,5 @@
 import { getCurrentURL, getDateRangeFromURL } from "../site";
 import { createConversionsChartBlock } from "./layout";
-import { getDataFromStorage } from "../../scripts/helpers";
 import { WishlistConversionsData, WishlistsData } from "./types";
 import { ChartConfiguration, Chart } from "chart.js";
 import { setFlexContentBlockContent } from "../pageblocks";
