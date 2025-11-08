@@ -1,0 +1,47 @@
+import { defaultSettings } from "../data/defaultsettings";
+import { correctDateRange, getCalculationToday, isStringEmpty } from "../scripts/helpers";
+import { getBrowser } from "../shared/browser";
+import { DateRange } from "../shared/types/daterange";
+
+export const readChartColors = async (): Promise<Record<string, string>> => {
+  const jsonFilePath = getBrowser().runtime.getURL('data/chartcolors.json');
+
+  const response = await fetch(jsonFilePath);
+  const chartColors = await response.json();
+
+  return chartColors;
+};
+
+export const getDefaultSettings = async (): Promise<Record<string, any>> => {
+  const settings = await getBrowser().storage.local.get(defaultSettings);
+  return settings;
+};
+
+export const getCurrentURL = (): string => {
+  return window.location.href;
+};
+
+/**
+ * Gets the date range from the URL. The URL should be in the format:
+ * https://partner.steampowered.com/app/details/AppID/?dateStart=2024-08-21&dateEnd=2024-08-27
+ * @param url - The URL to get the date range from
+ * @returns The date range
+ */
+export const getDateRangeFromURL = (url: string): DateRange => {
+  const urlObj = new URL(url);
+
+  const dateStartString: string = urlObj.searchParams.get('dateStart') || '';
+  const dateEndString: string = urlObj.searchParams.get('dateEnd') || '';
+
+  let today = getCalculationToday();
+
+  let dateStart = today;
+  let dateEnd = today;
+
+  if (!isStringEmpty(dateStartString)) dateStart = new Date(dateStartString);
+  if (!isStringEmpty(dateEndString)) dateEnd = new Date(dateEndString);
+
+  correctDateRange(dateStart, dateEnd);
+
+  return new DateRange(dateStart, dateEnd);
+}

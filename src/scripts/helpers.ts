@@ -390,39 +390,6 @@ export const createMessageBlock = (type: 'error' | 'warning', text: string): HTM
   return block;
 }
 
-/**
- * Creates a message block with a title and a text.
- *
- * @param {string} type - Type of the message. Can be 'error' or 'warning'
- * @param {string} text - Text of the message
- * @returns {object} - DOM Element
- */
-export const createMessageText = (type: 'error' | 'warning', text: string): HTMLParagraphElement => {
-  const block = document.createElement('p');
-  const title = document.createElement('b');
-
-  switch (type) {
-    case 'error': {
-      title.textContent = 'Steamworks extras error: ';
-      block.classList.add('extra_error_text');
-      break;
-    }
-    case 'warning': {
-      title.textContent = 'Steamworks extras warning: ';
-      block.classList.add('extra_warning_text');
-      break;
-    }
-  }
-
-  const textBlock = document.createElement('span');
-  textBlock.textContent = text;
-
-  block.appendChild(title);
-  block.appendChild(textBlock);
-
-  return block;
-}
-
 export const selectChartColor = (chartColors: any, tag: string): string => {
   if (chartColors && chartColors[tag]) return chartColors[tag];
 
