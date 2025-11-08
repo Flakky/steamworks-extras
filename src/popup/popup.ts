@@ -1,6 +1,9 @@
+import { getBrowser } from '../shared/browser';
+import { createStatusBlockElement, updateStatus, startUpdateStatus } from '../shared/statusblock';
+
 document.addEventListener('DOMContentLoaded', () => {
   bindButton('optionsButton', () => {
-    getBrowser().runtime.sendMessage({ request: "showOptions" }, res => { });
+    getBrowser().runtime.sendMessage({ request: "showOptions" });
   });
 
   bindButton('discordButton', () => {
@@ -10,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     openLink('https://github.com/Flakky/steamworks-extras');
   });
   bindButton('updateButton', () => {
-    getBrowser().runtime.sendMessage({ request: "updateStats" }, res => { });
+    getBrowser().runtime.sendMessage({ request: "updateStats" });
     updateStatus();
   });
 
@@ -20,12 +23,14 @@ document.addEventListener('DOMContentLoaded', () => {
   startUpdateStatus();
 });
 
-const bindButton = (id, func) => {
+const bindButton = (id: string, func: () => void) => {
   const button = document.getElementById(id);
-  button.addEventListener('click', func);
+  if(button) {
+    button.addEventListener('click', () => func());
+  }
 }
 
-const openLink = (link) => {
+const openLink = (link: string) => {
   console.log('Opening link:', link);
   getBrowser().tabs.create({ url: link, active: true });
 }
