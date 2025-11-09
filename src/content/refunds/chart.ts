@@ -1,35 +1,23 @@
-import * as helpers from '../scripts/helpers';
-import * as pageblocks from './pageblocks';
-import Chart from 'chart.js/auto';
+import { ChartConfiguration, Chart } from "chart.js";
+import { RefundsChartSelection, RefundsChartSplitType, RefundsChartValueType } from './types';
+import { setFlexContentBlockContent } from '../pageblocks';
+import { isStringEmpty } from '../../scripts/helpers';
 
-let refundsChart: any = undefined;
-let chartSplit: string = "Total";
-let chartValueType: string = "Refund %";
-
-export const createRefundsChartBlock = (): void => {
-  const contentBlock = pageblocks.createFlexContentBlock('Refunds chart', 'extra_refunds_chart_block');
-
-  const chartBlockElem = document.createElement('div');
+export const createRefundsChart = (doc: Document, sales: any[], chartSelection: RefundsChartSelection, chartColors: Record<string, string>, chartMaxBreakdown: number): Chart => {
+  const chartBlockElem = doc.createElement('div');
   chartBlockElem.id = 'extras_refunds_chart';
 
-  contentBlock.appendChild(chartBlockElem);
-};
-
-export const createRefundsChart = (): void => {
-  const chartBlockElem = document.createElement('div');
-  chartBlockElem.id = 'extras_refunds_chart';
-
-  pageblocks.setFlexContentBlockContent('extra_refunds_chart_block', chartBlockElem);
+  setFlexContentBlockContent(doc, 'extra_refunds_chart_block', chartBlockElem);
 
   const createChartSelect = (options: string[], name: string, defaultValue: string, onSelect: (select: HTMLSelectElement) => void) => {
-    const nameElem = document.createElement("b");
+    const nameElem = doc.createElement("b");
     nameElem.textContent = `${name}: `;
     nameElem.classList.add('extra_chart_select_name');
 
-    const selectElem = document.createElement("select");
+    const selectElem = doc.createElement("select");
 
     options.forEach(option => {
-      const optionElement = document.createElement("option");
+      const optionElement = doc.createElement("option");
       optionElement.value = option;
       optionElement.textContent = option;
       selectElem.appendChild(optionElement);
@@ -45,39 +33,14 @@ export const createRefundsChart = (): void => {
     return selectElem;
   }
 
-  createChartSelect([
-    "Total",
-    "Country",
-    "Region",
-    "Currency",
-    "Platform"
-  ], 'View by', chartSplit, (select) => {
-    console.log(select.value);
-    chartSplit = select.value;
-    updateRefundsChart(chartSplit, chartValueType);
-  });
-
-  createChartSelect([
-    "Refund %",
-    "Total Refunds"
-  ], "Data", chartValueType, (select) => {
-    console.log(select.value);
-    chartValueType = select.value;
-    updateRefundsChart(chartSplit, chartValueType);
-  });
-
-  const canvas = document.createElement('canvas');
+  const canvas = doc.createElement('canvas');
   (canvas as any).id = 'refundsChart';
   (canvas as any).width = 800;
   (canvas as any).height = 400;
 
-  chartBlockElem.appendChild(canvas);
-
-  const data: any = {};
-
-  const config: any = {
+  const config: ChartConfiguration = {
     type: 'line',
-    data: data,
+    data: { datasets: [], labels: [] },
     options: {
       plugins: {
         legend: {
@@ -87,15 +50,39 @@ export const createRefundsChart = (): void => {
     }
   };
 
-  refundsChart = new Chart(canvas, config);
+  const refundsChart = new Chart(canvas, config);
 
-  updateRefundsChart(chartSplit, chartValueType);
+  createChartSelect(
+    Object.values(RefundsChartSplitType).map(type => type),
+    'View by',
+    chartSelection.split,
+    (select) => {
+      console.log(select.value);
+      chartSelection.split = select.value as RefundsChartSplitType;
+      updateRefundsChart(refundsChart, sales, chartSelection, chartColors, chartMaxBreakdown);
+    }
+  );
+
+  createChartSelect(
+    Object.values(RefundsChartValueType).map(type => type),
+    "Data",
+    chartSelection.valueType,
+    (select) => {
+      console.log(select.value);
+      chartSelection.valueType = select.value as RefundsChartValueType;
+      updateRefundsChart(refundsChart, sales, chartSelection, chartColors, chartMaxBreakdown);
+    }
+  );
+
+  chartBlockElem.appendChild(canvas);
+
+  return refundsChart;
 }
 
-const updateRefundsChart = (split: string, valueType: string): void => {
-  if (!refundsChart) return;
+export const updateRefundsChart = (chart: Chart, sales: any[], chartSelection: RefundsChartSelection, chartColors: Record<string, string>, chartMaxBreakdown: number): void => {
+  if (!chart) return;
 
-  if (typeof salesAllTime === "undefined" || !Array.isArray(salesAllTime)) {
+  if (typeof sales === "undefined" || !Array.isArray(sales)) {
     console.log("Sales data is not yet ready to be used in refunds chart");
     return;
   }
@@ -103,15 +90,15 @@ const updateRefundsChart = (split: string, valueType: string): void => {
   // Group data by split and month
   const groupMap: any = {};
 
-  salesAllTime.forEach((element: any) => {
-    let groupKey = element[split];
+  sales.forEach((element: any) => {
+    let groupKey = element[chartSelection.split];
 
     // If grouping by Total, use "Total" as key
-    if (split === 'Total') {
-      groupKey = "Total";
+    if (chartSelection.split === RefundsChartSplitType.Total) {
+      groupKey = RefundsChartSplitType.Total;
     }
 
-    if (helpers.isStringEmpty(groupKey)) return;
+    if (isStringEmpty(groupKey)) return;
 
     // Extract YYYY-MM from Date for monthly grouping
     let monthKey = "Unknown";
@@ -159,7 +146,7 @@ const updateRefundsChart = (split: string, valueType: string): void => {
       months: sortedMonths,
       values: sortedMonths.map(month => {
         const data = monthData[month] || { grossUnits: 0, refunds: 0 };
-        if (valueType === "Refund %") {
+        if (chartSelection.valueType === RefundsChartValueType.RefundPercent) {
           return data.grossUnits > 0 ? (data.refunds / data.grossUnits) * 100 : 0;
         } else {
           return data.refunds;
@@ -171,7 +158,7 @@ const updateRefundsChart = (split: string, valueType: string): void => {
   // Filter only top entries by total value
   const entriesWithSum = Object.entries(processedData).map(([key, value]: any) => {
     let sum: number;
-    if (valueType === "Refund %") {
+    if (chartSelection.valueType === RefundsChartValueType.RefundPercent) {
       const groupMonthData = groupMap[key] || {};
       sum = sortedMonths.reduce((acc: number, month: string) => {
         const data = groupMonthData[month] || { grossUnits: 0 };
@@ -185,7 +172,7 @@ const updateRefundsChart = (split: string, valueType: string): void => {
 
   entriesWithSum.sort((a: any, b: any) => b.sum - a.sum);
 
-  const top10Entries = entriesWithSum.slice(0, settings.chartMaxBreakdown);
+  const top10Entries = entriesWithSum.slice(0, chartMaxBreakdown);
 
   const top10EntriesObject = top10Entries.reduce((obj: any, entry: any) => {
     obj[entry.key] = entry.value;
@@ -209,10 +196,12 @@ const updateRefundsChart = (split: string, valueType: string): void => {
 
   console.log(datasets);
 
-  refundsChart.data.labels = sortedMonths;
-  refundsChart.data.datasets = datasets;
+  chart.data.labels = sortedMonths;
+  chart.data.datasets = datasets;
 
-  refundsChart.config.type = 'line';
+  if (chart.options && 'type' in chart.options) {
+    chart.options.type = 'line';
+  }
 
-  refundsChart.update();
+  chart.update();
 }

@@ -1,8 +1,7 @@
-import * as helpers from '../scripts/helpers';
-import * as pageblocks from './pageblocks';
-
-let refundsTableSplit: string = "Country";
-let refundsTableValueType: string = "Chargeback/Returns (USD)";
+import { setFlexContentBlockContent } from '../pageblocks';
+import { RefundsTableSplitType } from './types';
+import { getRefundPercentageColor } from './layout';
+import { isStringEmpty, numberWithCommas } from '../../scripts/helpers';
 
 const refundsTableColumns: any[] = [
   { key: "GrossUnitsSold", label: "Sales" },
@@ -10,32 +9,28 @@ const refundsTableColumns: any[] = [
   { key: "RefundsPercent", label: "Refunds %" },
 ];
 
-export const createRefundsTableBlock = (): void => {
-  pageblocks.createFlexContentBlock('Refunds table', 'extras_refunds_table_block');
-};
+export const createRefundsTable = (doc: Document, sales: any[], split: RefundsTableSplitType): void => {
+  const tableBlockElem = doc.createElement('div');
 
-export const createRefundsTable = (): void => {
-  const tableBlockElem = document.createElement('div');
+  setFlexContentBlockContent(doc, 'extras_refunds_table_block', tableBlockElem);
 
-  pageblocks.setFlexContentBlockContent('extras_refunds_table_block', tableBlockElem);
-
-  const createTableSelect = (options: string[], name: string, defaultValue: string, onSelect: (select: HTMLSelectElement) => void) => {
-    const nameElem = document.createElement("b");
+  const createTableSelect = (options: string[], name: string, defaultValue: string, onSelect: (select: RefundsTableSplitType) => void) => {
+    const nameElem = doc.createElement("b");
     nameElem.textContent = `${name}: `;
     nameElem.classList.add('extra_chart_select_name');
 
-    const selectElem = document.createElement("select");
+    const selectElem = doc.createElement("select");
 
     options.forEach(option => {
-      const optionElement = document.createElement("option");
+      const optionElement = doc.createElement("option");
       optionElement.value = option;
       optionElement.textContent = option;
       selectElem.appendChild(optionElement);
     });
 
-    (selectElem as any).value = defaultValue;
+    selectElem.value = defaultValue;
 
-    selectElem.addEventListener("change", () => { onSelect(selectElem); });
+    selectElem.addEventListener("change", () => { onSelect(selectElem.value as RefundsTableSplitType); });
 
     tableBlockElem.appendChild(nameElem);
     tableBlockElem.appendChild(selectElem);
@@ -43,60 +38,49 @@ export const createRefundsTable = (): void => {
     return selectElem;
   }
 
-  const viewByOptions = [
-    "Month",
-    "Country",
-    "Region",
-    "Currency",
-    "Platform"
-  ];
+  const viewByOptions = Object.values(RefundsTableSplitType);
 
-  refundsTableSplit = "Month";
-
-  createTableSelect(viewByOptions, 'View by', refundsTableSplit, (select) => {
-    refundsTableSplit = select.value;
-    updateRefundsTable(refundsTableSplit);
+  createTableSelect(viewByOptions, 'View by', split, (select: RefundsTableSplitType) => {
+    updateRefundsTable(doc, sales, select);
   });
 
   // Table header outside of scrollable table
-  const headerTableElem = document.createElement('table');
+  const headerTableElem = doc.createElement('table');
   const thead = headerTableElem.createTHead();
   const headerRow = thead.insertRow();
-  const th0 = document.createElement('th');
-  th0.textContent = refundsTableSplit;
+  const th0 = doc.createElement('th');
+  th0.textContent = split;
   headerRow.appendChild(th0);
 
   refundsTableColumns.forEach(col => {
-    const th = document.createElement('th');
+    const th = doc.createElement('th');
     th.textContent = col.label;
     headerRow.appendChild(th);
   });
 
   // Wrapper is for margin because tables do not support margin in browsers
-  const wrapperDiv = document.createElement('div');
+  const wrapperDiv = doc.createElement('div');
   wrapperDiv.id = 'extras_refunds_table_header';
   wrapperDiv.appendChild(headerTableElem);
 
   tableBlockElem.appendChild(wrapperDiv);
 
   // Div for scrollable table
-  const tableContainerElem = document.createElement('div');
+  const tableContainerElem = doc.createElement('div');
   tableContainerElem.id = 'extras_refunds_table';
-  const tableElem = document.createElement('table');
+  const tableElem = doc.createElement('table');
   tableContainerElem.appendChild(tableElem);
 
   tableBlockElem.appendChild(tableContainerElem);
-
-  updateRefundsTable(refundsTableSplit);
 }
 
-const updateRefundsTable = (split: string): void => {
-  const tableElem = document.querySelector('#extras_refunds_table table') as HTMLTableElement | null;
+export const updateRefundsTable = (doc: Document, sales: any[], split: RefundsTableSplitType): void => {
+  const tableElem = doc.querySelector('#extras_refunds_table table') as HTMLTableElement | null;
   if (!tableElem) return;
 
   tableElem.innerHTML = "";
 
-  if (typeof salesAllTime === "undefined" || !Array.isArray(salesAllTime)) {
+  if (typeof sales === "undefined" || !Array.isArray(sales)) {
     const row = tableElem.insertRow();
     const cell = row.insertCell();
     cell.colSpan = refundsTableColumns.length + 1;
@@ -107,7 +91,7 @@ const updateRefundsTable = (split: string): void => {
   // Group data by split
   const groupMap: any = {};
 
-  salesAllTime.forEach((element: any) => {
+  sales.forEach((element: any) => {
     let groupKey = element[split];
 
     // If grouping by Month, extract YYYY-MM from Date
@@ -116,7 +100,7 @@ const updateRefundsTable = (split: string): void => {
       groupKey = dateObj.getFullYear() + '-' + String(dateObj.getMonth() + 1).padStart(2, '0');
     }
 
-    if (helpers.isStringEmpty(groupKey)) return;
+    if (isStringEmpty(groupKey)) return;
 
     if (!groupMap[groupKey]) {
       groupMap[groupKey] = {};
@@ -166,7 +150,7 @@ const updateRefundsTable = (split: string): void => {
   };
 
   // Update the first column label in the header (outside the scrollable table)
-  const firstTh = document.querySelector('#extras_refunds_table_header table thead th') as HTMLTableCellElement | null;
+  const firstTh = doc.querySelector('#extras_refunds_table_header table thead th') as HTMLTableCellElement | null;
   if (firstTh) {
     firstTh.textContent = split;
   }
@@ -189,7 +173,7 @@ const updateRefundsTable = (split: string): void => {
         (td.style as any).color = `rgb(${r},${g},${b})`;
 
       } else {
-        td.textContent = helpers.numberWithCommas(Math.round(rowData[col.key]));
+        td.textContent = numberWithCommas(Math.round(rowData[col.key]));
         td.setAttribute('align', 'right');
       }
     });

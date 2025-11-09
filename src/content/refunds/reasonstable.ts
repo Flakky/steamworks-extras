@@ -1,17 +1,14 @@
-import * as helpers from '../scripts/helpers';
-import * as pageblocks from './pageblocks';
+import { sendMessageAsync } from '../../scripts/helpers';
+import { setFlexContentBlockContent } from '../pageblocks';
+import { RefundsRangeSplit } from './types';
 
-export const createReasonsTableBlock = (): void => {
-  pageblocks.createFlexContentBlock('Refund reasons', 'extras_reasons_block');
-};
+export const createReasonsTable = (doc: Document, packageID: number, refundStats: any[]): void => {
+  const tableBlockElem = doc.createElement('div');
 
-export const createReasonsTable = (packageID: number, refundStats: Array<any>): void => {
-  const tableBlockElem = document.createElement('div');
-
-  pageblocks.setFlexContentBlockContent('extras_reasons_block', tableBlockElem);
+  setFlexContentBlockContent(doc, 'extras_reasons_block', tableBlockElem);
 
   // Create table element
-  const tableElem = document.createElement('table');
+  const tableElem = doc.createElement('table');
   (tableElem as any).id = 'extras_reasons_table';
 
   // Create table header
@@ -19,15 +16,15 @@ export const createReasonsTable = (packageID: number, refundStats: Array<any>): 
   const headerRow = thead.insertRow();
 
   const headers = [
-    { text: 'Reason' },
-    { text: 'Last week' },
-    { text: 'Last month' },
-    { text: 'Lifetime' },
+    'Reason',
+    'Last week',
+    'Last month',
+    'Lifetime'
   ];
 
   headers.forEach(header => {
-    const th = document.createElement('th');
-    th.textContent = (header as any).text;
+    const th = doc.createElement('th');
+    th.textContent = header;
     headerRow.appendChild(th);
   });
 
@@ -36,11 +33,6 @@ export const createReasonsTable = (packageID: number, refundStats: Array<any>): 
   const reasonsLastWeek = (refundStats[1] && refundStats[1].refundReasons) || [];
   const reasonsLastMonth = (refundStats[2] && refundStats[2].refundReasons) || [];
 
-  console.log('Reasons: ', refundStats);
-  console.log('Reasons lifetime: ', reasonsLifetime);
-  console.log('Reasons last week: ', reasonsLastWeek);
-  console.log('Reasons last month: ', reasonsLastMonth);
-
   // Get all unique reasons
   const allReasons = new Set<string>([
     ...(reasonsLifetime.map((r: any) => r.category)),
@@ -48,16 +40,10 @@ export const createReasonsTable = (packageID: number, refundStats: Array<any>): 
     ...(reasonsLastMonth.map((r: any) => r.category))
   ]);
 
-  console.log('All reasons: ', allReasons);
-
   // Get total refunds for each period
   const totalLifetime = reasonsLifetime.reduce((a: number, b: any) => a + (b.amount || 0), 0);
   const totalLastWeek = reasonsLastWeek.reduce((a: number, b: any) => a + (b.amount || 0), 0);
   const totalLastMonth = reasonsLastMonth.reduce((a: number, b: any) => a + (b.amount || 0), 0);
-
-  console.log('Total lifetime: ', totalLifetime);
-  console.log('Total last week: ', totalLastWeek);
-  console.log('Total last month: ', totalLastMonth);
 
   // Create table body
   const tbody = tableElem.createTBody();
@@ -67,15 +53,13 @@ export const createReasonsTable = (packageID: number, refundStats: Array<any>): 
 
     const reasonObj = reasonsLifetime.find((r: any) => r.category === reason) || { category: reason };
 
-    console.log('Reason: ', reason);
-
     // Reason
     const tdReason = row.insertCell();
-    const link = document.createElement('a');
+    const link = doc.createElement('a');
     link.href = "#";
     link.style.cursor = "pointer";
     link.textContent = `► ${reason}`;
-    link.onclick = (event) => requestRefundCommentsAndShow(event, packageID, reasonObj, row);
+    link.onclick = (event) => requestRefundCommentsAndShow(doc, event, packageID, reasonObj, row);
     tdReason.appendChild(link);
 
     // Refunds last week
@@ -97,7 +81,7 @@ export const createReasonsTable = (packageID: number, refundStats: Array<any>): 
   tableBlockElem.appendChild(tableElem);
 }
 
-export const requestRefundCommentsAndShow = async (event: any, packageID: number, reasonObj: any, row: HTMLTableRowElement): Promise<void> => {
+export const requestRefundCommentsAndShow = async (doc: Document, event: any, packageID: number, reasonObj: any, row: HTMLTableRowElement): Promise<void> => {
   event.preventDefault();
 
   const link = row.cells[0].querySelector('a') as HTMLAnchorElement | null;
@@ -106,18 +90,18 @@ export const requestRefundCommentsAndShow = async (event: any, packageID: number
     row.parentNode?.removeChild(row.nextSibling as Node);
     if (link) link.textContent = `► ${reasonObj.category}`;
   }
-  else{
+  else {
     if (link) link.textContent = `▼ ${reasonObj.category}`;
-    const detailsRow = document.createElement('tr');
+    const detailsRow = doc.createElement('tr');
     detailsRow.classList.add('reason-details-row');
 
-    const tdComments = document.createElement('td');
+    const tdComments = doc.createElement('td');
     tdComments.colSpan = 4;
 
-    const commentsDiv = document.createElement('div');
+    const commentsDiv = doc.createElement('div');
     commentsDiv.className = 'extras_refunds_comments';
 
-    const loader = document.createElement('div');
+    const loader = doc.createElement('div');
     loader.className = 'loader';
     commentsDiv.appendChild(loader);
 
@@ -132,14 +116,14 @@ export const requestRefundCommentsAndShow = async (event: any, packageID: number
 
     if (comments && comments.length > 0) {
       comments.forEach((comment: any) => {
-        const commentDiv = document.createElement('div');
+        const commentDiv = doc.createElement('div');
         commentDiv.className = 'refund-comment';
 
-        const text = document.createElement('span');
+        const text = doc.createElement('span');
         text.className = 'refund-comment-text';
 
         if (comment.language) {
-          const langSpan = document.createElement('span');
+          const langSpan = doc.createElement('span');
           langSpan.className = 'refund-comment-language';
           langSpan.textContent = `(${comment.language}) `;
           text.appendChild(langSpan);
@@ -151,7 +135,7 @@ export const requestRefundCommentsAndShow = async (event: any, packageID: number
         commentsDiv.appendChild(commentDiv);
       });
     } else {
-      const noCommentsDiv = document.createElement('div');
+      const noCommentsDiv = doc.createElement('div');
       noCommentsDiv.className = 'refund-no-comments';
       noCommentsDiv.textContent = 'No comments found for this reason.';
       commentsDiv.appendChild(noCommentsDiv);
@@ -160,12 +144,10 @@ export const requestRefundCommentsAndShow = async (event: any, packageID: number
 
 }
 
-const getRefundComments = async (packageID: number, reasonID: number): Promise<any[]> => {
-  const response = await fetch(`https://partner.steampowered.com/package/AjaxRefundText/${packageID}/?packageid=${packageID}&help_issueid=${reasonID}`, {
+const getRefundComments = async (packageID: number, split: RefundsRangeSplit): Promise<any[]> => {
+  const response = await fetch(`https://partner.steampowered.com/package/AjaxRefundText/${packageID}/?packageid=${packageID}&help_issueid=${split}`, {
     credentials: 'include'
   } as RequestInit);
-
-  console.log('Response: ', response);
 
   if (!response.ok) {
     console.error('Failed to fetch refund comments:', response.status, response.statusText);
@@ -173,15 +155,11 @@ const getRefundComments = async (packageID: number, reasonID: number): Promise<a
   }
   const data = await response.json();
 
-  console.log('Data: ', data);
-
-  const result = await helpers.sendMessageAsync({
+  const result = await sendMessageAsync({
     request: 'parseDOM',
     htmlText: data.html,
     type: 'RefundComments'
   });
-
-  console.log('Result: ', result);
 
   return result;
 }

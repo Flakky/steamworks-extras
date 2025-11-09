@@ -57,14 +57,14 @@ export const createWishlistChart = (doc: Document, wishlistChart: WishlistChart,
   const chart = new Chart(canvas, config);
   wishlistChart.chart = chart;
 
-  createChartSelect([
-    WishlistChartType.Actions,
-    WishlistChartType.Country,
-    WishlistChartType.Region
-  ], 'View by', wishlistChart.wishlistChartType, (select) => {
-    wishlistChart.wishlistChartType = select.value as WishlistChartType;
-    updateWishlistChart(wishlistChart, wishlistData, wishlistRegionSelection);
-  });
+  createChartSelect(
+    Object.values(WishlistChartType).map(type => type),
+    'View by', wishlistChart.wishlistChartType,
+    (select) => {
+      wishlistChart.wishlistChartType = select.value as WishlistChartType;
+      updateWishlistChart(wishlistChart, wishlistData, wishlistRegionSelection);
+    }
+  );
 
   chartBlockElem.appendChild(canvas);
 }

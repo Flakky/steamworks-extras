@@ -1,17 +1,13 @@
-import * as helpers from '../scripts/helpers';
-import * as pageblocks from './pageblocks';
-import * as refunds_chart from './chart';
-import * as refunds_table from './table';
-import * as refunds_reasonstable from './reasonstable';
+import { createRefundsChart, updateRefundsChart } from './chart';
 import { addStatusBlockToPage } from "../../shared/statusblock";
 import { getDefaultSettings, readChartColors } from '../site';
-import { createCustomContentBlock, hideOriginalMainBlock, moveGameTitle } from '../pageblocks';
+import { createCustomContentBlock, hideOriginalMainBlock, moveGameTitle, setFlexContentBlockContent } from '../pageblocks';
 import { createToolbarBlock } from '../pageblocks';
-import { RefundsSplit } from './types';
-import { sendMessageAsync } from '../../scripts/helpers';
-
-let salesAllTime: any = undefined;
-let refundStats: any = {};
+import { RefundsChartSelection, RefundsRangeSplit, RefundsTableSplitType } from './types';
+import { sendMessageAsync, getDataFromStorage } from '../../scripts/helpers';
+import { createReasonsTableBlock, createRefundsTableBlock, getRefundPercentageColor } from './layout';
+import { createRefundsTable, updateRefundsTable } from './table';
+import { createReasonsTable } from './reasonstable';
 
 const init = async (): Promise<void> => {
   console.log("Init refunds page");
@@ -45,25 +41,29 @@ const init = async (): Promise<void> => {
   addStatusBlockToPage();
   hideOriginalMainBlock(doc);
 
-  createRefundsStatsBlock();
-  refunds_table.createRefundsTableBlock();
-  refunds_chart.createRefundsChartBlock();
-  refunds_reasonstable.createReasonsTableBlock();
+  createRefundsTableBlock(doc);
 
-  await fetchAllRefundStats();
+  const refundsStats = await fetchAllRefundStats(packageID);
+  const sales = await requestSales(appID);
 
-  createRefundsStats();
-  refunds_reasonstable.createReasonsTable(packageID, refundStats);
+  createRefundsStats(doc, refundsStats);
 
-  await requestSales();
+  const refundsTableSplit = RefundsTableSplitType.Country;
+  createRefundsTable(doc, sales, refundsTableSplit);
+  updateRefundsTable(doc, sales, refundsTableSplit);
 
-  refunds_table.createRefundsTable();
-  refunds_chart.createRefundsChart();
+  createReasonsTableBlock(doc);
+  createReasonsTable(doc, packageID, refundsStats[RefundsRangeSplit.Lifetime]);
+
+  const chartSelection = new RefundsChartSelection();
+
+  const refundsChart = createRefundsChart(doc, sales, chartSelection, chartColors, settings.chartMaxBreakdown);
+  updateRefundsChart(refundsChart, sales, chartSelection, chartColors, settings.chartMaxBreakdown);
 };
 
 const getAppID = async (packageID: number): Promise<string> => {
 
-  const packageIDsMap = await helpers.sendMessageAsync({ request: 'getPackageIDs' });
+  const packageIDsMap = await sendMessageAsync({ request: 'getPackageIDs' });
 
   let foundAppID: any = undefined;
   for (const [appId, packageIds] of Object.entries(packageIDsMap)) {
@@ -89,24 +89,30 @@ const getPackageID = (): number | undefined => {
   return undefined;
 };
 
-const requestSales = async (): Promise<void> => {
+const requestSales = async (appID: string): Promise<any[]> => {
+  const sales = await getDataFromStorage(
+    'Sales',
+    appID
+  );
 
-  console.log('Requesting sales data...');
-
-  salesAllTime = await helpers.sendMessageAsync({ request: 'getData', type: 'Sales', appId: getAppID() });
-  console.debug('Sales data received: ', salesAllTime);
+  return sales;
 }
 
-const fetchAllRefundStats = async (packageID: number): Promise<void> => {
+const fetchAllRefundStats = async (packageID: number): Promise<Record<RefundsRangeSplit, any>> => {
+  const refundsStats: Record<RefundsRangeSplit, any> = {
+    [RefundsRangeSplit.Lifetime]: {},
+    [RefundsRangeSplit.LastWeek]: {},
+    [RefundsRangeSplit.LastMonth]: {},
+  };
 
-  await Promise.all([
-    fetchRefundStats(RefundsSplit.Lifetime),
-    fetchRefundStats(RefundsSplit.LastWeek),
-    fetchRefundStats(RefundsSplit.LastMonth)
-  ]);
+  refundsStats[RefundsRangeSplit.Lifetime] = await fetchRefundStats(packageID, RefundsRangeSplit.Lifetime);
+  refundsStats[RefundsRangeSplit.LastWeek] = await fetchRefundStats(packageID, RefundsRangeSplit.LastWeek);
+  refundsStats[RefundsRangeSplit.LastMonth] = await fetchRefundStats(packageID, RefundsRangeSplit.LastMonth);
+
+  return refundsStats;
 }
 
-const fetchRefundStats = async (packageID: number, split: RefundsSplit): Promise<void> => {
+const fetchRefundStats = async (packageID: number, split: RefundsRangeSplit): Promise<void> => {
   const url = `https://partner.steampowered.com/package/refunds/${packageID}/?range=${split}`;
 
   const response = await sendMessageAsync({
@@ -120,16 +126,12 @@ const fetchRefundStats = async (packageID: number, split: RefundsSplit): Promise
   return response;
 };
 
-const createRefundsStatsBlock = (): void => {
-  pageblocks.createFlexContentBlock('Refunds stats', 'extras_refunds_stats_block');
-};
-
-const createRefundsStats = async (): Promise<void> => {
-  const statsBlockElem = document.createElement('div');
+const createRefundsStats = (doc: Document, refundStats: Record<RefundsRangeSplit, any>) => {
+  const statsBlockElem = doc.createElement('div');
   statsBlockElem.id = 'extras_refunds_stats';
 
   // Create table
-  const tableElem = document.createElement('table');
+  const tableElem = doc.createElement('table');
   const thead = tableElem.createTHead();
   const headerRow = thead.insertRow();
 
@@ -156,7 +158,7 @@ const createRefundsStats = async (): Promise<void> => {
   ];
 
   headerConfigs.forEach(header => {
-    const th = document.createElement('th');
+    const th = doc.createElement('th');
     th.textContent = (header as any).text;
     if ((header as any).tooltip) {
       th.innerHTML += ' <a href="#" class="tooltip">(?)<span>' + (header as any).tooltip + '</span></a>';
@@ -203,25 +205,11 @@ const createRefundsStats = async (): Promise<void> => {
   };
 
   for (let i = 0; i < rangeLabels.length; i++) {
-    const stats = refundStats[i];
+    const stats = refundStats[i as RefundsRangeSplit];
     addStatsRow(rangeLabels[i], stats);
   }
 
-  pageblocks.setFlexContentBlockContent('extras_refunds_stats_block', statsBlockElem);
-};
-
-const getRefundPercentageColor = (percentage: number): { r: number; g: number; b: number } => {
-  const startColor = { r: 0, g: 220, b: 0 };
-  const endColor = { r: 220, g: 0, b: 0 };
-  const min = 8;
-  const max = 20;
-  const clamped = Math.max(min, Math.min(max, percentage));
-  const factor = (clamped - min) / (max - min);
-  return {
-    r: Math.round(startColor.r + factor * (endColor.r - startColor.r)),
-    g: Math.round(startColor.g + factor * (endColor.g - startColor.g)),
-    b: Math.round(startColor.b + factor * (endColor.b - startColor.b))
-  };
+  setFlexContentBlockContent(doc, 'extras_refunds_stats_block', statsBlockElem);
 };
 
 init();
