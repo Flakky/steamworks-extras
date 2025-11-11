@@ -1,5 +1,13 @@
 import { dateToString } from "../../scripts/helpers";
 
+/**
+ * Represents a date range.
+ *
+ * @example
+ * const dateRange = new DateRange(new Date('2025-01-01'), new Date('2025-01-02'));
+ * console.log(dateRange.dateStart); // 2025-01-01
+ * console.log(dateRange.dateEnd); // 2025-01-02
+ */
 export class DateRange {
   dateStart: Date;
   dateEnd: Date;
