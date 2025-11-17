@@ -59,6 +59,10 @@ const init = async () => {
   await initOffscreen();
   const offscreenManager = new OffscreenManager();
 
+  const queue = new StorageActionsQueue();
+
+  await initMessageListener({ offscreenManager, queue });
+
   await initIDsWithRetry(5, offscreenManager);
 
   const appIDs = await getAppIDs(false);
@@ -67,13 +71,11 @@ const init = async () => {
     return;
   }
 
+  console.log("AppIDs: ", appIDs);
+
   await initPageCreationDatesWithRetry(5, offscreenManager);
 
-  const queue = new StorageActionsQueue();
-
   await initStorageForAppIDs(appIDs);
-
-  await initMessageListener({ offscreenManager, queue });
 
   console.log("Extension service initiated");
 

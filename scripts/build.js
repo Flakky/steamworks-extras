@@ -84,10 +84,6 @@ const bundleContentScripts = async () => {
       entry: 'src/shared/statusblock.ts',
       outfile: 'dist/shared/statusblock.js',
     },
-    {
-      entry: 'src/scripts/parser.ts',
-      outfile: 'dist/scripts/parser.js',
-    },
   ];
 
   for (const script of contentScriptsToBundle) {

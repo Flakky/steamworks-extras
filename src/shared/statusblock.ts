@@ -1,7 +1,5 @@
 import { getBrowser } from './browser';
 
-let extensionStatuses: any = undefined;
-
 export const createStatusBlock = (): HTMLDivElement => {
   const statusBlock = createStatusBlockElement();
   statusBlock.classList.add('extra_floating_notification');
@@ -41,20 +39,25 @@ export const addStatusBlockToPage = (): void => {
   startUpdateStatus();
 }
 
-export const startUpdateStatus = (): void => {
+export const startUpdateStatus = async (): Promise<void> => {
   const statusElement = document.getElementById('extra_status') as HTMLDivElement;
   statusElement.style.display = 'none';
 
-  readStatuses();
-  updateStatus();
-  setInterval(() => { updateStatus() }, 3000);
+  const statuses = await readStatuses();
+  if (!statuses) {
+    console.error('Failed to load extension statuses');
+    return;
+  }
+
+  updateStatus(statuses);
+  setInterval(() => { updateStatus(statuses) }, 3000);
 }
 
-export const updateStatus = (): void => {
+export const updateStatus = (statuses: Record<string, any>): void => {
   getBrowser().runtime.sendMessage({ request: "getStatus" }, (status: any) => {
     console.debug('Status:', status);
 
-    if (!extensionStatuses) {
+    if (!statuses) {
       console.warn('Extension statuses not loaded yet.');
       return;
     }
@@ -64,7 +67,7 @@ export const updateStatus = (): void => {
     const statusText = document.getElementById('extra_status_message') as HTMLSpanElement;
     const statusExtraText = document.getElementById('extra_status_extramessage') as HTMLParagraphElement;
 
-    const statusInfo = extensionStatuses[`${status.code}`];
+    const statusInfo = statuses[`${status.code}`];
 
     statusElement.classList.remove('extra_info', 'extra_warning', 'extra_error');
 
@@ -90,23 +93,20 @@ export const updateStatus = (): void => {
   });
 }
 
-const readStatuses = (): void => {
+const readStatuses = async (): Promise<Record<string, any> | undefined> => {
   console.log('Loading extension statuses...');
   const jsonFilePath = getBrowser().runtime.getURL('data/extensionstatuses.json');
 
   console.log(jsonFilePath);
 
-  fetch(jsonFilePath).then(response => {
-    if (response.ok) {
-      response.json().then(json => {
-        console.log('Extension statuses loaded.');
-        extensionStatuses = json;
-      });
-    }
-    else {
-      console.error('Failed to load extension statuses');
-    }
-  });
+  const response = await fetch(jsonFilePath);
+  if (response.ok) {
+    const json = await response.json();
+    return json;
+  }
+  else {
+    return undefined;
+  }
 }
 
 

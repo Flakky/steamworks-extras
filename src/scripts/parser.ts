@@ -1,6 +1,6 @@
-let parser: any = {};
+export const parseDocument = (htmlText: string, parseType: string): { success: boolean; result: any } => {
+  console.log('Parsing document: ', parseType);
 
-parser.parseDocument = (htmlText: string, parseType: string): { success: boolean; result: any } => {
   let result: any = null;
   let success = true;
 
@@ -10,40 +10,41 @@ parser.parseDocument = (htmlText: string, parseType: string): { success: boolean
 
     switch (parseType) {
       case 'parsePackageID':
-        result = parser.parsePackageIDs(doc);
+        result = parsePackageIDs(doc);
         break;
       case 'parseWishlistData':
-        result = parser.parseWishlistData(doc);
+        result = parseWishlistData(doc);
         break;
       case 'parsePageCreationDate':
-        result = parser.parsePageCreationDate(doc);
+        result = parsePageCreationDate(doc);
         break;
       case 'parseAppIDs':
-        result = parser.parseAppIDs(doc);
+        result = parseAppIDs(doc);
         break;
       case 'followers':
-        result = parser.parseFollowers(doc);
+        result = parseFollowers(doc);
         break;
       case 'RefundStats':
-        result = parser.parseRefundStats(doc);
+        result = parseRefundStats(doc);
         break;
       case 'parsePageID':
-        result = parser.parsePageID(doc);
+        result = parsePageID(doc);
         break;
       case 'RefundComments':
-        result = parser.parseRefundComments(doc);
+        result = parseRefundComments(doc);
         break;
     }
   }
   catch (error: any) {
     success = false;
     result = error.toString();
+    console.error('Error parsing document: ', error);
   }
 
   return { success: success, result: result };
 }
 
-parser.parsePackageIDs = (doc: Document): any[] => {
+const parsePackageIDs = (doc: Document): any[] => {
   const table = doc.querySelector('.appLandingStorePackagesCtn');
   if (!table) {
     throw new Error('No table found');
@@ -68,23 +69,23 @@ parser.parsePackageIDs = (doc: Document): any[] => {
   return packageIDs;
 }
 
-parser.parsePageCreationDate = (doc: Document): Date => {
-  const startDateElem = doc.getElementById('start_date') as any;
+const parsePageCreationDate = (doc: Document): Date => {
+  const startDateElem = doc.getElementById('start_date') as HTMLInputElement;
+
+  if (!startDateElem) {
+    throw new Error('No "start_date" element found');
+  }
 
   const startDate = startDateElem.value;
 
   if (!startDate) {
-    throw new Error('No "start_date" element found');
-  }
-
-  if (!startDate) {
-    throw new Error('No valid link with "all history" text found');
+    throw new Error('No valid date found');
   }
 
   return new Date(startDate);
 }
 
-parser.parseWishlistData = (doc: Document): any => {
+const parseWishlistData = (doc: Document): any => {
   const table = doc.querySelector('.grouping_table');
 
   if (!table) {
@@ -139,7 +140,8 @@ parser.parseWishlistData = (doc: Document): any => {
   return wishlists;
 }
 
-parser.parseAppIDs = (doc: Document): any[] => {
+const parseAppIDs = (doc: Document): any[] => {
+  console.log('Parsing app IDs', doc);
   const links = doc.querySelectorAll('a[href*="partner.steampowered.com/app/details/"]');
   const appIDs: any[] = [];
 
@@ -155,10 +157,12 @@ parser.parseAppIDs = (doc: Document): any[] => {
     }
   });
 
+  console.log('App IDs: ', appIDs);
+
   return appIDs;
 }
 
-parser.parseFollowers = (doc: Document): number | void => {
+const parseFollowers = (doc: Document): number | void => {
   const groupPagingElement = doc.querySelector('.group_paging');
   if (!groupPagingElement) {
     throw new Error('No element with class "group_paging" found');
@@ -177,7 +181,7 @@ parser.parseFollowers = (doc: Document): number | void => {
   }
 }
 
-parser.parseRefundStats = (doc: Document): any => {
+const parseRefundStats = (doc: Document): any => {
   const contentCenter = doc.querySelector('.content_center');
   if (!contentCenter) {
     throw new Error('No element with class "content_center" found');
@@ -252,7 +256,7 @@ parser.parseRefundStats = (doc: Document): any => {
   return stats;
 }
 
-parser.parseRefundComments = (doc: Document): any[] => {
+const parseRefundComments = (doc: Document): any[] => {
   const comments: any[] = [];
   const table = doc.querySelector('.refund_notes_table');
   if (table) {
@@ -275,9 +279,9 @@ parser.parseRefundComments = (doc: Document): any[] => {
   return comments;
 }
 
-parser.parsePageID = (doc: Document): string => {
+const parsePageID = (doc: Document): string => {
   const link = doc.querySelector('a[href*="https://partner.steamgames.com/admin/game/edit/"]');
-  if(!link) {
+  if (!link) {
     throw new Error('No valid page ID link found');
   }
   const href = (link as HTMLAnchorElement).href;
@@ -289,7 +293,7 @@ parser.parsePageID = (doc: Document): string => {
 }
 
 
-parser.parsePageCreationDateFromHistory = (doc: Document): string => {
+const parsePageCreationDateFromHistory = (doc: Document): string => {
   const parentDiv = doc.querySelector('#tab_publish_content');
   if (!parentDiv) {
     throw new Error('No div with id "tab_publish_content" found');
