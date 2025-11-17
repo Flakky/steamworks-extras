@@ -134,4 +134,4 @@ const requestWishlistsData = async (appID: string) => {
   return { wishlists, conversions };
 }
 
-document.addEventListener('DOMContentLoaded', init);
+init();
