@@ -12,59 +12,15 @@
     "https://store.steampowered.com/*",
     "https://partner.steampowered.com/*",
     "https://partner.steamgames.com/*",
-    "http://127.0.0.1:3000/*",
-    "http://localhost:3000/*",
-    "https://127.0.0.1:3000/*",
-    "https://localhost:3000/*",
     "https://steamcommunity.com/*"
   ],
   "content_scripts": [
     {
       "matches": [
-        "http://127.0.0.1:3000/*",
-        "http://localhost:3000/*",
-        "https://127.0.0.1:3000/*",
-        "https://localhost:3000/*"
-      ],
-      "js": [
-        "shared/log.js",
-        "scripts/helpers.js",
-        "data/defaultsettings.js",
-        "content/site.js"
-      ]
-    },
-    {
-      "matches": [
-        "https://partner.steampowered.com/app/details/*"
-      ],
-      "js": [
-        "shared/log.js",
-        "scripts/chart.umd.min.js",
-        "shared/statusblock.js",
-        "scripts/helpers.js",
-        "data/defaultsettings.js",
-        "content/pageblocks.js",
-        "content/appdetails_reviews.js",
-        "content/appdetails_saleschart.js",
-        "content/appdetails_salestable.js",
-        "content/appdetails.js"
-      ],
-      "css": [
-        "styles/partner_steampowered_shared.css",
-        "styles/appdetails.css"
-      ]
-    },
-    {
-      "matches": [
         "https://partner.steamgames.com/apps/navtrafficstats/*"
       ],
       "js": [
-        "shared/log.js",
-        "scripts/chart.umd.min.js",
-        "shared/statusblock.js",
-        "scripts/helpers.js",
-        "data/defaultsettings.js",
-        "content/apptraffic.js"
+        "content/traffic/apptraffic.js"
       ],
       "css": [
         "styles/partner_steampowered_shared.css",
@@ -76,14 +32,7 @@
         "https://partner.steampowered.com/app/wishlist/*"
       ],
       "js": [
-        "shared/log.js",
-        "scripts/chart.umd.min.js",
-        "shared/statusblock.js",
-        "scripts/helpers.js",
-        "data/defaultsettings.js",
-        "content/pageblocks.js",
-        "content/appwishlist_conversions.js",
-        "content/appwishlist.js"
+        "content/appwishlists/appwishlist.js"
       ],
       "css": [
         "styles/partner_steampowered_shared.css",
@@ -95,16 +44,7 @@
         "https://partner.steampowered.com/package/refunds/*"
       ],
       "js": [
-        "shared/log.js",
-        "scripts/chart.umd.min.js",
-        "shared/statusblock.js",
-        "scripts/helpers.js",
-        "data/defaultsettings.js",
-        "content/pageblocks.js",
-        "content/refunds_table.js",
-        "content/refunds_reasonstable.js",
-        "content/refunds_chart.js",
-        "content/refunds.js"
+        "content/refunds/refunds.js"
       ],
       "css": [
         "styles/partner_steampowered_shared.css",
@@ -135,21 +75,6 @@
   "options_page": "options/options.html",
   "background": {
     "scripts": [
-      "shared/log.js",
-      "data/defaultsettings.js",
-      "scripts/helpers.js",
-      "background/offscreen/offscreenmanager.js",
-      "scripts/parser.js",
-      "background/bghelpers.js",
-      "background/status.js",
-      "background/storage/storage.js",
-      "background/storage/storagequeue.js",
-      "background/storage/storage_reviews.js",
-      "background/storage/storage_sales.js",
-      "background/storage/storage_traffic.js",
-      "background/storage/storage_wishlists.js",
-      "background/storage/storage_wishlistconversions.js",
-      "background/statsupdater.js",
       "background/extensionservice.js"
     ],
     "service_worker": "background/extensionservice.js"

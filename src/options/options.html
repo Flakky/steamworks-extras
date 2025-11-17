@@ -9,9 +9,6 @@
     <link rel="stylesheet" href="../styles/options.css">
 
     <script src="../shared/log.js"></script>
-    <script src="../scripts/helpers.js"></script>
-    <script src="../data/defaultsettings.js"></script>
-    <script src="../shared/statusblock.js"></script>
     <script src="options.js"></script>
 
     <title>Steamworks extra reports Settings</title>
@@ -118,17 +115,21 @@
                     <tr>
                         <td class="table_label"><label for="ignored_app_ids">Ignored AppIDs:</label>
                         </td>
-                        <td class="table_value"><textarea id="ignored_app_ids" rows="3" cols="30" placeholder="e.g. 123456, 789012"></textarea>
+                        <td class="table_value"><textarea id="ignored_app_ids" rows="3" cols="30"
+                                placeholder="e.g. 123456, 789012"></textarea>
                         </td>
-                        <td class="description">AppIDs to ignore when fetching data and displaying in reports. Separate multiple AppIDs with commas.</td>
+                        <td class="description">AppIDs to ignore when fetching data and displaying in reports. Separate
+                            multiple AppIDs with commas.</td>
                     </tr>
                     <tr>
                         <td class="table_label"><label for="requests_period">Min requests interval:</label>
                         </td>
                         <td class="table_value"><input type="number" min=0 max=10000 value=1000 id="requests_period">
                         </td>
-                        <td class="description">Minimum interval (in milliseconds) for requesting daily stats about your games in the background. 
-                            A higher value can help prevent Steam's DDoS protection from triggering. Lower values might speed up the stats collection process but could also trigger the protection.</td>
+                        <td class="description">Minimum interval (in milliseconds) for requesting daily stats about your
+                            games in the background.
+                            A higher value can help prevent Steam's DDoS protection from triggering. Lower values might
+                            speed up the stats collection process but could also trigger the protection.</td>
                     </tr>
                     <tr>
                         <td class="table_value"><button id="save">Save</button></td>

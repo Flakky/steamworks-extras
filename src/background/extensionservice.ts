@@ -15,23 +15,22 @@ if (typeof browser == "undefined") {
   // Chrome does not support the browser namespace yet.
   (globalThis as any).browser = chrome;
 
-  console.log('Importing scripts');
-
-  importScripts('../data/defaultsettings.js');
-  importScripts('../shared/log.js');
-  importScripts('../scripts/helpers.js');
-  importScripts('offscreen/offscreenmanager.js');
-  importScripts('../scripts/parser.js');
-  importScripts('bghelpers.js');
-  importScripts('status.js');
-  importScripts('storage/storage.js');
-  importScripts('storage/storagequeue.js');
-  importScripts('storage/storage_reviews.js');
-  importScripts('storage/storage_sales.js');
-  importScripts('storage/storage_traffic.js');
-  importScripts('storage/storage_wishlists.js');
-  importScripts('storage/storage_wishlistconversions.js');
-  importScripts('statsupdater.js');
+  // console.log('Importing scripts');
+  // importScripts('../data/defaultsettings.js');
+  // importScripts('../shared/log.js');
+  // importScripts('../scripts/helpers.js');
+  // importScripts('offscreen/offscreenmanager.js');
+  // importScripts('../scripts/parser.js');
+  // importScripts('bghelpers.js');
+  // importScripts('status.js');
+  // importScripts('storage/storage.js');
+  // importScripts('storage/storagequeue.js');
+  // importScripts('storage/storage_reviews.js');
+  // importScripts('storage/storage_sales.js');
+  // importScripts('storage/storage_traffic.js');
+  // importScripts('storage/storage_wishlists.js');
+  // importScripts('storage/storage_wishlistconversions.js');
+  // importScripts('statsupdater.js');
 }
 
 getBrowser().runtime.onInstalled.addListener(async () => {
@@ -78,7 +77,7 @@ const init = async () => {
 
   console.log("Extension service initiated");
 
-  startUpdatingStats(appIDs, {queue, offscreenManager});
+  startUpdatingStats(appIDs, { queue, offscreenManager });
 }
 
 init().catch(error => {
