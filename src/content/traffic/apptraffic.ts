@@ -3,7 +3,10 @@ import { addStatusBlockToPage } from "../../shared/statusblock";
 import { DateRange, getDateRangeArray } from "../../shared/types/daterange";
 import { hideOldElements } from "./layout";
 import { getDataFromStorage } from "../../scripts/helpers";
-import { TrafficCategorySelection, TrafficChartDataType } from "./types";
+import { TrafficCategorySelection, TrafficChartDataType, TrafficPresetType } from "./types";
+import { createChart, updateTrafficChart } from "./chart";
+import { addTableCheckboxes, getExternalWebsiteSubcategories, getTopCategories, updateSelectedChartCategories } from "./table";
+import { createCheckPresets } from "./presets";
 
 const init = async () => {
   console.log("Init");
@@ -32,13 +35,37 @@ const init = async () => {
 
   hideOldElements(doc);
 
+  const categorySelection = new TrafficCategorySelection();
 
-  createChart();
+  const trafficChart = createChart(doc, trafficData, TrafficChartDataType.Impressions, categorySelection, chartColors);
+
+  addTableCheckboxes(doc, categorySelection, (catSelection: TrafficCategorySelection) => {
+    updateTrafficChart(doc, trafficData, trafficChart, TrafficChartDataType.Impressions, catSelection, chartColors);
+  });
+
+
   addStatusBlockToPage();
 
-  addChartShowCheckboxes();
+  createCheckPresets(doc, (preset: TrafficPresetType) => {
+    switch (preset) {
+      case TrafficPresetType.Clear:
+        categorySelection.categories = [];
+        categorySelection.subcategories = [];
+        break;
+      case TrafficPresetType.Top5:
+        categorySelection.categories = getTopCategories(doc, 5);
+        break;
+      case TrafficPresetType.Top10:
+        categorySelection.categories = getTopCategories(doc, 10);
+        break;
+      case TrafficPresetType.External:
+        categorySelection.subcategories = getExternalWebsiteSubcategories(doc).map(subcategory => ({ category: 'External', subCategory: subcategory }));
+        break;
+    }
 
-  createCheckPresets();
+    updateSelectedChartCategories(doc, categorySelection);
+    updateTrafficChart(doc, trafficData, trafficChart, TrafficChartDataType.Impressions, categorySelection, chartColors);
+  });
 }
 
 const getAppID = () => {
@@ -81,162 +108,6 @@ const getTrafficData = async (doc: Document, appID: string): Promise<any[]> => {
   );
 
   return trafficData;
-}
-
-const getSelectedChartCategories = (doc: Document): TrafficCategorySelection => {
-  const checkboxes = doc.querySelectorAll('.extra_chart_category_checkbox') as NodeListOf<HTMLInputElement>;
-
-  const categorySelection = new TrafficCategorySelection();
-
-  for (const checkbox of Array.from(checkboxes)) {
-    console.log(checkbox.checked);
-
-    if (!checkbox.checked) continue;
-
-    const checkboxIDSplit = checkbox.id.split('__');
-
-    if (checkboxIDSplit.length === 1) {
-      categorySelection.categories.push(checkboxIDSplit[0]);
-    }
-    else {
-      categorySelection.subcategories.push({ category: checkboxIDSplit[0], subCategory: checkboxIDSplit[1] });
-    }
-  }
-
-  return categorySelection;
-}
-
-const addChartShowCheckboxes = (doc: Document) => {
-  const table = doc.querySelector('.breakdownTable');
-
-  if (!table) {
-    throw new Error('Table for checkboxesnot found');
-  }
-
-  const firstRowElem = table.children[0];
-
-  const newHeaderCell = doc.createElement('div');
-  newHeaderCell.classList.add('th');
-  newHeaderCell.textContent = 'Show on chart';
-
-  firstRowElem.insertBefore(newHeaderCell, firstRowElem.children[0]);
-
-  const addCheckbox = (rowElem: Element, id: string, checkedByDefault: boolean) => {
-    const checkboxContainerElem = doc.createElement('div');
-    checkboxContainerElem.classList.add('td');
-    const checkbox = doc.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.classList.add('extra_chart_category_checkbox');
-
-    checkboxContainerElem.appendChild(checkbox);
-
-    checkbox.id = id;
-    checkbox.checked = checkedByDefault;
-
-    checkbox.addEventListener('click', (event) => {
-      // Prevent category spoiler to toggle
-      event.stopPropagation();
-    });
-
-    checkbox.addEventListener('change', (event: Event) => {
-      // Prevent category spoiler to toggle
-      event.stopPropagation();
-      event.preventDefault();
-
-      const target = event.target as HTMLInputElement;
-
-      const id = target.id;
-      const value = target.value;
-      console.log('Checkbox ID:', id, 'Value:', value);
-
-      updateSelectedChartCategories();
-      updateTrafficChart();
-    });
-
-    rowElem.insertBefore(checkboxContainerElem, rowElem.firstChild);
-  }
-
-  let categoryIndex = 0;
-  let category = '';
-
-  for (const elem of Array.from(table.children)) {
-    if (!elem) continue;
-
-    const nameElem = elem.querySelector('strong');
-    if (nameElem === undefined || nameElem === null) continue;
-    const name = nameElem.textContent;
-
-    if (elem.classList.contains('page_stats')) {
-      category = name;
-      addCheckbox(elem, category, categoryIndex < 5);
-      categoryIndex++;
-    }
-    else if (elem.classList.contains('feature_stats')) {
-      addCheckbox(elem, `${category}__${name}`, false);
-    }
-  }
-
-  updateSelectedChartCategories();
-}
-
-const getTopCategories = (doc: Document, numberOfCategories: number): string[] => {
-  const categoryCounts: Record<string, number> = {};
-
-  const table = doc.querySelector('.breakdownTable');
-  if (!table) {
-    return [];
-  }
-
-  for (const elem of Array.from(table.children)) {
-    if (!elem) continue;
-
-    const nameElem = elem.querySelector('strong');
-    if (nameElem === undefined || nameElem === null) continue;
-    const name = nameElem.textContent;
-
-    if (elem.classList.contains('page_stats')) {
-      if (!categoryCounts[name]) {
-        categoryCounts[name] = 0;
-      }
-      categoryCounts[name]++;
-    }
-  }
-
-  const sortedCategories = Object.entries(categoryCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, numberOfCategories)
-    .map(entry => entry[0]);
-
-  return sortedCategories;
-}
-
-const getExternalWebsiteSubcategories = (doc: Document): string[] => {
-  const subcategories = [];
-  const table = doc.querySelector('.breakdownTable');
-
-  if (!table) {
-    return [];
-  }
-
-  let isExternalWebsite = false;
-
-  for (const elem of Array.from(table.children)) {
-    if (!elem) continue;
-
-    const nameElem = elem.querySelector('strong');
-    if (nameElem === undefined || nameElem === null) continue;
-    const name = nameElem.textContent;
-
-    if (elem.classList.contains('page_stats')) {
-      isExternalWebsite = name === 'External Website';
-    } else if (isExternalWebsite && elem.classList.contains('feature_stats')) {
-      subcategories.push(`External Website__${name}`);
-    } else if (elem.classList.contains('page_stats')) {
-      isExternalWebsite = false;
-    }
-  }
-
-  return subcategories;
 }
 
 init();

@@ -1,11 +1,11 @@
 import { getDateRangeArray } from "../../shared/types/daterange";
-import { TrafficChartDataType, TrafficCategorySelection } from "./types";
+import { TrafficChartDataType, TrafficCategorySelection, TrafficPresetType } from "./types";
 import { getPageContentElem } from "./layout";
 import { Chart, ChartConfiguration, ChartDataset } from "chart.js";
 import { selectChartColor } from "../../scripts/helpers";
 import { getDateRangeOfCurrentPage } from "./apptraffic"
 
-const createChart = (doc: Document, trafficData: any[], dataType: TrafficChartDataType, categorySelection: TrafficCategorySelection, chartColors: Record<string, string>) => {
+export const createChart = (doc: Document, trafficData: any[], dataType: TrafficChartDataType, categorySelection: TrafficCategorySelection, chartColors: Record<string, string>): Chart => {
   const chartBlockElem = doc.createElement('div');
   chartBlockElem.id = 'extras_chart';
 
@@ -67,9 +67,11 @@ const createChart = (doc: Document, trafficData: any[], dataType: TrafficChartDa
       updateTrafficChart(doc, trafficData, trafficChart, selectedDataType, categorySelection, chartColors);
     }
   );
+
+  return trafficChart;
 }
 
-const updateTrafficChart = (doc: Document, trafficData: any[], chart: Chart, dataType: TrafficChartDataType, categorySelection: TrafficCategorySelection, chartColors: Record<string, string>) => {
+export const updateTrafficChart = (doc: Document, trafficData: any[], chart: Chart, dataType: TrafficChartDataType, categorySelection: TrafficCategorySelection, chartColors: Record<string, string>) => {
   const dateRange = getDateRangeOfCurrentPage(doc);
 
   const days = getDateRangeArray(dateRange, false, true);
@@ -146,45 +148,4 @@ const updateTrafficChart = (doc: Document, trafficData: any[], chart: Chart, dat
   chart.data.datasets = datasets;
 
   chart.update();
-}
-
-const createCheckPresets = (doc: Document) => {
-  const chartBlockElem = doc.getElementById('extras_chart');
-
-  const presetsDiv = doc.createElement('div');
-  presetsDiv.id = 'chart_presets';
-
-  const selectCategories = (categories: string[]) => {
-    const checkboxes = doc.querySelectorAll('.extra_chart_category_checkbox') as NodeListOf<HTMLInputElement>;
-
-    checkboxes.forEach(checkbox => {
-      checkbox.checked = categories.includes(checkbox.id);
-    });
-
-    updateSelectedChartCategories();
-    updateTrafficChart();
-  }
-
-  const createButton = (text: string, categories: string[]) => {
-    const button = doc.createElement('button');
-    button.textContent = text;
-    button.addEventListener('click', () => selectCategories(categories));
-    return button;
-  }
-
-  const top5Categories = getTopCategories(doc, 5);
-  const top10Categories = getTopCategories(doc, 10);
-  const externalCategories = getExternalWebsiteSubcategories(doc);
-
-  const clearButton = createButton('Clear (Total)', []);
-  const top5Button = createButton('Top5', top5Categories);
-  const top10Button = createButton('Top10', top10Categories);
-  const externalSourcesButton = createButton('External websites', externalCategories);
-
-  presetsDiv.appendChild(clearButton);
-  presetsDiv.appendChild(top5Button);
-  presetsDiv.appendChild(top10Button);
-  presetsDiv.appendChild(externalSourcesButton);
-
-  chartBlockElem.appendChild(presetsDiv);
 }

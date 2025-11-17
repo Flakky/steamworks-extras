@@ -4,6 +4,13 @@ export enum TrafficChartDataType {
   ClickThroughRate = 'Click Through Rate',
 }
 
+export enum TrafficPresetType {
+  Clear = 'Clear (Total)',
+  Top5 = 'Top5',
+  Top10 = 'Top10',
+  External = 'External websites',
+}
+
 export class TrafficCategorySelection {
   categories: string[] = [];
   subcategories: TrafficCategorySubcategory[] = [];
