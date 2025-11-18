@@ -1,20 +1,21 @@
 {
-  "name": "steamworksextras",
-  "version": "0.1.0",
-  "private": true,
-  "description": "Build tooling for the Steamworks Extras browser extension with TypeScript support",
-  "license": "MIT",
-  "scripts": {
-    "build": "node scripts/build.js"
-  },
-  "devDependencies": {
-    "@types/chrome": "^0.0.262",
-    "@types/node": "^22.7.4",
-    "esbuild": "0.25.8",
-    "fs-extra": "^11.2.0",
-    "typescript": "^5.5.4"
-  },
-  "dependencies": {
-    "chart.js": "4.5.0"
-  }
+    "name": "steamworksextras",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Build tooling for the Steamworks Extras browser extension with TypeScript support",
+    "license": "MIT",
+    "scripts": {
+        "typecheck": "tsc --noEmit",
+        "build": "npm run typecheck && node scripts/build.js"
+    },
+    "devDependencies": {
+        "@types/chrome": "^0.0.262",
+        "@types/node": "^22.7.4",
+        "esbuild": "0.25.8",
+        "fs-extra": "^11.2.0",
+        "typescript": "^5.5.4"
+    },
+    "dependencies": {
+        "chart.js": "4.5.0"
+    }
 }
