@@ -5,6 +5,10 @@ export type SalesData = {
     periodUsRevenue: number;
 }
 
+export type ReviewsData = {
+    reviews: any[];
+}
+
 export type RevenueMap = {
     gross: number;
     net: number;
@@ -24,4 +28,10 @@ export type RoyaltiesAndTaxesMap = {
     otherRoyalties: number;
     localTax: number;
     royaltiesAfterTax: number;
+}
+
+export enum ReviewChartSplit {
+    Total = 'Total',
+    Vote = 'Vote',
+    Language = 'Language',
 }

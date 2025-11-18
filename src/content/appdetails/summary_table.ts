@@ -1,7 +1,7 @@
 import { findElementByText, findParentByTag, numberWithCommas, sendMessageAsync } from "../../scripts/helpers";
 import { getSummaryTable } from "./layout";
 import { getBrowser } from "../../shared/browser";
-import { RoyaltiesAndTaxesMap } from "./types";
+import { ReviewsData, RoyaltiesAndTaxesMap } from "./types";
 import { getRevenueMap, getRevenuePercentageMap } from "./revenue";
 
 const updateSummaryRowUnderExtend = (doc: Document, index: number, title: string, description: string, showPercentages: boolean, calculation: () => { summ: number, share: number }) => {
@@ -291,4 +291,71 @@ export const addRefundDataLink = (packageId: string) => {
     refundDescCell.innerHTML += ` (<a href="https://partner.steampowered.com/package/refunds/${packageId}/">Refund data</a>)`;
 
     console.log("Added refund data link");
+}
+
+export const updateReviewsSummary = (doc: Document, reviews: ReviewsData) => {
+    if (!reviews.reviews) {
+        throw new Error('Reviews data not found');
+    }
+
+    const summaryTable = getSummaryTable(doc);
+    if (!summaryTable) {
+        throw new Error('Summary table not found');
+    }
+
+    let positive = 0;
+    let negative = 0;
+
+    for (const review of reviews.reviews) {
+        if (!review.steam_purchase) continue; // Reviews which were not purchased from Steam do not count toward final score
+
+        if (review.voted_up) positive++;
+        else negative++;
+    }
+
+    const lifeTimeUnitsReturnedCell = findElementByText('td', 'Lifetime units returned');
+
+    const lifetimeUnitsRow = findParentByTag(lifeTimeUnitsReturnedCell, 'tr') as HTMLTableRowElement;
+    if (!lifetimeUnitsRow) {
+        throw new Error('Lifetime units returned row not found');
+    }
+
+    const lifetimeUnitsRowIndex = lifetimeUnitsRow.rowIndex;
+
+    let newLineSplitter = summaryTable.rows[lifetimeUnitsRowIndex + 1].cloneNode(true);
+
+    summaryTable.children[0].insertBefore(newLineSplitter, summaryTable.rows[lifetimeUnitsRowIndex + 1]);
+
+    const addReviewRow = (title: string, numHtml: string, desc: string) => {
+        const row = summaryTable.insertRow(lifetimeUnitsRowIndex + 2); // Insert after net
+        row.classList.add('extra_summary_review_row');
+
+        const nameElem = doc.createElement('td');
+        nameElem.textContent = title;
+
+        const numElem = doc.createElement('td');
+        numElem.align = 'right';
+        numElem.innerHTML = numHtml;
+
+        const descElem = doc.createElement('td');
+        descElem.textContent = desc;
+
+        row.appendChild(nameElem);
+        row.appendChild(numElem);
+        row.appendChild(descElem);
+
+        return row;
+    };
+
+    addReviewRow(
+        'Positive reviews',
+        `${(positive / (positive + negative) * 100).toFixed(1)}%`,
+        ''
+    );
+
+    addReviewRow(
+        'Reviews',
+        `<span>${positive + negative}</span> (<span class="extra_summary_review_positive">${positive}</span> | <span class="extra_summary_review_negative">${negative}</span>)`,
+        'Reviews which are not counted toward review score are not included.'
+    );
 }

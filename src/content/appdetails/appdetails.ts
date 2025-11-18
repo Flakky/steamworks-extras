@@ -3,9 +3,9 @@ import { addStatusBlockToPage } from "../../shared/statusblock";
 import { createCustomContentBlock, createToolbarBlock, hideOriginalMainBlock, moveDateRangeSelectionToTop, moveGameTitle } from "../pageblocks";
 import { hideOldLinks, moveSummaryTableToNewBlock, moveHeatmapNewBlock, moveOldChartToNewBlock, getSalesTable } from "./layout";
 import { getDataFromStorage } from "../../scripts/helpers";
-import { RoyaltiesAndTaxesMap, SalesData } from "./types";
+import { RoyaltiesAndTaxesMap, SalesData, ReviewsData } from "./types";
 import { isDateInRange } from "../../shared/types/daterange";
-import { addRefundDataLink, addFollowers, updateSummaryRows } from "./summary_table";
+import { addRefundDataLink, addFollowers, updateSummaryRows, updateReviewsSummary } from "./summary_table";
 import { getTotalRevenue } from "./revenue";
 
 const init = async () => {
@@ -42,6 +42,10 @@ const init = async () => {
     addStatusBlockToPage();
 
     const salesData = await requestSales(appID);
+    console.debug('Sales data: ', salesData);
+
+    const reviewsData = await requestReviews(appID);
+    console.debug('Reviews data: ', reviewsData);
 
     // Create blocks
     moveSummaryTableToNewBlock(doc);
@@ -69,9 +73,7 @@ const init = async () => {
     addRefundDataLink(packageID);
     addFollowers(doc, appID);
     updateSummaryRows(doc, gross, net, salesData.usRevenue, royaltiesAndTaxes, settings.showZeroRevenues, settings.showPercentages);
-
-    requestReviews();
-    requestSales();
+    updateReviewsSummary(doc, reviewsData);
 }
 
 const getAppID = (doc: Document) => {
@@ -122,17 +124,10 @@ const getPackageId = (doc: Document): string | null => {
 const requestSales = async (appID: string): Promise<SalesData> => {
     const dateRange = getDateRangeFromURL(getCurrentURL());
 
-    console.log('Requesting sales data...');
-
     const sales = await getDataFromStorage(
         'Sales',
-        appID,
-        dateRange.dateStart,
-        dateRange.dateEnd,
-        false
+        appID
     );
-
-    console.debug('Sales data received: ', sales);
 
     // Filter to current date range
     const salesForDateRange = sales.filter((item: any) => {
@@ -150,15 +145,27 @@ const requestSales = async (appID: string): Promise<SalesData> => {
         .filter((item: any) => item["Country"] === "United States")
         .reduce((sum: number, item: any) => sum + (item["Gross Steam Sales (USD)"] || 0), 0);
 
-    console.debug('Sales data for range: ', salesForDateRange);
-    console.debug('US sales data: ', usRevenue);
-    console.debug('US sales data for range: ', usRevenueForDateRange);
-
     return {
         allSales: sales,
         periodSales: salesForDateRange,
         usRevenue: usRevenue,
         periodUsRevenue: usRevenueForDateRange
+    };
+}
+
+const requestReviews = async (appID: string): Promise<ReviewsData> => {
+    const dateRange = getDateRangeFromURL(getCurrentURL());
+
+    const reviews = await getDataFromStorage(
+        'Reviews',
+        appID,
+        dateRange.dateStart,
+        dateRange.dateEnd,
+        false
+    );
+
+    return {
+        reviews: reviews
     };
 }
 

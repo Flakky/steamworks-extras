@@ -64,7 +64,6 @@ export const moveHeatmapNewBlock = (doc: Document) => {
     setFlexContentBlockContentElem(contentBlock, heatmapElem);
 }
 
-
 export const getSummaryTable = (doc: Document): HTMLTableElement | null => {
     return doc.querySelector('#extra_summary_block table') as HTMLTableElement | null;
 }
@@ -72,3 +71,11 @@ export const getSummaryTable = (doc: Document): HTMLTableElement | null => {
 export const getSalesTable = (doc: Document): HTMLTableElement | null => {
     return doc.querySelector('#gameDataLeft table') as HTMLTableElement | null;
 }
+
+export const createReviewsChartBlock = (doc: Document) => {
+    createFlexContentBlock(doc, 'Reviews chart', 'extra_reviews_chart_block');
+};
+
+export const createReviewsTableBlock = (doc: Document) => {
+    createFlexContentBlock(doc, 'Reviews table', 'extra_reviews_table_block');
+};
