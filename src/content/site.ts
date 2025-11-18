@@ -1,24 +1,24 @@
 import { defaultSettings } from "../data/defaultsettings";
-import { correctDateRange, getCalculationToday, isStringEmpty } from "../scripts/helpers";
+import { correctDateRange, getCalculationToday, isStringEmpty, dateFromString } from "../scripts/helpers";
 import { getBrowser } from "../shared/browser";
 import { DateRange } from "../shared/types/daterange";
 
 export const readChartColors = async (): Promise<Record<string, string>> => {
-  const jsonFilePath = getBrowser().runtime.getURL('data/chartcolors.json');
+    const jsonFilePath = getBrowser().runtime.getURL('data/chartcolors.json');
 
-  const response = await fetch(jsonFilePath);
-  const chartColors = await response.json();
+    const response = await fetch(jsonFilePath);
+    const chartColors = await response.json();
 
-  return chartColors;
+    return chartColors;
 };
 
 export const getDefaultSettings = async (): Promise<Record<string, any>> => {
-  const settings = await getBrowser().storage.local.get(defaultSettings);
-  return settings;
+    const settings = await getBrowser().storage.local.get(defaultSettings);
+    return settings;
 };
 
 export const getCurrentURL = (): string => {
-  return window.location.href;
+    return window.location.href;
 };
 
 /**
@@ -28,20 +28,26 @@ export const getCurrentURL = (): string => {
  * @returns The date range
  */
 export const getDateRangeFromURL = (url: string): DateRange => {
-  const urlObj = new URL(url);
+    const urlObj = new URL(url);
+    const urlParams = urlObj.searchParams
 
-  const dateStartString: string = urlObj.searchParams.get('dateStart') || '';
-  const dateEndString: string = urlObj.searchParams.get('dateEnd') || '';
+    const dateStartString: string = urlParams.get('dateStart') || '';
+    const dateEndString: string = urlParams.get('dateEnd') || '';
 
-  let today = getCalculationToday();
+    let today = getCalculationToday();
 
-  let dateStart = today;
-  let dateEnd = today;
+    let dateStart = today;
+    let dateEnd = today;
 
-  if (!isStringEmpty(dateStartString)) dateStart = new Date(dateStartString);
-  if (!isStringEmpty(dateEndString)) dateEnd = new Date(dateEndString);
+    const isToday = urlParams.get('specialPeriod') === 'today'
+        || (!urlParams.has('dateStart') && !urlParams.has('dateEnd'));
 
-  correctDateRange(dateStart, dateEnd);
+    if (!isToday) {
+        if (!isStringEmpty(dateStartString)) dateStart = dateFromString(dateStartString);
+        if (!isStringEmpty(dateEndString)) dateEnd = dateFromString(dateEndString);
+    }
 
-  return new DateRange(dateStart, dateEnd);
+    correctDateRange(dateStart, dateEnd);
+
+    return new DateRange(dateStart, dateEnd);
 }
