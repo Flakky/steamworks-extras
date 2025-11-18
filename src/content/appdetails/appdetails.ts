@@ -1,10 +1,12 @@
 import { getCurrentURL, getDateRangeFromURL, getDefaultSettings, readChartColors } from "../site";
 import { addStatusBlockToPage } from "../../shared/statusblock";
 import { createCustomContentBlock, createToolbarBlock, hideOriginalMainBlock, moveDateRangeSelectionToTop, moveGameTitle } from "../pageblocks";
-import { hideOldLinks, moveSummaryTableToNewBlock, moveHeatmapNewBlock, moveOldChartToNewBlock, getSummaryTable } from "./layout";
+import { hideOldLinks, moveSummaryTableToNewBlock, moveHeatmapNewBlock, moveOldChartToNewBlock, getSalesTable } from "./layout";
 import { getDataFromStorage } from "../../scripts/helpers";
-import { SalesData } from "./types";
+import { RoyaltiesAndTaxesMap, SalesData } from "./types";
 import { isDateInRange } from "../../shared/types/daterange";
+import { addRefundDataLink, addFollowers, updateSummaryRows } from "./summary_table";
+import { getTotalRevenue } from "./revenue";
 
 const init = async () => {
     console.log('Init');
@@ -24,6 +26,11 @@ const init = async () => {
     const appID = getAppID(doc);
     if (!appID) {
         throw new Error('App ID not found');
+    }
+
+    const packageID = getPackageId(doc);
+    if (!packageID) {
+        throw new Error('Package ID not found');
     }
 
     // Recreate the page structure
@@ -47,8 +54,21 @@ const init = async () => {
 
     hideOriginalMainBlock(doc);
 
-    addRefundDataLink();
-    addFollowers();
+    const gross = getTotalRevenue(doc, true);
+    const net = getTotalRevenue(doc, false);
+    const royaltiesAndTaxes: RoyaltiesAndTaxesMap = {
+        usSalesTax: settings.usSalesTax,
+        grossRoyalties: settings.grossRoyalties,
+        netRoyalties: settings.netRoyalties,
+        otherRoyalties: settings.otherRoyalties,
+        localTax: settings.localTax,
+        royaltiesAfterTax: settings.royaltiesAfterTax
+    };
+
+    // Summary table
+    addRefundDataLink(packageID);
+    addFollowers(doc, appID);
+    updateSummaryRows(doc, gross, net, salesData.usRevenue, royaltiesAndTaxes, settings.showZeroRevenues, settings.showPercentages);
 
     requestReviews();
     requestSales();
@@ -75,64 +95,28 @@ const getAppID = (doc: Document) => {
     return id;
 }
 
-const getPackageId = () => {
-    const salesTable = getSalesTable();
+const getPackageId = (doc: Document): string | null => {
+    const salesTable = getSalesTable(doc);
+
+    if (!salesTable) {
+        return null;
+    }
 
     const rows = salesTable.rows;
 
     const packageRow = rows[2];
 
     const packageLink = packageRow.getElementsByTagName('a')[0];
-    if (!packageLink) return;
-
-    const id = packageLink.href.match(/\/package\/details\/(\d+)/)[1];
-
-    return id;
-}
-
-const getTotalRevenue = (doc: Document, gross: boolean): number => {
-    const table = getSummaryTable(doc);
-    if (!table) return 0;
-
-    const rows = table.rows;
-    const revenueCell = rows[gross ? 0 : 1].cells[1];
-
-    let revenue = revenueCell.textContent.split(' ')[0]; // Remove percentage if shown by settings
-
-    revenue = revenue.replace('$', '');
-    revenue = revenue.replace(/,/g, '');
-
-    const revenueNumber = parseInt(revenue);
-
-    return revenueNumber;
-}
-
-const getDateRangeOfCurrentPage = () => {
-    // URL format:
-    // https://partner.steampowered.com/app/details/AppID/?dateStart=2024-08-21&dateEnd=2024-08-27
-    const urlObj = new URL(window.location.href);
-
-    const urlParams = urlObj.searchParams
-
-    let today = helpers.getCalculationToday();
-
-    let dateStart = today;
-    let dateEnd = today;
-
-    const isToday = urlParams.get('specialPeriod') === 'today'
-        || (!urlParams.has('dateStart') && !urlParams.has('dateEnd'));
-
-    if (!isToday) {
-        const dateStartString = urlParams.get('dateStart');
-        const dateEndString = urlParams.get('dateEnd');
-
-        if (!helpers.isStringEmpty(dateStartString)) dateStart = helpers.dateFromString(dateStartString);
-        if (!helpers.isStringEmpty(dateEndString)) dateEnd = helpers.dateFromString(dateEndString);
+    if (!packageLink) {
+        return null;
     }
 
-    ({ dateStart, dateEnd } = helpers.correctDateRange(dateStart, dateEnd));
+    const matchArray = packageLink.href.match(/\/package\/details\/(\d+)/);
+    if (!matchArray || matchArray.length < 2) {
+        return null;
+    }
 
-    return { dateStart: dateStart, dateEnd: dateEnd };
+    return matchArray[1] as string;
 }
 
 const requestSales = async (appID: string): Promise<SalesData> => {

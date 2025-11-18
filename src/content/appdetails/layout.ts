@@ -45,15 +45,15 @@ export const moveOldChartToNewBlock = (doc: Document) => {
 
     // We only need the first 4 children because this is the part about sales
     for (let i = 0; i < 4; i++) {
-      if (AllStatsDiv.children.length > 0) {
-        oldChartContainer.appendChild(AllStatsDiv.children[0]);
-      }
+        if (AllStatsDiv.children.length > 0) {
+            oldChartContainer.appendChild(AllStatsDiv.children[0]);
+        }
     }
 
     setFlexContentBlockContentElem(contentBlock, oldChartContainer);
-  }
+}
 
-  export const moveHeatmapNewBlock = (doc: Document) => {
+export const moveHeatmapNewBlock = (doc: Document) => {
     const heatmapElem = doc.getElementById('heatmapArea');
     if (!heatmapElem) {
         throw new Error('Heatmap element not found');
@@ -62,9 +62,13 @@ export const moveOldChartToNewBlock = (doc: Document) => {
     const contentBlock = createFlexContentBlock(doc, 'Sales heatmap', 'extra_sales_heatmap_block');
 
     setFlexContentBlockContentElem(contentBlock, heatmapElem);
-  }
+}
 
 
 export const getSummaryTable = (doc: Document): HTMLTableElement | null => {
     return doc.querySelector('#extra_summary_block table') as HTMLTableElement | null;
+}
+
+export const getSalesTable = (doc: Document): HTMLTableElement | null => {
+    return doc.querySelector('#gameDataLeft table') as HTMLTableElement | null;
 }
