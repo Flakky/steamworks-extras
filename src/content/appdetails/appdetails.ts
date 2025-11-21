@@ -7,6 +7,8 @@ import { RoyaltiesAndTaxesMap, SalesData, ReviewsData } from "./types";
 import { isDateInRange } from "../../shared/types/daterange";
 import { addRefundDataLink, addFollowers, updateSummaryRows, updateReviewsSummary } from "./summary_table";
 import { getTotalRevenue } from "./revenue";
+import { createReviewsChart } from "./reviews_chart";
+import { createReviewsTable, updateReviewsTable } from "./reviews_table";
 
 const init = async () => {
     console.log('Init');
@@ -51,13 +53,18 @@ const init = async () => {
     moveSummaryTableToNewBlock(doc);
     createSalesChartBlock();
     createSalesTableBlock();
-    createReviewsChartBlock();
-    createReviewsTableBlock();
+
+    // Reviews
+    createReviewsChart(doc, reviewsData, chartColors);
+    createReviewsTable(doc);
+    updateReviewsTable(doc, reviewsData);
+
     moveHeatmapNewBlock(doc);
     moveOldChartToNewBlock(doc);
 
     hideOriginalMainBlock(doc);
 
+    // Summary table
     const gross = getTotalRevenue(doc, true);
     const net = getTotalRevenue(doc, false);
     const royaltiesAndTaxes: RoyaltiesAndTaxesMap = {
@@ -68,8 +75,6 @@ const init = async () => {
         localTax: settings.localTax,
         royaltiesAfterTax: settings.royaltiesAfterTax
     };
-
-    // Summary table
     addRefundDataLink(packageID);
     addFollowers(doc, appID);
     updateSummaryRows(doc, gross, net, salesData.usRevenue, royaltiesAndTaxes, settings.showZeroRevenues, settings.showPercentages);

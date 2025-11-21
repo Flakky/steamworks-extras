@@ -1,3 +1,5 @@
+import { Review } from "../../shared/types/review";
+
 export type SalesData = {
     allSales: Record<string, any>;
     periodSales: Record<string, any>;
@@ -6,7 +8,7 @@ export type SalesData = {
 }
 
 export type ReviewsData = {
-    reviews: any[];
+    reviews: Review[];
 }
 
 export type RevenueMap = {
@@ -35,3 +37,4 @@ export enum ReviewChartSplit {
     Vote = 'Vote',
     Language = 'Language',
 }
+
