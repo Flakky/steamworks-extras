@@ -59,3 +59,21 @@ export enum SalesChartValueType {
     ChargebackReturns = 'Chargeback/Returns',
     ChargebackReturnsUSD = 'Chargeback/Returns (USD)',
 }
+
+export enum SalesTableSplit {
+    Date = 'Date',
+    Country = 'Country',
+    Region = 'Region',
+    Currency = 'Currency',
+    Platform = 'Platform',
+}
+
+export type SalesTableColumns = [
+    { key: "Gross Steam Sales (USD)"; label: "Gross" },
+    { key: "Net Steam Sales (USD)"; label: "Net" },
+    { key: "Gross Units Sold"; label: "Gross units" },
+    { key: "Net Units Sold"; label: "Net units" },
+    { key: "Chargeback/Returns (USD)"; label: "Refunds" },
+    { key: "Chargeback/Returns"; label: "Refund units" },
+    { key: "FinalDevRevenue"; label: "Est. revenue" }
+];
