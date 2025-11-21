@@ -38,3 +38,24 @@ export enum ReviewChartSplit {
     Language = 'Language',
 }
 
+export type SalesChartViewSelection = {
+    split: SalesChartSplit;
+    valueType: SalesChartValueType;
+}
+
+export enum SalesChartSplit {
+    Total = 'Total',
+    Country = 'Country',
+    Region = 'Region',
+    Currency = 'Currency',
+    Platform = 'Platform',
+}
+
+export enum SalesChartValueType {
+    GrossSteamSalesUSD = 'Gross Steam Sales (USD)',
+    NetSteamSalesUSD = 'Net Steam Sales (USD)',
+    GrossUnitsSold = 'Gross Units Sold',
+    NetUnitsSold = 'Net Units Sold',
+    ChargebackReturns = 'Chargeback/Returns',
+    ChargebackReturnsUSD = 'Chargeback/Returns (USD)',
+}

@@ -54,7 +54,8 @@ export const createReviewsChart = (doc: Document, reviews: ReviewsData, chartCol
 
     const chart = new Chart(canvas, config);
 
-    createChartSelect(Object.values(ReviewChartSplit).map(type => type),
+    createChartSelect(
+        Object.values(ReviewChartSplit).map(type => type),
         'View by',
         ReviewChartSplit.Total,
         (select) => {
