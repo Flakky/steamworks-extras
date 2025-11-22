@@ -1,5 +1,5 @@
 import { createFlexContentBlock, setFlexContentBlockContent } from "../pageblocks";
-import { SalesData, SalesTableColumns, SalesTableSplit } from "./types";
+import { RoyaltiesAndTaxesMap, SalesData, SalesTableColumns, SalesTableSplit } from "./types";
 import { isStringEmpty, numberWithCommas } from "../../scripts/helpers";
 import { getRevenueMap } from "./revenue";
 
@@ -7,7 +7,7 @@ export const createSalesTableBlock = (doc: Document) => {
     createFlexContentBlock(doc, 'Sales table', 'extra_sales_table_block');
 };
 
-const createSalesTable = (doc: Document, sales: SalesData, salesTableColumns: SalesTableColumns) => {
+const createSalesTable = (doc: Document, sales: SalesData, singleDay: boolean, grossNetRatio: number, salesTableColumns: SalesTableColumns, royaltiesAndTaxes: RoyaltiesAndTaxesMap) => {
     const tableBlockElem = doc.createElement('div');
 
     setFlexContentBlockContent(doc, 'extra_sales_table_block', tableBlockElem);
@@ -37,16 +37,13 @@ const createSalesTable = (doc: Document, sales: SalesData, salesTableColumns: Sa
     }
 
     // Get date range to determine if we should show Date filter
-    const { dateStart, dateEnd } = getDateRangeOfCurrentPage();
-    const isSingleDay = helpers.dateToString(dateStart) === helpers.dateToString(dateEnd);
-
     let viewByOptions = Object.values(SalesTableSplit).map(type => type)
 
-    if (!isSingleDay) {
+    if (!singleDay) {
         viewByOptions = viewByOptions.filter(type => type !== SalesTableSplit.Date);;
     }
 
-    const salesTableSplit: SalesTableSplit = isSingleDay ? SalesTableSplit.Country : SalesTableSplit.Date;
+    const salesTableSplit: SalesTableSplit = singleDay ? SalesTableSplit.Country : SalesTableSplit.Date;
 
     createTableSelect(
         viewByOptions,
@@ -54,7 +51,7 @@ const createSalesTable = (doc: Document, sales: SalesData, salesTableColumns: Sa
         salesTableSplit,
         (select) => {
             const split = select.value as SalesTableSplit;
-            updateSalesTable(doc, sales, split, salesTableColumns);
+            updateSalesTable(doc, sales, grossNetRatio, split, salesTableColumns, royaltiesAndTaxes);
         }
     );
 
@@ -92,7 +89,7 @@ const createSalesTable = (doc: Document, sales: SalesData, salesTableColumns: Sa
     tableBlockElem.appendChild(tableContainerElem);
 }
 
-const updateSalesTable = (doc: Document, sales: SalesData, salesTableSplit: SalesTableSplit, salesTableColumns: SalesTableColumns) => {
+const updateSalesTable = (doc: Document, sales: SalesData, grossNetRatio: number, salesTableSplit: SalesTableSplit, salesTableColumns: SalesTableColumns, royaltiesAndTaxes: RoyaltiesAndTaxesMap) => {
     const tableElem = doc.querySelector('#extras_sales_table table') as HTMLTableElement | null;
     if (!tableElem) {
         throw new Error("Table element not found");
@@ -131,8 +128,6 @@ const updateSalesTable = (doc: Document, sales: SalesData, salesTableSplit: Sale
         });
     });
 
-    const grossNetRatio = getTotalRevenue(false) / getTotalRevenue(true);
-
     // Add final dev revenue for groups
     const groupArr = Object.entries(groupMap).map(([key, values]) => {
 
@@ -140,7 +135,7 @@ const updateSalesTable = (doc: Document, sales: SalesData, salesTableSplit: Sale
 
         if (gross == 0) return {
             key,
-            ...values,
+            values: { ...values },
             FinalDevRevenue: 0
         };
 
@@ -150,11 +145,11 @@ const updateSalesTable = (doc: Document, sales: SalesData, salesTableSplit: Sale
         } else if (salesTableSplit === SalesTableSplit.Date) {
             usGross = sales.periodUsRevenue
         }
-        const rev = getRevenueMap(gross, gross * grossNetRatio, usGross);
+        const rev = getRevenueMap(gross, gross * grossNetRatio, usGross, royaltiesAndTaxes);
 
         return {
             key,
-            ...values,
+            values: { ...values },
             FinalDevRevenue: rev.finalRevenue
         };
     });
@@ -164,33 +159,34 @@ const updateSalesTable = (doc: Document, sales: SalesData, salesTableSplit: Sale
         groupArr.sort((a, b) => new Date(b.key).getTime() - new Date(a.key).getTime());
     } else {
         const sortKey = "Gross Steam Sales (USD)";
-        groupArr.sort((a, b) => b[sortKey] - a[sortKey]);
+        groupArr.sort((a, b) => b.values[sortKey] - a.values[sortKey]);
     }
 
     // Calculate total row
-    const totalRow = salesTableColumns.reduce((acc, col) => {
-        acc[col.key] = groupArr.reduce((sum, row) => sum + (row[col.key] || 0), 0);
+    const totalRow: Record<string, number> = salesTableColumns.reduce((acc, col) => {
+        acc[col.key] = groupArr.reduce((sum, row) => sum + (row.values[col.key] || 0), 0);
         return acc;
-    }, { key: "Total" });
+    }, { "Total": 0 } as Record<string, number>);
 
     // Calculate total dev revenue
     const totalGross = totalRow["Gross Steam Sales (USD)"] || 0;
     let totalUsGross = 0;
-    if (salesTableSplit === "Country") {
+    if (salesTableSplit === SalesTableSplit.Country) {
         const usGroup = groupArr.find(row => row.key === "United States");
-        if (usGroup) totalUsGross = usGroup["Gross Steam Sales (USD)"] || 0;
-    } else if (salesTableSplit === "Date") {
+        if (usGroup) totalUsGross = usGroup.values["Gross Steam Sales (USD)"] || 0;
+    }
+    else if (salesTableSplit === SalesTableSplit.Date) {
         // For date grouping, sum up all US sales across all dates
         totalUsGross = groupArr.reduce((sum, row) => {
             // Find US sales for this date from the original data
-            const dateUsSales = salesForDateRange
-                .filter(item => item["Date"] === row.key && item["Country"] === "United States")
-                .reduce((dateSum, item) => dateSum + (item["Gross Steam Sales (USD)"] || 0), 0);
+            const dateUsSales = sales.periodSales
+                .filter((item: any) => item["Date"] === row.key && item["Country"] === "United States")
+                .reduce((dateSum: number, item: any) => dateSum + (item["Gross Steam Sales (USD)"] || 0), 0);
             return sum + dateUsSales;
         }, 0);
     }
 
-    const { finalRevenue } = getRevenueMap(totalGross, totalGross * grossNetRatio, totalUsGross);
+    const { finalRevenue } = getRevenueMap(totalGross, totalGross * grossNetRatio, totalUsGross, royaltiesAndTaxes);
 
     totalRow["FinalDevRevenue"] = finalRevenue;
 
@@ -202,7 +198,7 @@ const updateSalesTable = (doc: Document, sales: SalesData, salesTableSplit: Sale
 
     const tbody = tableElem.createTBody();
 
-    const insertSalesTableRow = (tbody: HTMLTableSectionElement, rowData: Record<string, number>) => {
+    const insertSalesTableRow = (tbody: HTMLTableSectionElement, rowData: any) => {
         const tr = tbody.insertRow();
         const tdKey = tr.insertCell();
         tdKey.textContent = rowData.key.toString();
