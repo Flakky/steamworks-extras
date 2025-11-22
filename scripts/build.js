@@ -54,6 +54,10 @@ const bundleContentScripts = async (inlineScripts = false) => {
         },
         // Content scripts
         {
+            entry: 'src/content/appdetails/appdetails.ts',
+            outfile: 'dist/content/appdetails/appdetails.js',
+        },
+        {
             entry: 'src/content/appwishlists/appwishlist.ts',
             outfile: 'dist/content/appwishlists/appwishlist.js',
         },
