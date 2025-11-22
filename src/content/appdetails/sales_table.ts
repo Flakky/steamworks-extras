@@ -3,11 +3,7 @@ import { RoyaltiesAndTaxesMap, SalesData, SalesTableColumns, SalesTableSplit } f
 import { isStringEmpty, numberWithCommas } from "../../scripts/helpers";
 import { getRevenueMap } from "./revenue";
 
-export const createSalesTableBlock = (doc: Document) => {
-    createFlexContentBlock(doc, 'Sales table', 'extra_sales_table_block');
-};
-
-const createSalesTable = (doc: Document, sales: SalesData, singleDay: boolean, grossNetRatio: number, salesTableColumns: SalesTableColumns, royaltiesAndTaxes: RoyaltiesAndTaxesMap) => {
+export const createSalesTable = (doc: Document, sales: SalesData, singleDay: boolean, grossNetRatio: number, salesTableColumns: SalesTableColumns, royaltiesAndTaxes: RoyaltiesAndTaxesMap) => {
     const tableBlockElem = doc.createElement('div');
 
     setFlexContentBlockContent(doc, 'extra_sales_table_block', tableBlockElem);

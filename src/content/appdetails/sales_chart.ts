@@ -4,15 +4,6 @@ import { ReviewChartSplit, SalesChartSplit, SalesChartValueType, SalesChartViewS
 import { getCurrentURL, getDateRangeFromURL } from "../site";
 import { dateToString, isStringEmpty, selectChartColor } from "../../scripts/helpers";
 
-export const createSalesChartBlock = (doc: Document) => {
-    const contentBlock = createFlexContentBlock(doc, 'Sales chart', 'extra_sales_chart_block');
-
-    const chartBlockElem = doc.createElement('div');
-    chartBlockElem.id = 'extras_sales_chart';
-
-    contentBlock.appendChild(chartBlockElem);
-};
-
 export const createSalesChart = (doc: Document, sales: SalesData, salesChartViewSelection: SalesChartViewSelection, chartColors: Record<string, string>, chartMaxBreakdown: number) => {
     const chartBlockElem = doc.createElement('div');
     chartBlockElem.id = 'extras_sales_chart';

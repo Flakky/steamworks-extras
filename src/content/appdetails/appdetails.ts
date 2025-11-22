@@ -1,14 +1,16 @@
 import { getCurrentURL, getDateRangeFromURL, getDefaultSettings, readChartColors } from "../site";
 import { addStatusBlockToPage } from "../../shared/statusblock";
 import { createCustomContentBlock, createToolbarBlock, hideOriginalMainBlock, moveDateRangeSelectionToTop, moveGameTitle } from "../pageblocks";
-import { hideOldLinks, moveSummaryTableToNewBlock, moveHeatmapNewBlock, moveOldChartToNewBlock, getSalesTable } from "./layout";
-import { getDataFromStorage } from "../../scripts/helpers";
-import { RoyaltiesAndTaxesMap, SalesData, ReviewsData } from "./types";
+import { hideOldLinks, moveSummaryTableToNewBlock, moveHeatmapNewBlock, moveOldChartToNewBlock, getSalesTable, createSalesChartBlock, createSalesTableBlock, createReviewsChartBlock, createReviewsTableBlock } from "./layout";
+import { getDataFromStorage, dateToString } from "../../scripts/helpers";
+import { RoyaltiesAndTaxesMap, SalesData, ReviewsData, SalesChartValueType, SalesChartSplit, SalesChartViewSelection, SalesTableColumns } from "./types";
 import { isDateInRange } from "../../shared/types/daterange";
 import { addRefundDataLink, addFollowers, updateSummaryRows, updateReviewsSummary } from "./summary_table";
 import { getTotalRevenue } from "./revenue";
 import { createReviewsChart } from "./reviews_chart";
 import { createReviewsTable, updateReviewsTable } from "./reviews_table";
+import { createSalesChart } from "./sales_chart";
+import { createSalesTable } from "./sales_table";
 
 const init = async () => {
     console.log('Init');
@@ -43,28 +45,27 @@ const init = async () => {
     moveDateRangeSelectionToTop(doc);
     addStatusBlockToPage();
 
-    const salesData = await requestSales(appID);
-    console.debug('Sales data: ', salesData);
+    createSalesChartBlock(doc);
+    createSalesTableBlock(doc);
+    createReviewsChartBlock(doc);
+    createReviewsTableBlock(doc);
 
-    const reviewsData = await requestReviews(appID);
-    console.debug('Reviews data: ', reviewsData);
-
-    // Create blocks
     moveSummaryTableToNewBlock(doc);
-    createSalesChartBlock();
-    createSalesTableBlock();
 
-    // Reviews
-    createReviewsChart(doc, reviewsData, chartColors);
-    createReviewsTable(doc);
-    updateReviewsTable(doc, reviewsData);
+    addRefundDataLink(packageID);
+    addFollowers(doc, appID);
 
     moveHeatmapNewBlock(doc);
     moveOldChartToNewBlock(doc);
 
     hideOriginalMainBlock(doc);
 
-    // Summary table
+    const salesData = await requestSales(appID);
+    console.debug('Sales data: ', salesData);
+
+    const reviewsData = await requestReviews(appID);
+    console.debug('Reviews data: ', reviewsData);
+
     const gross = getTotalRevenue(doc, true);
     const net = getTotalRevenue(doc, false);
     const royaltiesAndTaxes: RoyaltiesAndTaxesMap = {
@@ -75,9 +76,37 @@ const init = async () => {
         localTax: settings.localTax,
         royaltiesAfterTax: settings.royaltiesAfterTax
     };
-    addRefundDataLink(packageID);
-    addFollowers(doc, appID);
+
+    // Get date range to determine if it's a single day
+    const dateRange = getDateRangeFromURL(getCurrentURL());
+    const singleDay = dateToString(dateRange.dateStart) === dateToString(dateRange.dateEnd);
+
+    // Sales
+    const salesChartViewSelection: SalesChartViewSelection = {
+        split: SalesChartSplit.Total,
+        valueType: SalesChartValueType.GrossSteamSalesUSD
+    };
+
+    const salesTableColumns: SalesTableColumns = [
+        { key: "Gross Steam Sales (USD)", label: "Gross" },
+        { key: "Net Steam Sales (USD)", label: "Net" },
+        { key: "Gross Units Sold", label: "Gross units" },
+        { key: "Net Units Sold", label: "Net units" },
+        { key: "Chargeback/Returns (USD)", label: "Refunds" },
+        { key: "Chargeback/Returns", label: "Refund units" },
+        { key: "FinalDevRevenue", label: "Est. revenue" }
+    ];
+
+    createSalesChart(doc, salesData, salesChartViewSelection, chartColors, settings.chartMaxBreakdown);
+    createSalesTable(doc, salesData, singleDay, gross / net, salesTableColumns, royaltiesAndTaxes);
+
+    // Reviews
+    createReviewsChart(doc, reviewsData, chartColors);
+    createReviewsTable(doc);
+    updateReviewsTable(doc, reviewsData);
+
     updateSummaryRows(doc, gross, net, salesData.usRevenue, royaltiesAndTaxes, settings.showZeroRevenues, settings.showPercentages);
+
     updateReviewsSummary(doc, reviewsData);
 }
 

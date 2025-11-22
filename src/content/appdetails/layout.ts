@@ -79,3 +79,16 @@ export const createReviewsChartBlock = (doc: Document) => {
 export const createReviewsTableBlock = (doc: Document) => {
     createFlexContentBlock(doc, 'Reviews table', 'extra_reviews_table_block');
 };
+
+export const createSalesTableBlock = (doc: Document) => {
+    createFlexContentBlock(doc, 'Sales table', 'extra_sales_table_block');
+};
+
+export const createSalesChartBlock = (doc: Document) => {
+    const contentBlock = createFlexContentBlock(doc, 'Sales chart', 'extra_sales_chart_block');
+
+    const chartBlockElem = doc.createElement('div');
+    chartBlockElem.id = 'extras_sales_chart';
+
+    contentBlock.appendChild(chartBlockElem);
+};
