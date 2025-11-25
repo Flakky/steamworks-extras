@@ -27,3 +27,13 @@ export type DateTraffic = {
     pageCategory: string;
     pageFeature: string;
 }
+
+export const dateTrafficFieldMap: Record<string, keyof DateTraffic> = {
+    'Date': 'date',
+    'Impressions': 'impressions',
+    'Visits': 'visits',
+    'Owner Impressions': 'ownerImpressions',
+    'Owner Visits': 'ownerVisits',
+    'Page / Category': 'pageCategory',
+    'Page / Feature': 'pageFeature',
+}
