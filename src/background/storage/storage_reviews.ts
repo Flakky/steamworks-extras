@@ -2,6 +2,7 @@ import { DateRangeAction, StorageAction, StorageActionSettings } from './storage
 import { dateToString } from '../../scripts/helpers';
 import { waitForDatabaseReady, readData, clearData, writeData } from './db';
 import { DateRange, getDateRangeArray, isDateInRange } from '../../shared/types/daterange';
+import { Review } from '../../shared/types/review';
 
 export class StorageActionRequestReviews extends StorageAction {
 
@@ -38,17 +39,17 @@ const getReviewsData = async (appID: string, dateRange: DateRange, returnLackDat
 
     console.debug(`Requesting reviews data for app ${appID}`);
 
-    let records = await readData(appID, 'Reviews');
+    let records = await readData(appID, 'Reviews') as Review[];
 
     if (dateRange.dateStart && dateRange.dateEnd) {
-        const filteredRecords = records.filter((item: any) => {
-            const date = new Date(item['timestamp_created'] * 1000);
+        const filteredRecords = records.filter((item: Review) => {
+            const date = new Date(item.timestamp_created * 1000);
             return isDateInRange(date, dateRange);
         });
 
         if (!returnLackData) {
             const dateRangeArray = getDateRangeArray(dateRange, false, true) as string[];
-            const datesWithData = [...new Set(filteredRecords.map((record: any) => dateToString(new Date(record['timestamp_created'] * 1000))))];
+            const datesWithData = [...new Set(filteredRecords.map((record: Review) => dateToString(new Date(record.timestamp_created * 1000))))];
 
             const allDatesHaveData = dateRangeArray.every(date => datesWithData.includes(date));
 
@@ -61,55 +62,8 @@ const getReviewsData = async (appID: string, dateRange: DateRange, returnLackDat
     }
 }
 
-const requestAllReviewsData = async (appID: string) => {
-    // Request documentation: https://partner.steamgames.com/doc/store/getreviews
-
-    let cursor = '*'
-
-    let reviews = [];
-
-    while (true) {
-        const request_data: Record<string, string> = {
-            'filter': 'recent',
-            'language': 'all',
-            'review_type': 'all',
-            'purchase_type': 'all',
-            'num_per_page': '100',
-            'cursor': 'cursor',
-            'json': '1'
-        }
-
-        const params = Object.keys(request_data)
-            .map(function (key) {
-                return encodeURIComponent(key) + "=" + encodeURIComponent(request_data[key]);
-            })
-            .join("&");
-
-        const request_url = `https://store.steampowered.com/appreviews/${appID}?${params}`;
-        const request_options = {
-            'method': 'POST',
-            'contentType': 'application/json',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-        };
-
-        console.debug(`Sending review request to "${request_url}"`);
-
-        const response = await fetch(request_url, request_options);
-
-        const responseText = await response.text();
-
-        const responseObj = JSON.parse(responseText);
-
-        if (responseObj.reviews === undefined || responseObj.reviews.length == 0) break;
-
-        cursor = responseObj.cursor;
-
-        for (const review of responseObj.reviews) {
-            if (review !== undefined) reviews.push(review);
-        }
-    }
+const requestAllReviewsData = async (appID: string): Promise<Review[]> => {
+    let reviews: Review[] = await requestAllReviews(appID);
 
     console.debug(`Reviews result: `, reviews);
 
@@ -118,4 +72,63 @@ const requestAllReviewsData = async (appID: string) => {
     await writeData(appID, 'Reviews', reviews);
 
     return reviews;
+}
+
+const requestAllReviews = async (appID: string): Promise<Review[]> => {
+    let reviews: Review[] = [];
+
+    let cursor: string = '*';
+
+    while (true) {
+        const reviewsResponse = await requestReviews(appID, cursor);
+
+        if (reviewsResponse.reviews === undefined || reviewsResponse.reviews.length == 0) break;
+
+        cursor = reviewsResponse.cursor;
+
+        for (const review of reviewsResponse.reviews) {
+            if (review !== undefined) reviews.push(review);
+        }
+    }
+
+    return reviews;
+}
+
+const requestReviews = async (appID: string, cursor: string): Promise<Record<string, any>> => {
+    // Request documentation: https://partner.steamgames.com/doc/store/getreviews
+
+    const request_data: Record<string, string> = {
+        'filter': 'recent',
+        'language': 'all',
+        'review_type': 'all',
+        'purchase_type': 'all',
+        'num_per_page': '100',
+        'cursor': cursor,
+        'json': '1'
+    }
+
+    const params = Object.keys(request_data)
+        .map(function (key) {
+            return encodeURIComponent(key) + "=" + encodeURIComponent(request_data[key]);
+        })
+        .join("&");
+
+    const request_url = `https://store.steampowered.com/appreviews/${appID}?${params}`;
+    const request_options = {
+        'method': 'POST',
+        'contentType': 'application/json',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+    };
+
+    console.debug(`Sending review request to "${request_url}"`);
+
+    const response = await fetch(request_url, request_options);
+
+    const responseText = await response.text();
+
+    const responseObj = JSON.parse(responseText);
+
+    return responseObj;
 }

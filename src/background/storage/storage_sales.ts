@@ -115,7 +115,8 @@ const requestSalesData = async (appID: string): Promise<DateSales[] | null> => {
             object.key = index++;
 
             return object;
-        }).map((obj: any) => {
+        })
+        .map((obj: any) => {
             return mapObject<DateSales>(obj, dateSalesFieldMap);
         });
 
