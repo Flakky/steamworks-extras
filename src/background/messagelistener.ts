@@ -5,6 +5,7 @@ import { parseDataFromPage, getAppIDs, makeRequest } from './bghelpers';
 import { updateStats, updateStatsStatus } from './statsupdater';
 import { getStatus } from './status';
 import { getDataFromDB } from './storage/storage';
+import { DateRange } from '../shared/types/daterange';
 
 class InitMessageListenerContext {
     queue: StorageActionsQueue;
@@ -111,7 +112,8 @@ export const initMessageListener = (context: InitMessageListenerContext) => {
             case BackgroundMessageType.getData:
                 {
                     (async () => {
-                        const data = await getDataFromDB(context.queue, message.type, message.appId, new Date(message.dateStart), new Date(message.dateEnd), message.returnLackData);
+                        const dateRange = new DateRange(new Date(message.dateStart), new Date(message.dateEnd));
+                        const data = await getDataFromDB(context.queue, message.type, message.appId, dateRange, message.returnLackData);
                         console.debug(`Returning "${message.type}" data from background: `, data);
                         sendResponse(data);
                     })(); break;

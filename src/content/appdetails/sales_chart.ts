@@ -3,6 +3,7 @@ import { createFlexContentBlock, setFlexContentBlockContent } from "../pageblock
 import { ReviewChartSplit, SalesChartSplit, SalesChartValueType, SalesChartViewSelection, SalesData } from "./types";
 import { getCurrentURL, getDateRangeFromURL } from "../site";
 import { dateToString, isStringEmpty, selectChartColor } from "../../scripts/helpers";
+import { DateSales, dateSalesFieldMap } from "../../shared/types/sales";
 
 export const createSalesChart = (doc: Document, sales: SalesData, salesChartViewSelection: SalesChartViewSelection, chartColors: Record<string, string>, chartMaxBreakdown: number) => {
     const chartBlockElem = doc.createElement('div');
@@ -103,8 +104,10 @@ const updateSalesChart = (chart: Chart, sales: SalesData, salesChartViewSelectio
     // Calculate data entries for chart
     const grossByDateAndSplit: Record<string, { dates: string[], gross: number[] }> = {};
 
-    sales.periodSales.forEach((element: any, index: number) => {
-        const splitData = salesChartViewSelection.split === SalesChartSplit.Total ? "Total" : element[salesChartViewSelection.split];
+    sales.periodSales.forEach((element: DateSales, index: number) => {
+        const splitField = dateSalesFieldMap[salesChartViewSelection.split] as keyof DateSales;
+        const valueField = dateSalesFieldMap[salesChartViewSelection.valueType] as keyof DateSales;
+        const splitData = salesChartViewSelection.split === SalesChartSplit.Total ? "Total" : element[splitField] as string;
 
         if (isStringEmpty(splitData)) return;
 
@@ -112,10 +115,10 @@ const updateSalesChart = (chart: Chart, sales: SalesData, salesChartViewSelectio
             grossByDateAndSplit[splitData] = { dates: labels, gross: new Array(labels.length).fill(0) };
         }
 
-        const date = element['Date'];
+        const date = element.date;
         if (isStringEmpty(date)) return;
 
-        const value = parseFloat(element[salesChartViewSelection.valueType]);
+        const value = element[valueField] as number;
 
         const dateIndex = grossByDateAndSplit[splitData].dates.indexOf(date);
         if (dateIndex >= 0) {

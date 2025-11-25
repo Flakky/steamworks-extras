@@ -2,6 +2,7 @@ import { createFlexContentBlock, setFlexContentBlockContent } from "../pageblock
 import { RoyaltiesAndTaxesMap, SalesData, SalesTableColumns, SalesTableSplit } from "./types";
 import { isStringEmpty, numberWithCommas } from "../../scripts/helpers";
 import { getRevenueMap } from "./revenue";
+import { DateSales, dateSalesFieldMap } from "../../shared/types/sales";
 
 export const createSalesTable = (doc: Document, sales: SalesData, singleDay: boolean, grossNetRatio: number, salesTableColumns: SalesTableColumns, royaltiesAndTaxes: RoyaltiesAndTaxesMap) => {
     const tableBlockElem = doc.createElement('div');
@@ -93,7 +94,7 @@ const updateSalesTable = (doc: Document, sales: SalesData, grossNetRatio: number
 
     tableElem.innerHTML = "";
 
-    if (typeof sales.periodSales === "undefined" || !Array.isArray(sales.periodSales)) {
+    if (typeof sales.periodSales === "undefined" || !Array.isArray(sales.periodSales) || sales.periodSales.length === 0) {
         const row = tableElem.insertRow();
         const cell = row.insertCell();
         cell.colSpan = salesTableColumns.length + 1;
@@ -102,27 +103,7 @@ const updateSalesTable = (doc: Document, sales: SalesData, grossNetRatio: number
     }
 
     // Group data by split
-    const groupMap: Record<string, Record<string, number>> = {};
-
-    sales.periodSales.forEach(element => {
-        let groupKey = element[salesTableSplit];
-
-        if (isStringEmpty(groupKey)) return;
-
-        if (!groupMap[groupKey]) {
-            groupMap[groupKey] = {};
-            salesTableColumns.forEach(col => {
-                groupMap[groupKey][col.key] = 0;
-            });
-        }
-
-        salesTableColumns.forEach(col => {
-            let val = element[col.key];
-            if (typeof val === "string") val = val.replace(/,/g, "");
-            val = parseFloat(val) || 0;
-            groupMap[groupKey][col.key] += val;
-        });
-    });
+    const groupMap = makeGroupMap(sales.periodSales, salesTableSplit, salesTableColumns);
 
     // Add final dev revenue for groups
     const groupArr = Object.entries(groupMap).map(([key, values]) => {
@@ -176,8 +157,8 @@ const updateSalesTable = (doc: Document, sales: SalesData, grossNetRatio: number
         totalUsGross = groupArr.reduce((sum, row) => {
             // Find US sales for this date from the original data
             const dateUsSales = sales.periodSales
-                .filter((item: any) => item["Date"] === row.key && item["Country"] === "United States")
-                .reduce((dateSum: number, item: any) => dateSum + (item["Gross Steam Sales (USD)"] || 0), 0);
+                .filter((item: DateSales) => item.date === row.key && item.country === "United States")
+                .reduce((dateSum: number, item: DateSales) => dateSum + (item.grossSteamSalesUSD || 0), 0);
             return sum + dateUsSales;
         }, 0);
     }
@@ -218,4 +199,28 @@ const updateSalesTable = (doc: Document, sales: SalesData, grossNetRatio: number
     groupArr.forEach(row => {
         insertSalesTableRow(tbody, row);
     });
+}
+
+const makeGroupMap = (periodSales: DateSales[], salesTableSplit: SalesTableSplit, salesTableColumns: SalesTableColumns) => {
+    const groupMap: Record<string, Record<string, number>> = {};
+
+    periodSales.forEach((element: DateSales) => {
+        let groupKey = element[dateSalesFieldMap[salesTableSplit]] as string;
+
+        if (isStringEmpty(groupKey)) return;
+
+        if (!groupMap[groupKey]) {
+            groupMap[groupKey] = {};
+            salesTableColumns.forEach(col => {
+                groupMap[groupKey][col.key] = 0;
+            });
+        }
+
+        salesTableColumns.forEach(col => {
+            let val = element[col.key as keyof DateSales] as number;
+            groupMap[groupKey][col.key] += val;
+        });
+    });
+
+    return groupMap;
 }

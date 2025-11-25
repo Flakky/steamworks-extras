@@ -5,40 +5,38 @@ import { StorageActionGetWishlists } from './storage_wishlists';
 import { StorageActionGetTraffic } from './storage_traffic';
 import { StorageActionsQueue } from './storagequeue';
 import { StorageAction } from './storageaction';
+import { DateRange } from '../../shared/types/daterange';
 
-export const getDataFromDB = async (queue: StorageActionsQueue, type: string, appId: string, dateStart: Date, dateEnd: Date, returnLackData = true): Promise<any> => {
+export const getDataFromDB = async (queue: StorageActionsQueue, type: string, appId: string, dateRange: DateRange, returnLackData = true): Promise<any> => {
 
-  const startDate = dateStart ? dateStart : new Date();
-  const endDate = dateEnd ? dateEnd : new Date();
+    let action: StorageAction | null = null;
 
-  let action: StorageAction | null = null;
-
-  switch (type) {
-    case "Traffic": {
-      action = new StorageActionGetTraffic(appId, startDate, endDate, returnLackData);
-      break;
+    switch (type) {
+        case "Traffic": {
+            action = new StorageActionGetTraffic(appId, dateRange, returnLackData);
+            break;
+        }
+        case "Sales": {
+            action = new StorageActionGetSales(appId, dateRange, returnLackData);
+            break;
+        }
+        case "Reviews": {
+            action = new StorageActionGetReviews(appId, dateRange, returnLackData);
+            break;
+        }
+        case "Wishlists": {
+            action = new StorageActionGetWishlists(appId, dateRange, returnLackData);
+            break;
+        }
+        case "WishlistConversions": {
+            action = new StorageActionGetWishlistConversions(appId, dateRange, returnLackData);
+            break;
+        }
     }
-    case "Sales": {
-      action = new StorageActionGetSales(appId, startDate, endDate, returnLackData);
-      break;
-    }
-    case "Reviews": {
-      action = new StorageActionGetReviews(appId, startDate, endDate, returnLackData);
-      break;
-    }
-    case "Wishlists": {
-      action = new StorageActionGetWishlists(appId, startDate, endDate, returnLackData);
-      break;
-    }
-    case "WishlistConversions": {
-      action = new StorageActionGetWishlistConversions(appId, startDate, endDate, returnLackData);
-      break;
-    }
-  }
 
-  if (action === null) {
-    throw new Error(`Unknown data type: ${type}`);
-  }
+    if (action === null) {
+        throw new Error(`Unknown data type: ${type}`);
+    }
 
-  return await queue.insertToQueue(action);
+    return await queue.insertToQueue(action);
 }

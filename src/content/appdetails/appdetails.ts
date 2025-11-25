@@ -11,6 +11,8 @@ import { createReviewsChart } from "./reviews_chart";
 import { createReviewsTable, updateReviewsTable } from "./reviews_table";
 import { createSalesChart } from "./sales_chart";
 import { createSalesTable } from "./sales_table";
+import { DateSales } from "../../shared/types/sales";
+import { Review } from "../../shared/types/review";
 
 const init = async () => {
     console.log('Init');
@@ -88,12 +90,12 @@ const init = async () => {
     };
 
     const salesTableColumns: SalesTableColumns = [
-        { key: "Gross Steam Sales (USD)", label: "Gross" },
-        { key: "Net Steam Sales (USD)", label: "Net" },
-        { key: "Gross Units Sold", label: "Gross units" },
-        { key: "Net Units Sold", label: "Net units" },
-        { key: "Chargeback/Returns (USD)", label: "Refunds" },
-        { key: "Chargeback/Returns", label: "Refund units" },
+        { key: "grossSteamSalesUSD", label: "Gross" },
+        { key: "netSteamSalesUSD", label: "Net" },
+        { key: "grossUnitsSold", label: "Gross units" },
+        { key: "netUnitsSold", label: "Net units" },
+        { key: "chargebacksOrReturnsUSD", label: "Refunds" },
+        { key: "chargebacksOrReturns", label: "Refund units" },
         { key: "FinalDevRevenue", label: "Est. revenue" }
     ];
 
@@ -161,23 +163,23 @@ const requestSales = async (appID: string): Promise<SalesData> => {
     const sales = await getDataFromStorage(
         'Sales',
         appID
-    );
+    ) as DateSales[];
 
     // Filter to current date range
-    const salesForDateRange = sales.filter((item: any) => {
-        if (!item["Date"]) return false;
-        const date = new Date(item["Date"]);
+    const salesForDateRange = sales.filter((item: DateSales) => {
+        if (!item.date) return false;
+        const date = new Date(item.date);
         return isDateInRange(date, dateRange);
     });
 
     // US sales for tax calculation purposes
     const usRevenueForDateRange = salesForDateRange
-        .filter((item: any) => item["Country"] === "United States")
-        .reduce((sum: number, item: any) => sum + (item["Gross Steam Sales (USD)"] || 0), 0);
+        .filter((item: DateSales) => item.country === "United States")
+        .reduce((sum: number, item: DateSales) => sum + (item.grossSteamSalesUSD || 0), 0);
 
     const usRevenue = sales
-        .filter((item: any) => item["Country"] === "United States")
-        .reduce((sum: number, item: any) => sum + (item["Gross Steam Sales (USD)"] || 0), 0);
+        .filter((item: DateSales) => item.country === "United States")
+        .reduce((sum: number, item: DateSales) => sum + (item.grossSteamSalesUSD || 0), 0);
 
     return {
         allSales: sales,
@@ -193,10 +195,10 @@ const requestReviews = async (appID: string): Promise<ReviewsData> => {
     const reviews = await getDataFromStorage(
         'Reviews',
         appID,
-        dateRange.dateStart,
-        dateRange.dateEnd,
+        dateToString(dateRange.dateStart),
+        dateToString(dateRange.dateEnd),
         false
-    );
+    ) as Review[];
 
     return {
         reviews: reviews

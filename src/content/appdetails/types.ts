@@ -1,8 +1,9 @@
 import { Review } from "../../shared/types/review";
+import { DateSales } from "../../shared/types/sales";
 
 export type SalesData = {
-    allSales: Record<string, any>;
-    periodSales: Record<string, any>;
+    allSales: DateSales[];
+    periodSales: DateSales[];
     usRevenue: number;
     periodUsRevenue: number;
 }
@@ -69,11 +70,11 @@ export enum SalesTableSplit {
 }
 
 export type SalesTableColumns = [
-    { key: "Gross Steam Sales (USD)"; label: "Gross" },
-    { key: "Net Steam Sales (USD)"; label: "Net" },
-    { key: "Gross Units Sold"; label: "Gross units" },
-    { key: "Net Units Sold"; label: "Net units" },
-    { key: "Chargeback/Returns (USD)"; label: "Refunds" },
-    { key: "Chargeback/Returns"; label: "Refund units" },
+    { key: "grossSteamSalesUSD"; label: "Gross" },
+    { key: "netSteamSalesUSD"; label: "Net" },
+    { key: "grossUnitsSold"; label: "Gross units" },
+    { key: "netUnitsSold"; label: "Net units" },
+    { key: "chargebacksOrReturnsUSD"; label: "Refunds" },
+    { key: "chargebacksOrReturns"; label: "Refund units" },
     { key: "FinalDevRevenue"; label: "Est. revenue" }
 ];
