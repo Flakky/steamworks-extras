@@ -1,9 +1,10 @@
 import { DateRangeAction, DateAction, StorageAction, StorageActionSettings } from './storageaction';
 import { csvTextToArray, dateToString } from '../../scripts/helpers';
-import { waitForDatabaseReady, readData, mergeData, writeData } from './db';
-import { getPageCreationDate, parseDataFromPage } from '../bghelpers';
+import { waitForDatabaseReady, readData, mergeData } from './db';
+import { getPageCreationDate, parseDataFromPage, mapObject } from '../bghelpers';
 import { OffscreenManager } from '../offscreen/offscreenmanager';
 import { DateRange, getDateRangeArray, isDateInRange } from '../../shared/types/daterange';
+import { DateWishlists, dateWishlistsFieldMap } from '../../shared/types/wishlists';
 
 export class StorageActionRequestWishlists extends StorageAction {
     async process() {
@@ -53,23 +54,23 @@ export class StorageActionGetWishlists extends StorageAction implements DateRang
     }
 }
 
-const getWishlistData = async (appID: string, dateRange: DateRange, returnLackData: boolean) => {
+const getWishlistData = async (appID: string, dateRange: DateRange, returnLackData: boolean): Promise<DateWishlists[] | null> => {
     await waitForDatabaseReady();
 
-    let records = await readData(appID, 'Wishlists');
+    let records = await readData(appID, 'Wishlists') as DateWishlists[];
 
     if (!returnLackData) {
         let datesNoData = getDateRangeArray(dateRange, false, true) as string[];
 
         for (const record of records) {
-            datesNoData = datesNoData.filter((item: any) => item !== record['Date']);
+            datesNoData = datesNoData.filter((item: string) => item !== record.date);
         }
 
         if (datesNoData.length > 0) return null;
     }
 
-    const out = records.filter((item: any) => {
-        const date = new Date(item['Date']);
+    const out = records.filter((item: DateWishlists) => {
+        const date = new Date(item.date);
         return isDateInRange(date, dateRange);
     });
 
@@ -81,9 +82,59 @@ const requestAllWishlistData = async (appID: string) => {
 
     const pageCreationDate = await getPageCreationDate(appID, false) as Date;
 
-    const startDate = pageCreationDate;
-    const endDate = new Date();
+    const csvString = await requestGeneralWishlistsCSV(appID, pageCreationDate, new Date());
+    if (csvString === null) {
+        console.debug(`No wishlists data found in CSV`);
+        throw new Error(`No wishlists data found in CSV`);
+    }
 
+    const wishlistActions = convertCSVToDateWishlists(csvString);
+
+    await mergeData(appID, 'Wishlists', wishlistActions);
+
+    return wishlistActions;
+}
+
+const requestWishlistRegionalData = async (appID: string, date: Date, offscreenManager: OffscreenManager): Promise<DateWishlists> => {
+    const pageCreationDate = await getPageCreationDate(appID, false) as Date;
+
+    if (date < pageCreationDate) {
+        console.error(`Cannot request wishlist data for date ${date} because it is before page creation date`);
+    }
+
+    const formattedDate = dateToString(date);
+
+    const data = await requestRegionalWishlistData(appID, date, offscreenManager);
+
+    // Make sure empty dates also get saved with 'World' so we do not request it again
+    if (typeof data !== 'object' || Object.keys(data).length === 0) {
+
+        console.debug(`No wishlist data found for date ${formattedDate}. Writing empty data`);
+
+        const dataToWrite: DateWishlists = {
+            date: formattedDate,
+            adds: 0,
+            deletes: 0,
+            gifts: 0,
+            activations: 0,
+            "World": 0
+        };
+
+        await mergeData(appID, 'Wishlists', dataToWrite);
+
+        return dataToWrite;
+    }
+
+    const formattedData = convertRegionalWishlistDataToDateWishlists(data, date);
+
+    console.debug(`Wishlist result for app ${appID} for date ${formattedDate}: `, formattedData);
+
+    await mergeData(appID, 'Wishlists', formattedData);
+
+    return formattedData;
+}
+
+const requestGeneralWishlistsCSV = async (appID: string, startDate: Date, endDate: Date): Promise<string | null> => {
     const formattedStartDate = dateToString(startDate);
     const formattedEndDate = dateToString(endDate);
 
@@ -118,49 +169,40 @@ const requestAllWishlistData = async (appID: string) => {
 
     // Ensure that we have lines to process
     if (lines.length === 0) {
-        console.debug(`No wishlists data found in CSV`);
-        return;
+        return null;
     }
 
     const csvString = lines.join('\n');
 
+    return csvString;
+}
+
+const convertCSVToDateWishlists = (csvString: string): DateWishlists[] => {
     const objects: any[] = csvTextToArray(csvString);
 
     const headers = (objects[0] as string[]).map((header: string) => header.trim());
 
     // Map each line to an object using the headers as keys
-    let wishlistActions = objects
+    return objects
         .slice(1)
         .map((obj: any) => {
             return {
-                'Date': obj[headers.indexOf('DateLocal')],
-                'Adds': obj[headers.indexOf('Adds')],
-                'Deletes': obj[headers.indexOf('Deletes')],
-                'Gifts': obj[headers.indexOf('Gifts')],
-                'Activations': obj[headers.indexOf('PurchasesAndActivations')]
+                date: obj[headers.indexOf('DateLocal')],
+                adds: obj[headers.indexOf('Adds')],
+                deletes: obj[headers.indexOf('Deletes')],
+                gifts: obj[headers.indexOf('Gifts')],
+                activations: obj[headers.indexOf('PurchasesAndActivations')]
             };
         });
-
-    await mergeData(appID, 'Wishlists', wishlistActions);
-
-    return wishlistActions;
 }
 
-const requestWishlistRegionalData = async (appID: string, date: Date, offscreenManager: OffscreenManager) => {
-    const pageCreationDate = await getPageCreationDate(appID, false) as Date;
-
-    if (date < pageCreationDate) {
-        console.error(`Cannot request wishlist data for date ${date} because it is before page creation date`);
-    }
-
-    const formattedDate = dateToString(date);
-
+const requestRegionalWishlistData = async (appID: string, date: Date, offscreenManager: OffscreenManager): Promise<any> => {
     let url = `https://partner.steampowered.com/region/`;
     const params = {
         appID: appID,
         unitType: 'wishlist',
-        dateStart: formattedDate,
-        dateEnd: formattedDate
+        dateStart: dateToString(date),
+        dateEnd: dateToString(date)
     }
 
     const queryString = new URLSearchParams(params).toString();
@@ -168,34 +210,26 @@ const requestWishlistRegionalData = async (appID: string, date: Date, offscreenM
 
     const data = await parseDataFromPage(url, 'parseWishlistData', offscreenManager);
 
-    if (typeof data !== 'object' || Object.keys(data).length === 0) {
-        console.debug(`No wishlist data found for date ${formattedDate}. Writing empty data`);
+    return data;
+}
 
-        // Make sure empty dates also get saved with 'World' so we do not request it again
+const convertRegionalWishlistDataToDateWishlists = (data: any, date: Date): DateWishlists => {
+    const formattedData: DateWishlists = Object.keys(data)
+        .reduce((acc: any, country: string) => {
+            let value = data[country];
+            if (typeof value === 'string' && value.startsWith('(') && value.endsWith(')')) {
+                value = -parseInt(value.slice(1, -1));
+            } else {
+                value = parseInt(value) || 0;
+            }
+            acc[country] = value;
+            return acc;
+        }, {})
+        .map((obj: any) => {
+            return mapObject<DateWishlists>(obj, dateWishlistsFieldMap);
+        });
 
-        const dataToWrite = { 'Date': formattedDate, 'World': 0 };
-
-        await mergeData(appID, 'Wishlists', dataToWrite);
-
-        return dataToWrite;
-    }
-
-    const formattedData = Object.keys(data).reduce((acc: any, country: string) => {
-        let value = data[country];
-        if (typeof value === 'string' && value.startsWith('(') && value.endsWith(')')) {
-            value = -parseInt(value.slice(1, -1));
-        } else {
-            value = parseInt(value) || 0;
-        }
-        acc[country] = value;
-        return acc;
-    }, {});
-
-    console.debug(`Wishlist result for app ${appID} for date ${formattedDate}: `, formattedData);
-
-    formattedData['Date'] = dateToString(date);
-
-    await mergeData(appID, 'Wishlists', formattedData);
+    formattedData.date = dateToString(date);
 
     return formattedData;
 }

@@ -130,9 +130,14 @@ export const makeRequest = async (url: string, params: RequestInit): Promise<str
  * @returns {T} Mapped object
  */
 export const mapObject = <T>(obj: any, fieldMap: Record<string, keyof T>): T => {
-    const result: any = {};
+    const result: any = obj;
     Object.keys(obj).forEach((key) => {
         result[fieldMap[key] as keyof T] = obj[key];
+
+        // Remove the original key if it was replaced by the field map
+        if (fieldMap[key] !== key) {
+            delete result[key];
+        }
     });
     return result as T;
 }
