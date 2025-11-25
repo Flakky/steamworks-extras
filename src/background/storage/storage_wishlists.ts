@@ -4,7 +4,7 @@ import { waitForDatabaseReady, readData, mergeData } from './db';
 import { getPageCreationDate, parseDataFromPage, mapObject } from '../bghelpers';
 import { OffscreenManager } from '../offscreen/offscreenmanager';
 import { DateRange, getDateRangeArray, isDateInRange } from '../../shared/types/daterange';
-import { DateWishlists, dateWishlistsFieldMap } from '../../shared/types/wishlists';
+import { DateWishlists, GameWishlists, dateWishlistsFieldMap } from '../../shared/types/wishlists';
 
 export class StorageActionRequestWishlists extends StorageAction {
     async process() {
@@ -54,7 +54,7 @@ export class StorageActionGetWishlists extends StorageAction implements DateRang
     }
 }
 
-const getWishlistData = async (appID: string, dateRange: DateRange, returnLackData: boolean): Promise<DateWishlists[] | null> => {
+const getWishlistData = async (appID: string, dateRange: DateRange, returnLackData: boolean): Promise<GameWishlists[] | null> => {
     await waitForDatabaseReady();
 
     let records = await readData(appID, 'Wishlists') as DateWishlists[];
@@ -69,10 +69,14 @@ const getWishlistData = async (appID: string, dateRange: DateRange, returnLackDa
         if (datesNoData.length > 0) return null;
     }
 
-    const out = records.filter((item: DateWishlists) => {
-        const date = new Date(item.date);
-        return isDateInRange(date, dateRange);
-    });
+    const out = records
+        .filter((item: DateWishlists) => {
+            const date = new Date(item.date);
+            return isDateInRange(date, dateRange);
+        })
+        .map((item: DateWishlists): GameWishlists => {
+            return convertDateWishlistsToGameWishlists(item);
+        });
 
     return out;
 }
@@ -232,4 +236,30 @@ const convertRegionalWishlistDataToDateWishlists = (data: any, date: Date): Date
     formattedData.date = dateToString(date);
 
     return formattedData;
+}
+const convertDateWishlistsToGameWishlists = (data: DateWishlists): GameWishlists => {
+    const commonFields = {
+        date: data.date,
+        adds: data.adds,
+        deletes: data.deletes,
+        gifts: data.gifts,
+        activations: data.activations
+    };
+
+    const regionalData: Record<string, number> = {};
+
+    // Extract all extra fields (region names) into regionalData
+    for (const key in data) {
+        if (key !== 'date' && key !== 'adds' && key !== 'deletes' && key !== 'gifts' && key !== 'activations') {
+            const value = data[key];
+            if (typeof value === 'number') {
+                regionalData[key] = value;
+            }
+        }
+    }
+
+    return {
+        ...commonFields,
+        regionalData
+    };
 }
