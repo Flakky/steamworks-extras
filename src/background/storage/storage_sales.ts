@@ -1,7 +1,7 @@
 import { DateRangeAction, StorageAction, StorageActionSettings } from './storageaction';
 import { csvTextToArray, dateToString } from '../../scripts/helpers';
 import { waitForDatabaseReady, readData, clearData, writeData } from './db';
-import { getPageCreationDate, getAppPackageIDs } from '../bghelpers';
+import { getPageCreationDate, getAppPackageIDs, mapObject } from '../bghelpers';
 import { DateSales, dateSalesFieldMap } from '../../shared/types/sales';
 import { DateRange, isDateInRange, getDateRangeArray } from '../../shared/types/daterange';
 
@@ -116,11 +116,7 @@ const requestSalesData = async (appID: string): Promise<DateSales[] | null> => {
 
             return object;
         }).map((obj: any) => {
-            const dateSalesObj: any = {};
-            Object.keys(obj).forEach((field) => {
-                dateSalesObj[dateSalesFieldMap[field] as keyof DateSales] = obj[field];
-            });
-            return dateSalesObj as DateSales;
+            return mapObject<DateSales>(obj, dateSalesFieldMap);
         });
 
     console.debug(`Sales from CSV result:`, result);

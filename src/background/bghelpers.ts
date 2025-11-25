@@ -11,12 +11,12 @@ import { OffscreenManager } from './offscreen/offscreenmanager';
  * @returns {Date} - Page creation date
  */
 export const getPageCreationDate = async (appID: string, stringify: boolean = false): Promise<Date | string> => {
-  const pagesCreationDate = await getBrowser().storage.local.get("pagesCreationDate");
-  const pageCreationDate = new Date(pagesCreationDate.pagesCreationDate[appID]) || new Date(2014, 0, 0);
+    const pagesCreationDate = await getBrowser().storage.local.get("pagesCreationDate");
+    const pageCreationDate = new Date(pagesCreationDate.pagesCreationDate[appID]) || new Date(2014, 0, 0);
 
-  if (stringify) return dateToString(pageCreationDate);
+    if (stringify) return dateToString(pageCreationDate);
 
-  return pageCreationDate;
+    return pageCreationDate;
 }
 
 /**
@@ -26,10 +26,10 @@ export const getPageCreationDate = async (appID: string, stringify: boolean = fa
  * @returns {Array} - Package IDs
  */
 export const getAppPackageIDs = async (appID: string): Promise<string[]> => {
-  const PackageIDsResult = await getBrowser().storage.local.get("packageIDs");
-  const packageIDs = PackageIDsResult.packageIDs[appID] || [];
+    const PackageIDsResult = await getBrowser().storage.local.get("packageIDs");
+    const packageIDs = PackageIDsResult.packageIDs[appID] || [];
 
-  return packageIDs;
+    return packageIDs;
 }
 
 /**
@@ -39,25 +39,25 @@ export const getAppPackageIDs = async (appID: string): Promise<string[]> => {
  * @returns {Array} - Package IDs
  */
 export const getPackageIDs = async (appID: string): Promise<string[]> => {
-  const url = `https://store.steampowered.com/api/appdetails?appids=${appID}`;
+    const url = `https://store.steampowered.com/api/appdetails?appids=${appID}`;
 
-  console.log(`Fetching package IDs from URL: ${url}`);
+    console.log(`Fetching package IDs from URL: ${url}`);
 
-  const response = await fetch(url, { credentials: 'omit' });
-  if (!response.ok) throw new Error('Network response was not ok');
+    const response = await fetch(url, { credentials: 'omit' });
+    if (!response.ok) throw new Error('Network response was not ok');
 
-  const data = await response.json();
-  const appData = data[appID];
+    const data = await response.json();
+    const appData = data[appID];
 
-  if(!appData){
-    throw new Error('Package IDs request returned no data');
-  }
+    if (!appData) {
+        throw new Error('Package IDs request returned no data');
+    }
 
-  if (appData.data.packages) {
-    return appData.data.packages;
-  }
+    if (appData.data.packages) {
+        return appData.data.packages;
+    }
 
-  return [];
+    return [];
 }
 
 /**
@@ -65,23 +65,23 @@ export const getPackageIDs = async (appID: string): Promise<string[]> => {
  *
  * @returns {Array} - App IDs
  */
-export const getAppIDs = async (includeIgnored: boolean = false) : Promise<string[]> => {
-  let result = await getBrowser().storage.local.get("appIDs");
+export const getAppIDs = async (includeIgnored: boolean = false): Promise<string[]> => {
+    let result = await getBrowser().storage.local.get("appIDs");
 
-  let appIDs = result.appIDs || [];
+    let appIDs = result.appIDs || [];
 
-  if (includeIgnored) {
+    if (includeIgnored) {
+        return appIDs;
+    }
+
+    const ignoredResult = await getBrowser().storage.local.get("ignoredAppIDs");
+    const ignoredAppIDs: string[] = ignoredResult.ignoredAppIDs || [];
+
+    if (ignoredAppIDs.length > 0) {
+        appIDs = appIDs.filter((appID: string) => !ignoredAppIDs.includes(appID));
+    }
+
     return appIDs;
-  }
-
-  const ignoredResult = await getBrowser().storage.local.get("ignoredAppIDs");
-  const ignoredAppIDs: string[] = ignoredResult.ignoredAppIDs || [];
-
-  if (ignoredAppIDs.length > 0) {
-    appIDs = appIDs.filter((appID: string) => !ignoredAppIDs.includes(appID));
-  }
-
-  return appIDs;
 }
 
 /**
@@ -92,32 +92,47 @@ export const getAppIDs = async (includeIgnored: boolean = false) : Promise<strin
  * @returns {Promise} - Promise with the parsed data
  */
 export const parseDataFromPage = async (url: string, request: string, offscreenManager: OffscreenManager): Promise<any> => {
-  console.debug(`Getting data "${request}" from URL: ${url}`);
+    console.debug(`Getting data "${request}" from URL: ${url}`);
 
-  const response = await fetch(url);
+    const response = await fetch(url);
 
-  if (!response.ok) throw new Error('Network response was not ok');
+    if (!response.ok) throw new Error('Network response was not ok');
 
-  const htmlText = await response.text();
+    const htmlText = await response.text();
 
-  const parsedData = await offscreenManager.parseDOM(htmlText, request);
+    const parsedData = await offscreenManager.parseDOM(htmlText, request);
 
-  console.debug(`Data result from parsing for "${request}": `, parsedData);
+    console.debug(`Data result from parsing for "${request}": `, parsedData);
 
-  return parsedData;
+    return parsedData;
 }
 
 export const makeRequest = async (url: string, params: RequestInit): Promise<string> => {
-  console.debug(`Make request to ${url}`);
+    console.debug(`Make request to ${url}`);
 
-  const response = await fetch(url, params);
-  if (!response.ok) throw new Error('Network response was not ok');
+    const response = await fetch(url, params);
+    if (!response.ok) throw new Error('Network response was not ok');
 
-  console.log(response);
+    console.log(response);
 
-  const responseText = await response.text();
+    const responseText = await response.text();
 
-  console.log(responseText);
+    console.log(responseText);
 
-  return responseText;
+    return responseText;
+}
+
+/**
+ * Map object fields to a new object using a field map.
+ *
+ * @param {any} obj - Object to map
+ * @param {Record<string, keyof T>} fieldMap - Field map
+ * @returns {T} Mapped object
+ */
+export const mapObject = <T>(obj: any, fieldMap: Record<string, keyof T>): T => {
+    const result: any = {};
+    Object.keys(obj).forEach((key) => {
+        result[fieldMap[key] as keyof T] = obj[key];
+    });
+    return result as T;
 }
