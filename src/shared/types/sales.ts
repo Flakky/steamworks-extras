@@ -40,7 +40,7 @@ export const dateSalesFieldMap: Record<string, keyof DateSales> = {
     'Net Units Sold': 'netUnitsSold',
     'Base Price': 'basePrice',
     'Sale Price': 'salePrice',
-    'currency': 'currency',
+    'Currency': 'currency',
     'Gross Steam Sales (USD)': 'grossSteamSalesUSD',
     'Chargeback/Returns (USD)': 'chargebacksOrReturnsUSD',
     'VAT/Tax (USD)': 'vatOrTaxUSD',
