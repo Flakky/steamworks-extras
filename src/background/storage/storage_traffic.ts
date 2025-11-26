@@ -2,8 +2,8 @@ import { DateRangeAction, DateAction, StorageAction, StorageActionSettings } fro
 import { csvTextToArray, dateToString } from '../../scripts/helpers';
 import { waitForDatabaseReady, readData, writeData } from './db';
 import { getPageCreationDate, mapObject } from '../bghelpers';
-import { DateRange, isDateInRange } from '../../shared/types/daterange';
-import { DateTraffic, dateTrafficFieldMap } from '../../shared/types/traffic';
+import { DateRange, isDateInRange, getDateRangeArray } from '../../shared/types/daterange';
+import { DateTraffic, dateTrafficFieldMap, GameTraffic } from '../../shared/types/traffic';
 
 export class StorageActionRequestTraffic extends StorageAction implements DateAction {
     date: Date;
@@ -41,7 +41,7 @@ export class StorageActionGetTraffic extends StorageAction implements DateRangeA
     }
 }
 
-const getTrafficData = async (appID: string, dateRange: DateRange, returnLackData: boolean) => {
+const getTrafficData = async (appID: string, dateRange: DateRange, returnLackData: boolean): Promise<GameTraffic[] | null> => {
     await waitForDatabaseReady();
 
     // TODO: Optimize reading data only for range from DB
@@ -49,13 +49,24 @@ const getTrafficData = async (appID: string, dateRange: DateRange, returnLackDat
 
     let records = await readData(appID, 'Traffic') as DateTraffic[];
 
-    const out = records.filter((item: DateTraffic) => {
+    const data = records.filter((item: DateTraffic) => {
         const date = new Date(item.date);
 
         return isDateInRange(date, dateRange);
     });
 
-    return out;
+    if (!returnLackData) {
+        const dateRangeArray = getDateRangeArray(dateRange, false, true) as string[];
+        const datesWithData = [...new Set(data.map((record: DateTraffic) => record.date))];
+
+        const allDatesHaveData = dateRangeArray.every(date => datesWithData.includes(date));
+
+        if (!allDatesHaveData) return null;
+    }
+
+    const gameTraffic = convertDateTrafficToGameTraffic(data);
+
+    return gameTraffic;
 }
 
 const requestTrafficData = async (appID: string, date: Date) => {
@@ -145,4 +156,47 @@ const constructTrafficDataFromObjects = (objects: any[], formattedDate: string):
         });
 
     return result;
+}
+
+const convertDateTrafficToGameTraffic = (data: DateTraffic[]): GameTraffic[] => {
+    return data.reduce((acc: GameTraffic[], item: DateTraffic) => {
+        let dateRecord = acc.find(game => game.date === item.date);
+        if (!dateRecord) {
+            dateRecord = {
+                date: item.date,
+                categories: {}
+            };
+            acc.push(dateRecord);
+        }
+
+        let categoryRecord = dateRecord.categories[item.pageCategory];
+        if (!categoryRecord) {
+            categoryRecord = {
+                impressions: 0,
+                visits: 0,
+                ownerImpressions: 0,
+                ownerVisits: 0,
+                featureTraffic: {}
+            };
+            dateRecord.categories[item.pageCategory] = categoryRecord;
+        }
+
+        let featureRecord = categoryRecord.featureTraffic[item.pageFeature];
+        if (!featureRecord) {
+            featureRecord = {
+                impressions: item.impressions,
+                visits: item.visits,
+                ownerImpressions: item.ownerImpressions,
+                ownerVisits: item.ownerVisits
+            };
+            categoryRecord.featureTraffic[item.pageFeature] = featureRecord;
+        }
+
+        categoryRecord.impressions += item.impressions;
+        categoryRecord.visits += item.visits;
+        categoryRecord.ownerImpressions += item.ownerImpressions;
+        categoryRecord.ownerVisits += item.ownerVisits;
+
+        return acc;
+    }, []);
 }
