@@ -9,6 +9,7 @@ import { createReasonsTableBlock, createRefundsTableBlock, getRefundPercentageCo
 import { createRefundsTable, updateRefundsTable } from './table';
 import { createReasonsTable } from './reasonstable';
 import { DateSales } from '../../shared/types/sales';
+import { BackgroundMessageType, GetDataType } from '../../shared/types/background_requests';
 
 const init = async (): Promise<void> => {
     console.log("Init refunds page");
@@ -64,7 +65,7 @@ const init = async (): Promise<void> => {
 
 const getAppID = async (packageID: number): Promise<string> => {
 
-    const packageIDsMap = await sendMessageAsync({ request: 'getPackageIDs' });
+    const packageIDsMap = await sendMessageAsync({ request: BackgroundMessageType.getPackageIDs, payload: undefined });
 
     let foundAppID: any = undefined;
     for (const [appId, packageIds] of Object.entries(packageIDsMap)) {
@@ -92,7 +93,7 @@ const getPackageID = (): number | undefined => {
 
 const requestSales = async (appID: string): Promise<DateSales[]> => {
     const sales = await getDataFromStorage(
-        'Sales',
+        GetDataType.Sales,
         appID
     );
 
@@ -117,9 +118,8 @@ const fetchRefundStats = async (packageID: number, split: RefundsRangeSplit): Pr
     const url = `https://partner.steampowered.com/package/refunds/${packageID}/?range=${split}`;
 
     const response = await sendMessageAsync({
-        request: 'parseDOM',
-        url: url,
-        type: 'RefundStats'
+        request: BackgroundMessageType.parseDOM,
+        payload: { url: url, type: 'RefundStats' },
     });
 
     console.log('Refund stats response: ', response);

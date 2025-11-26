@@ -13,6 +13,7 @@ import { createSalesChart } from "./sales_chart";
 import { createSalesTable } from "./sales_table";
 import { DateSales } from "../../shared/types/sales";
 import { Review } from "../../shared/types/review";
+import { GetDataType } from "../../shared/types/background_requests";
 
 const init = async () => {
     console.log('Init');
@@ -161,7 +162,7 @@ const requestSales = async (appID: string): Promise<SalesData> => {
     const dateRange = getDateRangeFromURL(getCurrentURL());
 
     const sales = await getDataFromStorage(
-        'Sales',
+        GetDataType.Sales,
         appID
     ) as DateSales[];
 
@@ -193,7 +194,7 @@ const requestReviews = async (appID: string): Promise<ReviewsData> => {
     const dateRange = getDateRangeFromURL(getCurrentURL());
 
     const reviews = await getDataFromStorage(
-        'Reviews',
+        GetDataType.Reviews,
         appID,
         dateToString(dateRange.dateStart),
         dateToString(dateRange.dateEnd),

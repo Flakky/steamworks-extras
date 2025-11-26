@@ -1,167 +1,167 @@
 import { sendMessageAsync } from '../../scripts/helpers';
+import { BackgroundMessageType } from '../../shared/types/background_requests';
 import { setFlexContentBlockContent } from '../pageblocks';
 import { RefundsRangeSplit } from './types';
 
 export const createReasonsTable = (doc: Document, packageID: number, refundStats: any[]): void => {
-  const tableBlockElem = doc.createElement('div');
+    const tableBlockElem = doc.createElement('div');
 
-  setFlexContentBlockContent(doc, 'extras_reasons_block', tableBlockElem);
+    setFlexContentBlockContent(doc, 'extras_reasons_block', tableBlockElem);
 
-  // Create table element
-  const tableElem = doc.createElement('table');
-  (tableElem as any).id = 'extras_reasons_table';
+    // Create table element
+    const tableElem = doc.createElement('table');
+    (tableElem as any).id = 'extras_reasons_table';
 
-  // Create table header
-  const thead = tableElem.createTHead();
-  const headerRow = thead.insertRow();
+    // Create table header
+    const thead = tableElem.createTHead();
+    const headerRow = thead.insertRow();
 
-  const headers = [
-    'Reason',
-    'Last week',
-    'Last month',
-    'Lifetime'
-  ];
+    const headers = [
+        'Reason',
+        'Last week',
+        'Last month',
+        'Lifetime'
+    ];
 
-  headers.forEach(header => {
-    const th = doc.createElement('th');
-    th.textContent = header;
-    headerRow.appendChild(th);
-  });
+    headers.forEach(header => {
+        const th = doc.createElement('th');
+        th.textContent = header;
+        headerRow.appendChild(th);
+    });
 
 
-  const reasonsLifetime = (refundStats[0] && refundStats[0].refundReasons) || [];
-  const reasonsLastWeek = (refundStats[1] && refundStats[1].refundReasons) || [];
-  const reasonsLastMonth = (refundStats[2] && refundStats[2].refundReasons) || [];
+    const reasonsLifetime = (refundStats[0] && refundStats[0].refundReasons) || [];
+    const reasonsLastWeek = (refundStats[1] && refundStats[1].refundReasons) || [];
+    const reasonsLastMonth = (refundStats[2] && refundStats[2].refundReasons) || [];
 
-  // Get all unique reasons
-  const allReasons = new Set<string>([
-    ...(reasonsLifetime.map((r: any) => r.category)),
-    ...(reasonsLastWeek.map((r: any) => r.category)),
-    ...(reasonsLastMonth.map((r: any) => r.category))
-  ]);
+    // Get all unique reasons
+    const allReasons = new Set<string>([
+        ...(reasonsLifetime.map((r: any) => r.category)),
+        ...(reasonsLastWeek.map((r: any) => r.category)),
+        ...(reasonsLastMonth.map((r: any) => r.category))
+    ]);
 
-  // Get total refunds for each period
-  const totalLifetime = reasonsLifetime.reduce((a: number, b: any) => a + (b.amount || 0), 0);
-  const totalLastWeek = reasonsLastWeek.reduce((a: number, b: any) => a + (b.amount || 0), 0);
-  const totalLastMonth = reasonsLastMonth.reduce((a: number, b: any) => a + (b.amount || 0), 0);
+    // Get total refunds for each period
+    const totalLifetime = reasonsLifetime.reduce((a: number, b: any) => a + (b.amount || 0), 0);
+    const totalLastWeek = reasonsLastWeek.reduce((a: number, b: any) => a + (b.amount || 0), 0);
+    const totalLastMonth = reasonsLastMonth.reduce((a: number, b: any) => a + (b.amount || 0), 0);
 
-  // Create table body
-  const tbody = tableElem.createTBody();
+    // Create table body
+    const tbody = tableElem.createTBody();
 
-  allReasons.forEach((reason: string) => {
-    const row = tbody.insertRow();
+    allReasons.forEach((reason: string) => {
+        const row = tbody.insertRow();
 
-    const reasonObj = reasonsLifetime.find((r: any) => r.category === reason) || { category: reason };
+        const reasonObj = reasonsLifetime.find((r: any) => r.category === reason) || { category: reason };
 
-    // Reason
-    const tdReason = row.insertCell();
-    const link = doc.createElement('a');
-    link.href = "#";
-    link.style.cursor = "pointer";
-    link.textContent = `► ${reason}`;
-    link.onclick = (event) => requestRefundCommentsAndShow(doc, event, packageID, reasonObj, row);
-    tdReason.appendChild(link);
+        // Reason
+        const tdReason = row.insertCell();
+        const link = doc.createElement('a');
+        link.href = "#";
+        link.style.cursor = "pointer";
+        link.textContent = `► ${reason}`;
+        link.onclick = (event) => requestRefundCommentsAndShow(doc, event, packageID, reasonObj, row);
+        tdReason.appendChild(link);
 
-    // Refunds last week
-    const valLastWeek = ((reasonsLastWeek.find((r: any) => r.category === reason) || {}).amount || 0);
-    const tdLastWeek = row.insertCell();
-    tdLastWeek.innerHTML = `${valLastWeek} <span class="extras_refunds_percentage">(${(valLastWeek / totalLastWeek * 100).toFixed(2)}%)</span>`;
+        // Refunds last week
+        const valLastWeek = ((reasonsLastWeek.find((r: any) => r.category === reason) || {}).amount || 0);
+        const tdLastWeek = row.insertCell();
+        tdLastWeek.innerHTML = `${valLastWeek} <span class="extras_refunds_percentage">(${(valLastWeek / totalLastWeek * 100).toFixed(2)}%)</span>`;
 
-    // Refunds last month
-    const valLastMonth = ((reasonsLastMonth.find((r: any) => r.category === reason) || {}).amount || 0);
-    const tdLastMonth = row.insertCell();
-    tdLastMonth.innerHTML = `${valLastMonth} <span class="extras_refunds_percentage">(${(valLastMonth / totalLastMonth * 100).toFixed(2)}%)</span>`;
+        // Refunds last month
+        const valLastMonth = ((reasonsLastMonth.find((r: any) => r.category === reason) || {}).amount || 0);
+        const tdLastMonth = row.insertCell();
+        tdLastMonth.innerHTML = `${valLastMonth} <span class="extras_refunds_percentage">(${(valLastMonth / totalLastMonth * 100).toFixed(2)}%)</span>`;
 
-    // Lifetime refunds
-    const valLifetime = ((reasonsLifetime.find((r: any) => r.category === reason) || {}).amount || 0);
-    const tdLifetime = row.insertCell();
-    tdLifetime.innerHTML = `${valLifetime} <span class="extras_refunds_percentage">(${(valLifetime / totalLifetime * 100).toFixed(2)}%)</span>`;
-  });
+        // Lifetime refunds
+        const valLifetime = ((reasonsLifetime.find((r: any) => r.category === reason) || {}).amount || 0);
+        const tdLifetime = row.insertCell();
+        tdLifetime.innerHTML = `${valLifetime} <span class="extras_refunds_percentage">(${(valLifetime / totalLifetime * 100).toFixed(2)}%)</span>`;
+    });
 
-  tableBlockElem.appendChild(tableElem);
+    tableBlockElem.appendChild(tableElem);
 }
 
 export const requestRefundCommentsAndShow = async (doc: Document, event: any, packageID: number, reasonObj: any, row: HTMLTableRowElement): Promise<void> => {
-  event.preventDefault();
+    event.preventDefault();
 
-  const link = row.cells[0].querySelector('a') as HTMLAnchorElement | null;
+    const link = row.cells[0].querySelector('a') as HTMLAnchorElement | null;
 
-  if ((row.nextSibling as any) && (row.nextSibling as HTMLElement).classList.contains('reason-details-row')) {
-    row.parentNode?.removeChild(row.nextSibling as Node);
-    if (link) link.textContent = `► ${reasonObj.category}`;
-  }
-  else {
-    if (link) link.textContent = `▼ ${reasonObj.category}`;
-    const detailsRow = doc.createElement('tr');
-    detailsRow.classList.add('reason-details-row');
-
-    const tdComments = doc.createElement('td');
-    tdComments.colSpan = 4;
-
-    const commentsDiv = doc.createElement('div');
-    commentsDiv.className = 'extras_refunds_comments';
-
-    const loader = doc.createElement('div');
-    loader.className = 'loader';
-    commentsDiv.appendChild(loader);
-
-    tdComments.appendChild(commentsDiv);
-    detailsRow.appendChild(tdComments);
-
-    row.parentNode?.insertBefore(detailsRow, row.nextSibling);
-
-    const comments = await getRefundComments(packageID, reasonObj.id);
-
-    commentsDiv.removeChild(loader); // Remove loader
-
-    if (comments && comments.length > 0) {
-      comments.forEach((comment: any) => {
-        const commentDiv = doc.createElement('div');
-        commentDiv.className = 'refund-comment';
-
-        const text = doc.createElement('span');
-        text.className = 'refund-comment-text';
-
-        if (comment.language) {
-          const langSpan = doc.createElement('span');
-          langSpan.className = 'refund-comment-language';
-          langSpan.textContent = `(${comment.language}) `;
-          text.appendChild(langSpan);
-        }
-
-        text.innerHTML += ' ' + comment.text;
-        commentDiv.appendChild(text);
-
-        commentsDiv.appendChild(commentDiv);
-      });
-    } else {
-      const noCommentsDiv = doc.createElement('div');
-      noCommentsDiv.className = 'refund-no-comments';
-      noCommentsDiv.textContent = 'No comments found for this reason.';
-      commentsDiv.appendChild(noCommentsDiv);
+    if ((row.nextSibling as any) && (row.nextSibling as HTMLElement).classList.contains('reason-details-row')) {
+        row.parentNode?.removeChild(row.nextSibling as Node);
+        if (link) link.textContent = `► ${reasonObj.category}`;
     }
-  }
+    else {
+        if (link) link.textContent = `▼ ${reasonObj.category}`;
+        const detailsRow = doc.createElement('tr');
+        detailsRow.classList.add('reason-details-row');
+
+        const tdComments = doc.createElement('td');
+        tdComments.colSpan = 4;
+
+        const commentsDiv = doc.createElement('div');
+        commentsDiv.className = 'extras_refunds_comments';
+
+        const loader = doc.createElement('div');
+        loader.className = 'loader';
+        commentsDiv.appendChild(loader);
+
+        tdComments.appendChild(commentsDiv);
+        detailsRow.appendChild(tdComments);
+
+        row.parentNode?.insertBefore(detailsRow, row.nextSibling);
+
+        const comments = await getRefundComments(packageID, reasonObj.id);
+
+        commentsDiv.removeChild(loader); // Remove loader
+
+        if (comments && comments.length > 0) {
+            comments.forEach((comment: any) => {
+                const commentDiv = doc.createElement('div');
+                commentDiv.className = 'refund-comment';
+
+                const text = doc.createElement('span');
+                text.className = 'refund-comment-text';
+
+                if (comment.language) {
+                    const langSpan = doc.createElement('span');
+                    langSpan.className = 'refund-comment-language';
+                    langSpan.textContent = `(${comment.language}) `;
+                    text.appendChild(langSpan);
+                }
+
+                text.innerHTML += ' ' + comment.text;
+                commentDiv.appendChild(text);
+
+                commentsDiv.appendChild(commentDiv);
+            });
+        } else {
+            const noCommentsDiv = doc.createElement('div');
+            noCommentsDiv.className = 'refund-no-comments';
+            noCommentsDiv.textContent = 'No comments found for this reason.';
+            commentsDiv.appendChild(noCommentsDiv);
+        }
+    }
 
 }
 
 const getRefundComments = async (packageID: number, split: RefundsRangeSplit): Promise<any[]> => {
-  const response = await fetch(`https://partner.steampowered.com/package/AjaxRefundText/${packageID}/?packageid=${packageID}&help_issueid=${split}`, {
-    credentials: 'include'
-  } as RequestInit);
+    const response = await fetch(`https://partner.steampowered.com/package/AjaxRefundText/${packageID}/?packageid=${packageID}&help_issueid=${split}`, {
+        credentials: 'include'
+    } as RequestInit);
 
-  if (!response.ok) {
-    console.error('Failed to fetch refund comments:', response.status, response.statusText);
-    return [];
-  }
-  const data = await response.json();
+    if (!response.ok) {
+        console.error('Failed to fetch refund comments:', response.status, response.statusText);
+        return [];
+    }
+    const data = await response.json();
 
-  const result = await sendMessageAsync({
-    request: 'parseDOM',
-    htmlText: data.html,
-    type: 'RefundComments'
-  });
+    const result = await sendMessageAsync({
+        request: BackgroundMessageType.parseDOM,
+        payload: { htmlText: data.html, type: 'RefundComments' }
+    });
 
-  return result;
+    return result;
 }
 
 

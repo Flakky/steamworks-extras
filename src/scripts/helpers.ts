@@ -1,4 +1,6 @@
 import { getBrowser } from '../shared/browser';
+import { BackgroundMessage, BackgroundMessageType, GetDataType } from '../shared/types/background_requests';
+import { DateSales } from '../shared/types/sales';
 
 /**
  * Returns number splitted with commas as thousands separators
@@ -11,8 +13,8 @@ import { getBrowser } from '../shared/browser';
  * numberWithCommas(123456789);
  */
 export const numberWithCommas = (x: number): string => {
-  // https://stackoverflow.com/questions/2901102/how-to-format-a-number-with-commas-as-thousands-separators
-  return Math.floor(x).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+    // https://stackoverflow.com/questions/2901102/how-to-format-a-number-with-commas-as-thousands-separators
+    return Math.floor(x).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
 }
 
 /**
@@ -26,7 +28,7 @@ export const numberWithCommas = (x: number): string => {
  * isStringEmpty(' ');
  */
 export const isStringEmpty = (str: string | null | undefined): boolean => {
-  return str === null || str === undefined || str.trim() === '';
+    return str === null || str === undefined || str.trim() === '';
 }
 
 /**
@@ -42,15 +44,15 @@ export const isStringEmpty = (str: string | null | undefined): boolean => {
  * findElementByText('td', 'Hello World', document);
  */
 export const findElementByText = (tag: string, text: string, doc: Document | undefined = undefined): Element | undefined => {
-  const elements = doc ? doc.getElementsByTagName(tag) : document.getElementsByTagName(tag);
+    const elements = doc ? doc.getElementsByTagName(tag) : document.getElementsByTagName(tag);
 
-  for (const element of Array.from(elements)) {
-    if ((element.textContent as string).trim() === text) {
-      return element;
+    for (const element of Array.from(elements)) {
+        if ((element.textContent as string).trim() === text) {
+            return element;
+        }
     }
-  }
 
-  return undefined;
+    return undefined;
 }
 
 /**
@@ -68,28 +70,28 @@ export const findElementByText = (tag: string, text: string, doc: Document | und
  */
 export const findParentByTag = (element: any, tagName: string): Element | undefined => {
 
-  tagName = tagName.toUpperCase();
+    tagName = tagName.toUpperCase();
 
-  while (element && element.parentNode) {
-    element = element.parentNode;
-    if (element.tagName === tagName) {
-      return element;
+    while (element && element.parentNode) {
+        element = element.parentNode;
+        if (element.tagName === tagName) {
+            return element;
+        }
     }
-  }
 
-  return undefined;
+    return undefined;
 }
 
 export const tryConvertStringToNumber = (str: string): number | string => {
-  // First, attempt to convert to a number
-  const number = Number(str);
+    // First, attempt to convert to a number
+    const number = Number(str);
 
-  // Check if the conversion resulted in a valid number (not NaN)
-  if (!isNaN(number)) {
-    return number;  // Return the number (int or float)
-  } else {
-    return str;  // If not a valid number, return the original string
-  }
+    // Check if the conversion resulted in a valid number (not NaN)
+    if (!isNaN(number)) {
+        return number;  // Return the number (int or float)
+    } else {
+        return str;  // If not a valid number, return the original string
+    }
 }
 
 /**
@@ -103,7 +105,7 @@ export const tryConvertStringToNumber = (str: string): number | string => {
  * await dateToString(new Date('2020-01-20'));
  */
 export const dateToString = (date: Date): string => {
-  return date.toISOString().split('T')[0];
+    return date.toISOString().split('T')[0];
 }
 
 /**
@@ -120,23 +122,23 @@ export const dateToString = (date: Date): string => {
  * getDateRangeArray(new Date('2020-01-20'), new Date('2020-01-22'));
  */
 export const getDateRangeArray = (dateStart: Date, dateEnd: Date, reverse?: boolean, outputDateStrings?: boolean): Array<Date | string> => {
-  const days: Array<Date | string> = [];
+    const days: Array<Date | string> = [];
 
-  let day = new Date(dateStart);
-  while (day <= dateEnd) {
-    if (outputDateStrings) {
-      const formattedDate = dateToString(day);
-      days.push(formattedDate);
+    let day = new Date(dateStart);
+    while (day <= dateEnd) {
+        if (outputDateStrings) {
+            const formattedDate = dateToString(day);
+            days.push(formattedDate);
+        }
+        else days.push(new Date(day))
+
+        // Move to the next day
+        day.setDate(day.getDate() + 1);
     }
-    else days.push(new Date(day))
 
-    // Move to the next day
-    day.setDate(day.getDate() + 1);
-  }
+    if (reverse) days.reverse();
 
-  if (reverse) days.reverse();
-
-  return days;
+    return days;
 }
 
 /**
@@ -154,26 +156,29 @@ export const getDateRangeArray = (dateStart: Date, dateEnd: Date, reverse?: bool
  */
 export const getCountryRevenue = async (appID: string, country: string, dateStart?: Date, dateEnd?: Date): Promise<number> => {
 
-  const startDate = dateStart || new Date(2010, 0, 1);
-  const endDate = dateEnd || new Date();
+    const startDate = dateStart || new Date(2010, 0, 1);
+    const endDate = dateEnd || new Date();
 
-  const formattedStartDate = dateToString(startDate);
-  const formattedEndDate = dateToString(endDate);
+    const formattedStartDate = dateToString(startDate);
+    const formattedEndDate = dateToString(endDate);
 
-  let result: any = await sendMessageAsync({ request: 'getData', type: 'Sales', appId: appID, dateStart: formattedStartDate, dateEnd: formattedEndDate, returnLackData: true });
+    let result: any = await sendMessageAsync({
+        request: BackgroundMessageType.getData,
+        payload: { type: GetDataType.Sales, appId: appID, dateStart: formattedStartDate, dateEnd: formattedEndDate, returnLackData: true }
+    }) as DateSales[];
 
-  if (result === undefined) throw new Error(`Was not able to get sales data for appID ${appID}`);
+    if (result === undefined) throw new Error(`Was not able to get sales data for appID ${appID}`);
 
-  result = result.filter((item: any) => item["Country"] === country);
+    result = result.filter((item: any) => item.country === country);
 
-  let revenue = 0;
-  result.forEach((item: any) => {
-    revenue += item["Gross Steam Sales (USD)"];
-  });
+    let revenue = 0;
+    result.forEach((item: DateSales) => {
+        revenue += item.grossSteamSalesUSD;
+    });
 
-  console.log(`${country} revenue share between ${formattedStartDate} and ${formattedEndDate}: ${revenue}`);
+    console.log(`${country} revenue share between ${formattedStartDate} and ${formattedEndDate}: ${revenue}`);
 
-  return revenue;
+    return revenue;
 }
 
 /**
@@ -187,26 +192,26 @@ export const getCountryRevenue = async (appID: string, country: string, dateStar
  * correctDateRange(new Date('2025-01-01'), new Date('2025-01-02'));
  */
 export const correctDateRange = (dateStart: Date, dateEnd: Date): { dateStart: Date, dateEnd: Date } => {
-  dateStart = new Date(Date.UTC(
-    dateStart.getUTCFullYear(),
-    dateStart.getUTCMonth(),
-    dateStart.getUTCDate(),
-    0, 0, 0, 0
-  ));
+    dateStart = new Date(Date.UTC(
+        dateStart.getUTCFullYear(),
+        dateStart.getUTCMonth(),
+        dateStart.getUTCDate(),
+        0, 0, 0, 0
+    ));
 
-  dateEnd = new Date(Date.UTC(
-    dateEnd.getUTCFullYear(),
-    dateEnd.getUTCMonth(),
-    dateEnd.getUTCDate(),
-    23, 59, 59, 999
-  ));
+    dateEnd = new Date(Date.UTC(
+        dateEnd.getUTCFullYear(),
+        dateEnd.getUTCMonth(),
+        dateEnd.getUTCDate(),
+        23, 59, 59, 999
+    ));
 
-  return { dateStart: dateStart, dateEnd: dateEnd };
+    return { dateStart: dateStart, dateEnd: dateEnd };
 }
 
 export const getDateNoOffset = (): Date => {
-  const now = new Date(Date.now());
-  return now;
+    const now = new Date(Date.now());
+    return now;
 }
 
 /**
@@ -215,9 +220,9 @@ export const getDateNoOffset = (): Date => {
  * @returns {Date} - Corrected today's date
  */
 export const getCalculationToday = (): Date => {
-  const now = new Date(Date.now());
-  if (now.getUTCHours() < 7) now.setUTCDate(now.getUTCDate() - 1); // Steam still stands on the previous day until 7am UTC
-  return now;
+    const now = new Date(Date.now());
+    if (now.getUTCHours() < 7) now.setUTCDate(now.getUTCDate() - 1); // Steam still stands on the previous day until 7am UTC
+    return now;
 }
 
 /**
@@ -229,11 +234,11 @@ export const getCalculationToday = (): Date => {
  * @returns {boolean} - True if the date is in the range, false otherwise
  */
 export const isDateInRange = (date: Date, startDate: Date, endDate: Date): boolean => {
-  const start = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getUTCDate());
-  const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getUTCDate(), 23, 59, 59, 999);
-  const target = new Date(date.getFullYear(), date.getMonth(), date.getUTCDate(), 12, 0, 0, 0); // To be sure the date is inside start and end
+    const start = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getUTCDate());
+    const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getUTCDate(), 23, 59, 59, 999);
+    const target = new Date(date.getFullYear(), date.getMonth(), date.getUTCDate(), 12, 0, 0, 0); // To be sure the date is inside start and end
 
-  return target >= start && target <= end;
+    return target >= start && target <= end;
 }
 
 /**
@@ -243,8 +248,8 @@ export const isDateInRange = (date: Date, startDate: Date, endDate: Date): boole
  * @returns {Date} - Date object
  */
 export const dateFromString = (dateString: string): Date => {
-  const [year, month, day] = dateString.split('-').map(Number);
-  return new Date(Date.UTC(year, month - 1, day));
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(Date.UTC(year, month - 1, day));
 }
 
 /**
@@ -255,87 +260,87 @@ export const dateFromString = (dateString: string): Date => {
  * @returns {Array} - Array of arrays
  */
 export const csvTextToArray = (strData: string, strDelimiter?: string): any[] => {
-  // https://www.bennadel.com/blog/1504-ask-ben-parsing-csv-strings-with-javascript-exec-regular-expression-command.htm
+    // https://www.bennadel.com/blog/1504-ask-ben-parsing-csv-strings-with-javascript-exec-regular-expression-command.htm
 
-  // Check to see if the delimiter is defined. If not,
-  // then default to comma.
-  strDelimiter = (strDelimiter || ",");
+    // Check to see if the delimiter is defined. If not,
+    // then default to comma.
+    strDelimiter = (strDelimiter || ",");
 
-  // Create a regular expression to parse the CSV values.
-  var objPattern = new RegExp(
-    (
-      // Delimiters.
-      "(\\" + strDelimiter + "|\\r?\\n|\\r|^)" +
+    // Create a regular expression to parse the CSV values.
+    var objPattern = new RegExp(
+        (
+            // Delimiters.
+            "(\\" + strDelimiter + "|\\r?\\n|\\r|^)" +
 
-      // Quoted fields.
-      "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
+            // Quoted fields.
+            "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
 
-      // Standard fields.
-      "([^\"\\" + strDelimiter + "\\r\\n]*))"
-    ),
-    "gi"
-  );
-
-
-  // Create an array to hold our data. Give the array
-  // a default empty first row.
-  var arrData: any[] = [[]];
-
-  // Create an array to hold our individual pattern
-  // matching groups.
-  var arrMatches: RegExpExecArray | null = null;
+            // Standard fields.
+            "([^\"\\" + strDelimiter + "\\r\\n]*))"
+        ),
+        "gi"
+    );
 
 
-  // Keep looping over the regular expression matches
-  // until we can no longer find a match.
-  while (arrMatches = objPattern.exec(strData)) {
+    // Create an array to hold our data. Give the array
+    // a default empty first row.
+    var arrData: any[] = [[]];
 
-    // Get the delimiter that was found.
-    var strMatchedDelimiter = arrMatches[1];
+    // Create an array to hold our individual pattern
+    // matching groups.
+    var arrMatches: RegExpExecArray | null = null;
 
-    // Check to see if the given delimiter has a length
-    // (is not the start of string) and if it matches
-    // field delimiter. If id does not, then we know
-    // that this delimiter is a row delimiter.
-    if (
-      strMatchedDelimiter.length &&
-      (strMatchedDelimiter != strDelimiter)
-    ) {
 
-      // Since we have reached a new row of data,
-      // add an empty row to our data array.
-      arrData.push([]);
+    // Keep looping over the regular expression matches
+    // until we can no longer find a match.
+    while (arrMatches = objPattern.exec(strData)) {
 
+        // Get the delimiter that was found.
+        var strMatchedDelimiter = arrMatches[1];
+
+        // Check to see if the given delimiter has a length
+        // (is not the start of string) and if it matches
+        // field delimiter. If id does not, then we know
+        // that this delimiter is a row delimiter.
+        if (
+            strMatchedDelimiter.length &&
+            (strMatchedDelimiter != strDelimiter)
+        ) {
+
+            // Since we have reached a new row of data,
+            // add an empty row to our data array.
+            arrData.push([]);
+
+        }
+
+
+        // Now that we have our delimiter out of the way,
+        // let's check to see which kind of value we
+        // captured (quoted or unquoted).
+        if (arrMatches[2]) {
+
+            // We found a quoted value. When we capture
+            // this value, unescape any double quotes.
+            var strMatchedValue = arrMatches[2].replace(
+                new RegExp("\"\"", "g"),
+                "\""
+            );
+
+        } else {
+
+            // We found a non-quoted value.
+            var strMatchedValue = arrMatches[3];
+
+        }
+
+
+        // Now that we have our value string, let's add
+        // it to the data array.
+        arrData[arrData.length - 1].push(tryConvertStringToNumber(strMatchedValue));
     }
 
-
-    // Now that we have our delimiter out of the way,
-    // let's check to see which kind of value we
-    // captured (quoted or unquoted).
-    if (arrMatches[2]) {
-
-      // We found a quoted value. When we capture
-      // this value, unescape any double quotes.
-      var strMatchedValue = arrMatches[2].replace(
-        new RegExp("\"\"", "g"),
-        "\""
-      );
-
-    } else {
-
-      // We found a non-quoted value.
-      var strMatchedValue = arrMatches[3];
-
-    }
-
-
-    // Now that we have our value string, let's add
-    // it to the data array.
-    arrData[arrData.length - 1].push(tryConvertStringToNumber(strMatchedValue));
-  }
-
-  // Return the parsed data.
-  return (arrData);
+    // Return the parsed data.
+    return (arrData);
 }
 
 /**
@@ -352,10 +357,14 @@ export const csvTextToArray = (strData: string, strDelimiter?: string): any[] =>
  * // returns data from storage
  * await getDataFromStorage('Sales', 123456, new Date('2020-01-20'), new Date('2020-01-22'), true);
  */
-export const getDataFromStorage = async (type: string, appId: string | number, dateStart?: any, dateEnd?: any, returnLackData?: boolean): Promise<any> => {
-  const result = await sendMessageAsync({ request: 'getData', type: type, appId: appId, dateStart: dateStart, dateEnd: dateEnd, returnLackData: returnLackData });
-  console.debug(`returning "${type}" data from background: `, result);
-  return result;
+export const getDataFromStorage = async (type: GetDataType, appId: string, dateStart?: any, dateEnd?: any, returnLackData?: boolean): Promise<any> => {
+    const result = await sendMessageAsync({
+        request: BackgroundMessageType.getData,
+        payload: { type: type, appId: appId, dateStart: dateStart, dateEnd: dateEnd, returnLackData: returnLackData }
+    });
+
+    console.debug(`returning "${type}" data from background: `, result);
+    return result;
 }
 
 /**
@@ -366,47 +375,47 @@ export const getDataFromStorage = async (type: string, appId: string | number, d
  * @returns {object} - DOM Element
  */
 export const createMessageBlock = (type: 'error' | 'warning', text: string): HTMLDivElement => {
-  const block = document.createElement('div');
-  const title = document.createElement('b');
+    const block = document.createElement('div');
+    const title = document.createElement('b');
 
-  switch (type) {
-    case 'error': {
-      title.textContent = 'Steamworks extras error';
-      block.classList.add('extra_error');
-      break;
+    switch (type) {
+        case 'error': {
+            title.textContent = 'Steamworks extras error';
+            block.classList.add('extra_error');
+            break;
+        }
+        case 'warning': {
+            title.textContent = 'Steamworks extras warning';
+            block.classList.add('extra_warning');
+            break;
+        }
     }
-    case 'warning': {
-      title.textContent = 'Steamworks extras warning';
-      block.classList.add('extra_warning');
-      break;
-    }
-  }
 
-  const textBlock = document.createElement('p');
-  textBlock.textContent = text;
+    const textBlock = document.createElement('p');
+    textBlock.textContent = text;
 
-  block.appendChild(title);
-  block.appendChild(textBlock);
-  return block;
+    block.appendChild(title);
+    block.appendChild(textBlock);
+    return block;
 }
 
 export const selectChartColor = (chartColors: any, tag: string): string => {
-  if (chartColors && chartColors[tag]) return chartColors[tag];
+    if (chartColors && chartColors[tag]) return chartColors[tag];
 
-  return `rgb(${30 + Math.round(Math.random() * 225)}, ${30 + Math.round(Math.random() * 225)}, ${30 + Math.round(Math.random() * 225)})`;
+    return `rgb(${30 + Math.round(Math.random() * 225)}, ${30 + Math.round(Math.random() * 225)}, ${30 + Math.round(Math.random() * 225)})`;
 }
 
 export const getDOMLocal = async (url: string): Promise<Document> => {
-  const response = await fetch(url);
+    const response = await fetch(url);
 
-  if (!response.ok) throw new (Error as any)('Network response was not ok', url);
+    if (!response.ok) throw new (Error as any)('Network response was not ok', url);
 
-  const htmlText = await response.text();
+    const htmlText = await response.text();
 
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(htmlText, 'text/html');
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlText, 'text/html');
 
-  return doc;
+    return doc;
 }
 
 /**
@@ -415,14 +424,14 @@ export const getDOMLocal = async (url: string): Promise<Document> => {
  * @param {object} message - Message to send. Must contain 'request' property in order to be recognized.
  * @returns {Promise} - Promise with the response
  */
-export const sendMessageAsync = (message: any): Promise<any> => {
-  return new Promise((resolve, reject) => {
-    getBrowser().runtime.sendMessage(message, (response: any) => {
-      if (getBrowser().runtime.lastError) {
-        reject(getBrowser().runtime.lastError);
-      } else {
-        resolve(response);
-      }
+export const sendMessageAsync = (message: BackgroundMessage): Promise<any> => {
+    return new Promise((resolve, reject) => {
+        getBrowser().runtime.sendMessage(message, (response: any) => {
+            if (getBrowser().runtime.lastError) {
+                reject(getBrowser().runtime.lastError);
+            } else {
+                resolve(response);
+            }
+        });
     });
-  });
 }

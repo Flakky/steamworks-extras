@@ -3,6 +3,7 @@ import { getSummaryTable } from "./layout";
 import { getBrowser } from "../../shared/browser";
 import { ReviewsData, RoyaltiesAndTaxesMap } from "./types";
 import { getRevenueMap, getRevenuePercentageMap } from "./revenue";
+import { BackgroundMessageType } from "../../shared/types/background_requests";
 
 const updateSummaryRowUnderExtend = (doc: Document, index: number, title: string, description: string, showPercentages: boolean, calculation: () => { summ: number, share: number }) => {
     const cell = findElementByText('td', title);
@@ -253,7 +254,7 @@ export const addFollowers = async (doc: Document, appID: string) => {
     try {
         const url = `https://steamcommunity.com/games/${appID}/membersManage`;
         console.log(`Requesting followers from `, url);
-        followers = await sendMessageAsync({ request: 'parseDOM', url: url, type: 'followers' });
+        followers = await sendMessageAsync({ request: BackgroundMessageType.parseDOM, payload: { url: url, type: 'followers' } });
     }
     catch (e) {
         console.error('Failed to get followers:', e);

@@ -19,6 +19,7 @@ import { createCountryTable, updateCountryTable } from "./country_table";
 import { WishlistsData, WishlistChart, WishlistRegionSelection, WishlistConversionsData } from "./types";
 import { initConversionsChart } from "./conversions_chart";
 import { GameWishlists, GameWishlistConversions } from "../../shared/types/wishlists";
+import { GetDataType } from "../../shared/types/background_requests";
 
 const init = async (): Promise<void> => {
     console.log('Init');
@@ -117,7 +118,7 @@ const requestWishlistsData = async (appID: string): Promise<{ wishlists: GameWis
     const dateRange = getDateRangeFromURL(getCurrentURL());
 
     const wishlists = await getDataFromStorage(
-        'Wishlists',
+        GetDataType.Wishlists,
         appID,
         dateToString(dateRange.dateStart),
         dateToString(dateRange.dateEnd),
@@ -125,7 +126,7 @@ const requestWishlistsData = async (appID: string): Promise<{ wishlists: GameWis
     ) as GameWishlists[];
 
     const conversions = await getDataFromStorage(
-        'WishlistConversions',
+        GetDataType.WishlistConversions,
         appID,
         dateToString(dateRange.dateStart),
         dateToString(dateRange.dateEnd),

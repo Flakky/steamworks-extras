@@ -8,6 +8,7 @@ import { createChart, updateTrafficChart } from "./chart";
 import { addTableCheckboxes, getExternalWebsiteSubcategories, getTopCategories, updateSelectedChartCategories } from "./table";
 import { createCheckPresets } from "./presets";
 import { GameTraffic } from "../../shared/types/traffic";
+import { GetDataType } from "../../shared/types/background_requests";
 
 const init = async () => {
     console.log("Init");
@@ -101,7 +102,7 @@ const getTrafficData = async (doc: Document, appID: string): Promise<GameTraffic
     const { dateStart, dateEnd } = getDateRangeOfCurrentPage(doc);
 
     const trafficData = await getDataFromStorage(
-        'Traffic',
+        GetDataType.Traffic,
         appID,
         dateToString(dateStart),
         dateToString(dateEnd),

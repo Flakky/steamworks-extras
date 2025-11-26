@@ -1,11 +1,12 @@
 import { getBrowser } from '../shared/browser';
 import { OffscreenManager, OffscreenParseResponse } from './offscreen/offscreenmanager';
 import { StorageActionsQueue } from './storage/storagequeue';
-import { parseDataFromPage, getAppIDs, makeRequest } from './bghelpers';
+import { parseDataFromPage, getAppIDs, makeRequest, getPageCreationDate } from './bghelpers';
 import { updateStats, updateStatsStatus } from './statsupdater';
 import { getStatus } from './status';
 import { getDataFromDB } from './storage/storage';
 import { DateRange } from '../shared/types/daterange';
+import { BackgroundMessage, BackgroundMessageType } from '../shared/types/background_requests';
 
 class InitMessageListenerContext {
     queue: StorageActionsQueue;
@@ -15,40 +16,6 @@ class InitMessageListenerContext {
         this.queue = queue;
         this.offscreenManager = offscreenManager;
     }
-}
-
-export type BackgroundMessage =
-    | { request: BackgroundMessageType.showOptions }
-    | { request: BackgroundMessageType.makeRequest; url: string; params?: any }
-    | { request: BackgroundMessageType.getAppIDs }
-    | { request: BackgroundMessageType.getPackageIDs }
-    | { request: BackgroundMessageType.getPageCreationDates }
-    | { request: BackgroundMessageType.getQueueLenght }
-    | { request: BackgroundMessageType.getStatus }
-    | {
-        request: BackgroundMessageType.getData;
-        type: 'Traffic' | 'Sales' | 'Reviews' | 'Wishlists' | 'WishlistConversions';
-        appId: string;
-        dateStart: string;
-        dateEnd: string;
-        returnLackData?: boolean;
-    }
-    | { request: BackgroundMessageType.parseDOM; htmlText?: string; url: string; type: string }
-    | { request: BackgroundMessageType.parsedDOM } & OffscreenParseResponse // OffscreenParseResponse - defined in offscreenmanager
-    | { request: BackgroundMessageType.updateStats };
-
-export enum BackgroundMessageType {
-    showOptions = "showOptions",
-    makeRequest = "makeRequest",
-    getAppIDs = "getAppIDs",
-    getPackageIDs = "getPackageIDs",
-    getPageCreationDates = "getPageCreationDates",
-    getQueueLenght = "getQueueLenght",
-    getStatus = "getStatus",
-    getData = "getData",
-    parseDOM = "parseDOM",
-    parsedDOM = "parsedDOM",
-    updateStats = "updateStats"
 }
 
 export const initMessageListener = (context: InitMessageListenerContext) => {
@@ -68,7 +35,7 @@ export const initMessageListener = (context: InitMessageListenerContext) => {
             case BackgroundMessageType.makeRequest:
                 {
                     (async () => {
-                        const response = await makeRequest(message.url, message.params);
+                        const response = await makeRequest(message.payload.url, message.payload.params);
                         sendResponse(response);
                     })(); break;
                 };
@@ -112,25 +79,38 @@ export const initMessageListener = (context: InitMessageListenerContext) => {
             case BackgroundMessageType.getData:
                 {
                     (async () => {
-                        const dateRange = new DateRange(new Date(message.dateStart), new Date(message.dateEnd));
-                        const data = await getDataFromDB(context.queue, message.type, message.appId, dateRange, message.returnLackData);
-                        console.debug(`Returning "${message.type}" data from background: `, data);
+                        let dateRange;
+                        if (message.payload.dateStart === undefined || message.payload.dateEnd === undefined) {
+                            dateRange = new DateRange(await getPageCreationDate(message.payload.appId, false) as Date, new Date());
+                        }
+                        else {
+                            dateRange = new DateRange(new Date(message.payload.dateStart), new Date(message.payload.dateEnd))
+                        }
+                        const data = await getDataFromDB(context.queue, message.payload.type, message.payload.appId, dateRange, message.payload.returnLackData);
+                        console.debug(`Returning "${message.payload.type}" data from background: `, data);
                         sendResponse(data);
                     })(); break;
                 };
             case BackgroundMessageType.parseDOM:
                 {
                     (async () => {
-                        const data = message.htmlText
-                            ? await context.offscreenManager.parseDOM(message.htmlText, message.type)
-                            : await parseDataFromPage(message.url, message.type, context.offscreenManager);
-                        console.debug(`Returning DOM parsed "${message.type}" data from background: `, data);
+                        let data;
+                        if (message.payload.htmlText) {
+                            data = await context.offscreenManager.parseDOM(message.payload.htmlText, message.payload.type);
+                        }
+                        else if (message.payload.url) {
+                            data = await parseDataFromPage(message.payload.url, message.payload.type, context.offscreenManager);
+                        }
+                        else {
+                            throw new Error('No HTML text or URL provided to parse DOM');
+                        }
+                        console.debug(`Returning DOM parsed "${message.payload.type}" data from background: `, data);
                         sendResponse(data);
                     })(); break;
                 };
             case BackgroundMessageType.parsedDOM:
                 {
-                    context.offscreenManager.processParsedDOM(message as OffscreenParseResponse);
+                    context.offscreenManager.processParsedDOM(message.payload as OffscreenParseResponse);
                     break;
                 }
             case BackgroundMessageType.updateStats:
