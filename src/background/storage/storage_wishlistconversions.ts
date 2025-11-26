@@ -3,6 +3,7 @@ import { csvTextToArray, dateToString } from '../../scripts/helpers';
 import { waitForDatabaseReady, readData, clearData, writeData } from './db';
 import { getPageCreationDate } from '../bghelpers';
 import { DateRange, isDateInRange, getDateRangeArray } from '../../shared/types/daterange';
+import { DateWishlistConversions, GameWishlistConversions } from '../../shared/types/wishlists';
 
 export class StorageActionRequestWishlistConversions extends StorageAction {
     async process() {
@@ -36,11 +37,46 @@ export class StorageActionGetWishlistConversions extends StorageAction implement
 const requestWishlistConversionsData = async (appID: string) => {
     const pageCreationDate = await getPageCreationDate(appID, false) as Date;
 
-    const startDate = pageCreationDate;
-    const endDate = new Date();
+    await clearData(appID, 'WishlistConversions');
 
-    const formattedStartDate = dateToString(startDate);
-    const formattedEndDate = dateToString(endDate);
+    const csvString = await requestWishlistConversionsCSV(appID, new DateRange(pageCreationDate, new Date()));
+
+    const result = convertCSVToDateWishlistConversions(csvString);
+
+    console.debug(`Wishlist conversions CSV result:`, result);
+
+    await writeData(appID, 'WishlistConversions', result);
+
+    return result;
+}
+
+const getWishlistConversionsData = async (appID: string, dateRange: DateRange, returnLackData: boolean): Promise<GameWishlistConversions[] | null> => {
+    await waitForDatabaseReady();
+
+    let records = await readData(appID, 'WishlistConversions') as DateWishlistConversions[];
+
+    const filteredRecords = records.filter((item: DateWishlistConversions) => {
+        let date = new Date(item.date);
+        return isDateInRange(date, dateRange);
+    });
+
+    if (!returnLackData) {
+        const dateRangeArray = getDateRangeArray(dateRange, false, true) as string[];
+        const datesWithData = [...new Set(filteredRecords.map((record: DateWishlistConversions) => record.date))];
+
+        const allDatesHaveData = dateRangeArray.every(date => datesWithData.includes(date));
+
+        if (!allDatesHaveData) return null;
+    }
+
+    const wishlistConversions = convertDateWishlistConversionsToGameWishlistConversions(filteredRecords);
+
+    return wishlistConversions;
+}
+
+const requestWishlistConversionsCSV = async (appID: string, dateRange: DateRange): Promise<string> => {
+    const formattedStartDate = dateToString(dateRange.dateStart);
+    const formattedEndDate = dateToString(dateRange.dateEnd);
 
     console.debug(`Request wishlist conversions in CSV between ${formattedStartDate} and ${formattedEndDate}`);
 
@@ -69,83 +105,54 @@ const requestWishlistConversionsData = async (appID: string) => {
 
     // Ensure that we have lines to process
     if (lines.length === 0) {
-        console.warn(`No wishlist conversions data found in CSV`);
-        return [];
+        throw new Error(`No wishlist conversions data found in CSV`);
     }
 
     await clearData(appID, 'WishlistConversions');
 
     const csvString = lines.join('\n');
 
+    return csvString;
+}
+
+const convertCSVToDateWishlistConversions = (csvString: string): DateWishlistConversions[] => {
     const objects: any[] = csvTextToArray(csvString);
 
     const headers = (objects[0] as string[]).map((header: string) => header.trim());
 
-    // Map each line to an object using the headers as keys
-    let index = 0;
-    const result = objects
+    const result: DateWishlistConversions[] = objects
         .slice(1)
         .map((obj: any) => {
-            const object: any = {};
-
-            obj.forEach((element: any, i: number) => {
-                object[headers[i]] = element;
-            });
-
-            object.key = index++;
-
-            return object;
-        }
-        );
-
-    // Remove every invalid record
-    const filteredResult = result.filter(record => record['Date'] && record['MonthCohort']);
-    result.length = 0;
-    result.push(...filteredResult);
-
-    console.debug(`Wishlist conversions CSV result:`, result);
-
-    await writeData(appID, 'WishlistConversions', result);
+            return {
+                date: obj[headers.indexOf('DateLocal')],
+                month: obj[headers.indexOf('MonthCohort')],
+                purchasesAndActivations: obj[headers.indexOf('PurchasesAndActivations')],
+                gifts: obj[headers.indexOf('Gifts')],
+                totalConversions: obj[headers.indexOf('TotalConversions')]
+            };
+        })
+        .filter(record => record.date && record.month);
 
     return result;
 }
 
-const getAllWishlistConversionsData = async (appID: string) => {
-    await waitForDatabaseReady();
-    let records = await readData(appID, 'WishlistConversions');
-
-    if (records.length === 0) {
-        console.debug(`No wishlist conversions data found in DB. Requesting from server...`);
-        await requestWishlistConversionsData(appID);
-        records = await readData(appID, 'WishlistConversions');
-    }
-
-    return records;
-}
-
-const getWishlistConversionsData = async (appID: string, dateRange: DateRange, returnLackData: boolean) => {
-    await waitForDatabaseReady();
-
-    let records = await readData(appID, 'WishlistConversions');
-
-    if (dateRange.dateStart && dateRange.dateEnd) {
-        const filteredRecords = records.filter((item: any) => {
-            let date = new Date(item['Date']);
-            return isDateInRange(date, dateRange);
-        });
-
-        if (!returnLackData) {
-            const dateRangeArray = getDateRangeArray(dateRange, false, true) as string[];
-            const datesWithData = [...new Set(filteredRecords.map((record: any) => record['Date']))];
-
-            const allDatesHaveData = dateRangeArray.every(date => datesWithData.includes(date));
-
-            return allDatesHaveData ? filteredRecords : null;
+const convertDateWishlistConversionsToGameWishlistConversions = (data: DateWishlistConversions[]): GameWishlistConversions[] => {
+    return data.reduce((acc: GameWishlistConversions[], item: DateWishlistConversions) => {
+        let dateRecord = acc.find(game => game.date === item.date);
+        if (!dateRecord) {
+            dateRecord = {
+                date: item.date,
+                monthConversions: {}
+            };
+            acc.push(dateRecord);
         }
 
-        return filteredRecords;
-    }
-    else {
-        return records;
-    }
+        dateRecord.monthConversions[item.month] = {
+            totalConversions: item.totalConversions,
+            gifts: item.gifts,
+            purchasesAndActivations: item.purchasesAndActivations
+        };
+
+        return acc;
+    }, []);
 }
