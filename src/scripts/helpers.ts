@@ -184,6 +184,8 @@ export const dateFromString = (dateString: string): Date => {
 export const csvTextToArray = (strData: string, strDelimiter?: string): any[] => {
     // https://www.bennadel.com/blog/1504-ask-ben-parsing-csv-strings-with-javascript-exec-regular-expression-command.htm
 
+    if (isStringEmpty(strData)) return [[]];
+
     // Check to see if the delimiter is defined. If not,
     // then default to comma.
     strDelimiter = (strDelimiter || ",");

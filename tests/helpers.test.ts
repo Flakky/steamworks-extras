@@ -371,7 +371,7 @@ describe('csvTextToArray', () => {
         const csv = '';
         const result = csvTextToArray(csv);
 
-        expect(result).toEqual([['']]);
+        expect(result).toEqual([[]]);
     });
 
     test('should convert numeric strings to numbers', () => {
