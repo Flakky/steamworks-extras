@@ -5,13 +5,10 @@ import {
     findParentByTag,
     tryConvertStringToNumber,
     dateToString,
-    getDateRangeArray,
     getCountryRevenue,
-    correctDateRange,
-    getDateNoOffset,
     getCalculationToday,
-    isDateInRange,
     dateFromString,
+    getDateNoOffset,
     csvTextToArray,
     getDataFromStorage,
     createMessageBlock,
@@ -207,10 +204,10 @@ describe('tryConvertStringToNumber', () => {
         expect(tryConvertStringToNumber('-123.45')).toBe(-123.45);
     });
 
-    test('should return original string if not a number', () => {
-        expect(tryConvertStringToNumber('hello')).toBe('hello');
-        expect(tryConvertStringToNumber('abc123')).toBe('abc123');
-        expect(tryConvertStringToNumber('')).toBe('');
+    test('should return null if not a number', () => {
+        expect(tryConvertStringToNumber('hello')).toBe(null);
+        expect(tryConvertStringToNumber('abc123')).toBe(null);
+        expect(tryConvertStringToNumber('')).toBe(null);
     });
 
     test('should handle scientific notation', () => {
@@ -238,91 +235,6 @@ describe('dateToString', () => {
     test('should handle leap year dates', () => {
         const date = new Date('2024-02-29T00:00:00.000Z');
         expect(dateToString(date)).toBe('2024-02-29');
-    });
-});
-
-describe('getDateRangeArray', () => {
-    test('should return array of dates for date range', () => {
-        const start = new Date('2020-01-20T00:00:00.000Z');
-        const end = new Date('2020-01-22T00:00:00.000Z');
-        const result = getDateRangeArray(start, end);
-
-        expect(result).toHaveLength(3);
-        expect((result[0] as Date).getTime()).toBe(new Date('2020-01-20T00:00:00.000Z').getTime());
-        expect((result[1] as Date).getTime()).toBe(new Date('2020-01-21T00:00:00.000Z').getTime());
-        expect((result[2] as Date).getTime()).toBe(new Date('2020-01-22T00:00:00.000Z').getTime());
-    });
-
-    test('should return single date for same start and end', () => {
-        const date = new Date('2020-01-20T00:00:00.000Z');
-        const result = getDateRangeArray(date, date);
-
-        expect(result).toHaveLength(1);
-        expect((result[0] as Date).getTime()).toBe(date.getTime());
-    });
-
-    test('should return date strings when outputDateStrings is true', () => {
-        const start = new Date('2020-01-20T00:00:00.000Z');
-        const end = new Date('2020-01-22T00:00:00.000Z');
-        const result = getDateRangeArray(start, end, false, true);
-
-        expect(result).toEqual(['2020-01-20', '2020-01-21', '2020-01-22']);
-    });
-
-    test('should reverse array when reverse is true', () => {
-        const start = new Date('2020-01-20T00:00:00.000Z');
-        const end = new Date('2020-01-22T00:00:00.000Z');
-        const result = getDateRangeArray(start, end, true);
-
-        expect(result).toHaveLength(3);
-        expect((result[0] as Date).getTime()).toBe(new Date('2020-01-22T00:00:00.000Z').getTime());
-        expect((result[2] as Date).getTime()).toBe(new Date('2020-01-20T00:00:00.000Z').getTime());
-    });
-
-    test('should reverse date strings when both reverse and outputDateStrings are true', () => {
-        const start = new Date('2020-01-20T00:00:00.000Z');
-        const end = new Date('2020-01-22T00:00:00.000Z');
-        const result = getDateRangeArray(start, end, true, true);
-
-        expect(result).toEqual(['2020-01-22', '2020-01-21', '2020-01-20']);
-    });
-});
-
-describe('correctDateRange', () => {
-    test('should set start date to beginning of day', () => {
-        const start = new Date('2025-01-01T12:34:56.789Z');
-        const end = new Date('2025-01-02T12:34:56.789Z');
-        const result = correctDateRange(start, end);
-
-        expect(result.dateStart.getUTCHours()).toBe(0);
-        expect(result.dateStart.getUTCMinutes()).toBe(0);
-        expect(result.dateStart.getUTCSeconds()).toBe(0);
-        expect(result.dateStart.getUTCMilliseconds()).toBe(0);
-    });
-
-    test('should set end date to end of day', () => {
-        const start = new Date('2025-01-01T00:00:00.000Z');
-        const end = new Date('2025-01-02T12:34:56.789Z');
-        const result = correctDateRange(start, end);
-
-        expect(result.dateEnd.getUTCHours()).toBe(23);
-        expect(result.dateEnd.getUTCMinutes()).toBe(59);
-        expect(result.dateEnd.getUTCSeconds()).toBe(59);
-        expect(result.dateEnd.getUTCMilliseconds()).toBe(999);
-    });
-
-    test('should preserve date values', () => {
-        const start = new Date('2025-01-01T12:34:56.789Z');
-        const end = new Date('2025-01-02T12:34:56.789Z');
-        const result = correctDateRange(start, end);
-
-        expect(result.dateStart.getUTCFullYear()).toBe(2025);
-        expect(result.dateStart.getUTCMonth()).toBe(0);
-        expect(result.dateStart.getUTCDate()).toBe(1);
-
-        expect(result.dateEnd.getUTCFullYear()).toBe(2025);
-        expect(result.dateEnd.getUTCMonth()).toBe(0);
-        expect(result.dateEnd.getUTCDate()).toBe(2);
     });
 });
 
@@ -367,48 +279,6 @@ describe('getCalculationToday', () => {
         expect(result.getUTCDate()).toBe(15);
         expect(result.getUTCMonth()).toBe(0);
         expect(result.getUTCFullYear()).toBe(2024);
-    });
-});
-
-describe('isDateInRange', () => {
-    test('should return true if date is within range', () => {
-        const date = new Date('2020-01-15T12:00:00.000Z');
-        const start = new Date('2020-01-10T00:00:00.000Z');
-        const end = new Date('2020-01-20T23:59:59.999Z');
-
-        expect(isDateInRange(date, start, end)).toBe(true);
-    });
-
-    test('should return true if date equals start date', () => {
-        const date = new Date('2020-01-10T00:00:00.000Z');
-        const start = new Date('2020-01-10T00:00:00.000Z');
-        const end = new Date('2020-01-20T23:59:59.999Z');
-
-        expect(isDateInRange(date, start, end)).toBe(true);
-    });
-
-    test('should return true if date equals end date', () => {
-        const date = new Date('2020-01-20T00:00:00.000Z');
-        const start = new Date('2020-01-10T00:00:00.000Z');
-        const end = new Date('2020-01-20T23:59:59.999Z');
-
-        expect(isDateInRange(date, start, end)).toBe(true);
-    });
-
-    test('should return false if date is before start', () => {
-        const date = new Date('2020-01-05T00:00:00.000Z');
-        const start = new Date('2020-01-10T00:00:00.000Z');
-        const end = new Date('2020-01-20T23:59:59.999Z');
-
-        expect(isDateInRange(date, start, end)).toBe(false);
-    });
-
-    test('should return false if date is after end', () => {
-        const date = new Date('2020-01-25T00:00:00.000Z');
-        const start = new Date('2020-01-10T00:00:00.000Z');
-        const end = new Date('2020-01-20T23:59:59.999Z');
-
-        expect(isDateInRange(date, start, end)).toBe(false);
     });
 });
 

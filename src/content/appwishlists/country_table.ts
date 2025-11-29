@@ -1,9 +1,8 @@
-import { getDateRangeArray } from "../../scripts/helpers";
 import { getCurrentURL, getDateRangeFromURL } from "../site";
 import { setFlexContentBlockContent } from "../pageblocks";
 import { WishlistRegionSelection, WishlistsData, WishlistChartActionsType, WishlistChart } from "./types";
 import { updateWishlistChart } from "./wishlist_chart";
-import { GameWishlists } from "../../shared/types/wishlists";
+import { getDateRangeArray } from "../../shared/types/daterange";
 
 export const createCountryTable = (doc: Document) => {
 
@@ -74,8 +73,8 @@ export const updateCountryTable = (doc: Document, wishlistChart: WishlistChart, 
     countryTableBody.innerHTML = '';
     regionTableBody.innerHTML = '';
 
-    const { dateStart, dateEnd } = getDateRangeFromURL(getCurrentURL());
-    const dateRangeArray = getDateRangeArray(dateStart, dateEnd, false, true) as string[];
+    const dateRange = getDateRangeFromURL(getCurrentURL());
+    const dateRangeArray = getDateRangeArray(dateRange, false, true) as string[];
 
     if (!wishlistsData.data || wishlistsData.data.length === 0) return;
 

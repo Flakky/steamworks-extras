@@ -1,7 +1,7 @@
 import { defaultSettings } from "../data/defaultsettings";
-import { correctDateRange, getCalculationToday, isStringEmpty, dateFromString } from "../scripts/helpers";
+import { getCalculationToday, isStringEmpty, dateFromString } from "../scripts/helpers";
 import { getBrowser } from "../shared/browser";
-import { DateRange } from "../shared/types/daterange";
+import { correctDateRange, DateRange } from "../shared/types/daterange";
 
 export const readChartColors = async (): Promise<Record<string, string>> => {
     const jsonFilePath = getBrowser().runtime.getURL('data/chartcolors.json');
@@ -47,7 +47,8 @@ export const getDateRangeFromURL = (url: string): DateRange => {
         if (!isStringEmpty(dateEndString)) dateEnd = dateFromString(dateEndString);
     }
 
-    correctDateRange(dateStart, dateEnd);
+    const dateRange = new DateRange(dateStart, dateEnd);
+    correctDateRange(dateRange);
 
-    return new DateRange(dateStart, dateEnd);
+    return dateRange;
 }

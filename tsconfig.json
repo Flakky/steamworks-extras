@@ -22,7 +22,6 @@
         "types": [
             "chrome",
             "jest",
-            "node"
         ]
     },
     "include": [

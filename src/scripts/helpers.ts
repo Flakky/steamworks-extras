@@ -69,7 +69,6 @@ export const findElementByText = (tag: string, text: string, doc: Document | und
  * findParentByTag(myTableTDCellElem, 'table');
  */
 export const findParentByTag = (element: any, tagName: string): Element | undefined => {
-
     tagName = tagName.toUpperCase();
 
     while (element && element.parentNode) {
@@ -82,15 +81,15 @@ export const findParentByTag = (element: any, tagName: string): Element | undefi
     return undefined;
 }
 
-export const tryConvertStringToNumber = (str: string): number | string => {
-    // First, attempt to convert to a number
+export const tryConvertStringToNumber = (str: string): number | null => {
+    if (isStringEmpty(str)) return null;
+
     const number = Number(str);
 
-    // Check if the conversion resulted in a valid number (not NaN)
     if (!isNaN(number)) {
-        return number;  // Return the number (int or float)
+        return number;
     } else {
-        return str;  // If not a valid number, return the original string
+        return null;
     }
 }
 
@@ -108,37 +107,9 @@ export const dateToString = (date: Date): string => {
     return date.toISOString().split('T')[0];
 }
 
-/**
- * Returns an array of dates between a given date range.
- *
- * @param {Date} dateStart - Start date of the range
- * @param {Date} dateEnd - End date of the range
- * @param {boolean} reverse - [Optional] If true, the array will be reversed
- * @param {boolean} outputDateStrings - [Optional] If true, the array will contain date strings instead of Date objects
- * @returns {Array} - Array of dates
- *
- * @example
- * // returns ['2020-01-20', '2020-01-21', '2020-01-22']
- * getDateRangeArray(new Date('2020-01-20'), new Date('2020-01-22'));
- */
-export const getDateRangeArray = (dateStart: Date, dateEnd: Date, reverse?: boolean, outputDateStrings?: boolean): Array<Date | string> => {
-    const days: Array<Date | string> = [];
-
-    let day = new Date(dateStart);
-    while (day <= dateEnd) {
-        if (outputDateStrings) {
-            const formattedDate = dateToString(day);
-            days.push(formattedDate);
-        }
-        else days.push(new Date(day))
-
-        // Move to the next day
-        day.setDate(day.getDate() + 1);
-    }
-
-    if (reverse) days.reverse();
-
-    return days;
+export const getDateNoOffset = (): Date => {
+    const now = new Date(Date.now());
+    return now;
 }
 
 /**
@@ -182,39 +153,6 @@ export const getCountryRevenue = async (appID: string, country: string, dateStar
 }
 
 /**
- * Corrects a given date range to be a full day.
- *
- * @param {Date} startDate - Start date of the range
- * @param {Date} endDate - End date of the range
- *
- * @example
- * // returns 2025-01-01 00:00:00 and 2025-01-02 23:59:59
- * correctDateRange(new Date('2025-01-01'), new Date('2025-01-02'));
- */
-export const correctDateRange = (dateStart: Date, dateEnd: Date): { dateStart: Date, dateEnd: Date } => {
-    dateStart = new Date(Date.UTC(
-        dateStart.getUTCFullYear(),
-        dateStart.getUTCMonth(),
-        dateStart.getUTCDate(),
-        0, 0, 0, 0
-    ));
-
-    dateEnd = new Date(Date.UTC(
-        dateEnd.getUTCFullYear(),
-        dateEnd.getUTCMonth(),
-        dateEnd.getUTCDate(),
-        23, 59, 59, 999
-    ));
-
-    return { dateStart: dateStart, dateEnd: dateEnd };
-}
-
-export const getDateNoOffset = (): Date => {
-    const now = new Date(Date.now());
-    return now;
-}
-
-/**
  * Returns today's date, but if it's before 7am UTC, it returns the previous day. This is because Steam updates date only at 7am UTC for statistics.
  *
  * @returns {Date} - Corrected today's date
@@ -223,22 +161,6 @@ export const getCalculationToday = (): Date => {
     const now = new Date(Date.now());
     if (now.getUTCHours() < 7) now.setUTCDate(now.getUTCDate() - 1); // Steam still stands on the previous day until 7am UTC
     return now;
-}
-
-/**
- * Checks if a given date is in a given date range.
- *
- * @param {Date} date - Date to check
- * @param {Date} startDate - Start date of the range
- * @param {Date} endDate - End date of the range
- * @returns {boolean} - True if the date is in the range, false otherwise
- */
-export const isDateInRange = (date: Date, startDate: Date, endDate: Date): boolean => {
-    const start = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getUTCDate());
-    const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getUTCDate(), 23, 59, 59, 999);
-    const target = new Date(date.getFullYear(), date.getMonth(), date.getUTCDate(), 12, 0, 0, 0); // To be sure the date is inside start and end
-
-    return target >= start && target <= end;
 }
 
 /**
@@ -333,10 +255,9 @@ export const csvTextToArray = (strData: string, strDelimiter?: string): any[] =>
 
         }
 
-
         // Now that we have our value string, let's add
         // it to the data array.
-        arrData[arrData.length - 1].push(tryConvertStringToNumber(strMatchedValue));
+        arrData[arrData.length - 1].push(tryConvertStringToNumber(strMatchedValue) ?? strMatchedValue);
     }
 
     // Return the parsed data.
