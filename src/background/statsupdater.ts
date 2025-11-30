@@ -13,7 +13,7 @@ import { StorageActionRequestWishlists, StorageActionRequestRegionalWishlists } 
 import { StorageActionRequestTraffic } from './storage/storage_traffic';
 import { OffscreenManager } from './offscreen/offscreenmanager';
 import { DateRange, getDateRangeArray } from '../shared/types/daterange';
-
+import { DateTraffic } from '../shared/types/traffic';
 class UpdateStatsContext {
     queue: StorageActionsQueue;
     offscreenManager: OffscreenManager;
@@ -110,6 +110,7 @@ const fetchDailyData = async (appIDs: string[], queue: StorageActionsQueue, offs
 
     for (const appID of appIDs) {
         const trafficDates = await getMissingDatesForTraffic(appID, queue);
+
         for (const date of trafficDates) {
             missingTrafficDates.push({ appid: appID, date });
         }
@@ -117,6 +118,8 @@ const fetchDailyData = async (appIDs: string[], queue: StorageActionsQueue, offs
 
     // We sort dates in descending order because we want to request the most recent dates first so the user can use it
     missingTrafficDates.sort((a, b) => b.date.getTime() - a.date.getTime());
+
+    console.debug(`Missing traffic dates:`, missingTrafficDates);
 
     const actionSettings = await makeActionSettings();
 
@@ -137,7 +140,7 @@ const getMissingDatesForTraffic = async (appID: string, queue: StorageActionsQue
 
     const dates = getDateRangeArray(new DateRange(pageCreationDate, getDateNoOffset()), true, false) as Date[];
 
-    const trafficData = await readData(appID, 'Traffic');
+    const trafficData = await readData(appID, 'Traffic') as DateTraffic[];
 
     let missingDates = [];
 
@@ -154,12 +157,12 @@ const getMissingDatesForTraffic = async (appID: string, queue: StorageActionsQue
 
             const dateString = dateToString(date);
 
-            const hasData = trafficData.some((data: any) => {
+            const hasData = trafficData.some((data: DateTraffic) => {
                 // If page category is not a string, then the data is not valid or skipped for some reason
-                if (typeof data['PageCategory'] !== 'string') {
+                if (typeof data.pageCategory !== 'string') {
                     return false;
                 }
-                const sameDate = data['Date'] === dateString;
+                const sameDate = data.date === dateString;
                 return sameDate;
             });
 
