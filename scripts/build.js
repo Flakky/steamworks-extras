@@ -40,7 +40,7 @@ const copyManifest = async () => {
         await fse.copy(manifestRoot, path.join(distDir, 'manifest.json'));
     }
 };
-const bundleContentScripts = async (inlineScripts = false) => {
+const bundleContentScripts = async (inlineScripts = true) => {
     const contentScriptsToBundle = [
         // Background scripts
         {

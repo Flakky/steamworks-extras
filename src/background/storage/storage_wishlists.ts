@@ -142,7 +142,7 @@ const convertCSVToDateWishlists = (csvString: string): DateWishlists[] => {
 // Request Regional Wishlists
 
 const requestAllRegionalWishlistData = async (appID: string): Promise<DateWishlistRegional[]> => {
-    console.debug(`Requesting all wishlist data for app ${appID}`);
+    console.debug(`Requesting all regional wishlist data for app ${appID}`);
 
     const pageCreationDate = await getPageCreationDate(appID, false) as Date;
 
@@ -153,6 +153,7 @@ const requestAllRegionalWishlistData = async (appID: string): Promise<DateWishli
     }
 
     const wishlistRegionalActions = convertCSVToDateWishlistRegional(csvString);
+    console.log('Regional wishlists: ', wishlistRegionalActions);
 
     await mergeData(appID, 'WishlistsRegional', wishlistRegionalActions);
 
@@ -164,20 +165,25 @@ const requestRegionalWishlistDataCSV = async (appID: string, dateRange: DateRang
     const formattedStartDate = dateToString(dateRange.dateStart);
     const formattedEndDate = dateToString(dateRange.dateEnd);
 
-    const URL = `https://partner.steampowered.com/report_csv.php`;
+    let URL = `https://partner.steampowered.com/report_csv.php`;
+
+    URL += `?file=SteamRegionalWishlists_${appID}_${formattedStartDate}_to_${formattedEndDate}`;
+    URL += `&params=query=QueryWishlistActionsByCountryForCSV^appID=${appID}^dateStart=${formattedStartDate}^dateEnd=${formattedEndDate}^interpreter=WishlistCountryReportInterpreter`
 
     const reqHeaders = {
         'Content-Type': 'application/x-www-form-urlencoded',
     };
 
-    const data = new URLSearchParams();
-    data.append('file', `SteamRegionalWishlists_${appID}_${formattedStartDate}_to_${formattedEndDate}`);
-    data.append('params', `query=QueryWishlistActionsByCountryForCSV%appID=${appID}%dateStart=${formattedStartDate}%dateEnd=${formattedEndDate}%interpreter=WishlistCountryReportInterpreter`);
+    console.debug('Requesting regional wishlists CSV: ', URL);
 
-    const response = await fetch(URL, { method: 'POST', headers: reqHeaders, body: data.toString(), credentials: 'include' });
+    const response = await fetch(URL, { method: 'GET', headers: reqHeaders, credentials: 'include' });
     if (!response.ok) throw new Error('Network response was not ok');
 
-    return readCSVFromResponse(await response.text());
+    const htmlText = await response.text();
+
+    console.log('Regional wishlists CSV: ', htmlText);
+
+    return readCSVFromResponse(htmlText);
 }
 
 const convertCSVToDateWishlistRegional = (csvString: string): DateWishlistRegional[] => {
@@ -192,7 +198,7 @@ const convertCSVToDateWishlistRegional = (csvString: string): DateWishlistRegion
             return {
                 date: obj[headers.indexOf('DateLocal')],
                 country: obj[headers.indexOf('CountryCode')],
-                region: obj[headers.indexOf('RegionCode')],
+                region: obj[headers.indexOf('Region')],
                 adds: obj[headers.indexOf('Adds')],
                 deletes: obj[headers.indexOf('Deletes')],
                 gifts: obj[headers.indexOf('Gifts')],

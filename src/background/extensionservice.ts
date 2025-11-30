@@ -8,6 +8,7 @@ import { initStorageForAppIDs } from './storage/db';
 import { startUpdatingStats } from './statsupdater';
 import { initMessageListener } from './messagelistener';
 import { getAppIDs } from './bghelpers';
+import '../shared/log';
 
 declare var browser: typeof chrome | undefined;
 

@@ -6,7 +6,7 @@ const tables = [
     { name: 'Reviews', key: 'recommendationid' },
     { name: 'Wishlists', key: 'date' }, // Key is a combination of date and country
     { name: 'WishlistsRegional', key: ['date', 'country'] },
-    { name: 'WishlistConversions', key: ['Date', 'month'] },
+    { name: 'WishlistConversions', key: ['date', 'month'] },
     { name: 'Refunds', key: 'key' }, // Key is a hash of refund comment
     { name: 'Traffic', key: ['date', 'pageCategory', 'pageFeature'] },
     { name: 'Sales', key: 'key' } // Key is unique identifier

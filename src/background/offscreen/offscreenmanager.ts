@@ -70,7 +70,7 @@ export class OffscreenManager {
   processParsedDOM = (message: OffscreenParseResponse) => {
     console.debug('Processing parsed DOM message: ', message);
 
-    if (message.request !== 'parsedDOM'
+    if (message === undefined
       || message.id === undefined
       || message.result === undefined) {
       console.warn('Invalid parsed DOM message received: ', message);
