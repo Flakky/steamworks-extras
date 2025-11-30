@@ -1,5 +1,5 @@
 import { DateRangeAction, StorageAction, StorageActionSettings } from './storageaction';
-import { csvTextToArray, dateToString } from '../../scripts/helpers';
+import { csvTextToArray, dateToString, isStringEmpty } from '../../scripts/helpers';
 import { waitForDatabaseReady, readData, mergeData } from './db';
 import { getPageCreationDate } from '../bghelpers';
 import { DateRange, getDateRangeArray, isDateInRange } from '../../shared/types/daterange';
@@ -151,7 +151,11 @@ const requestAllRegionalWishlistData = async (appID: string): Promise<DateWishli
         throw new Error(`No wishlists data found in CSV`);
     }
 
-    const wishlistRegionalActions = convertCSVToDateWishlistRegional(csvString);
+    const wishlistRegionalActions = convertCSVToDateWishlistRegional(csvString)
+        .filter((element: DateWishlistRegional) => {
+            return element.country !== undefined && !isStringEmpty(element.date);
+        });
+
     console.log('Regional wishlists: ', wishlistRegionalActions);
 
     await mergeData(appID, 'WishlistsRegional', wishlistRegionalActions);
