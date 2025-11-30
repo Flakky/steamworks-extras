@@ -94,7 +94,7 @@ export const updateCountryTable = (doc: Document, wishlistChart: WishlistChart, 
                     countryData[country] = 0;
                 }
 
-                countryData[country] += data.regionalData[country];
+                countryData[country] += data.regionalData[country].adds;
             }
         }
     });

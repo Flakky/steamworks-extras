@@ -13,7 +13,14 @@ export type GameWishlists = {
     deletes: number;
     gifts: number;
     activations: number;
-    regionalData: Record<string, number>;
+    regionalData: Record<string, GameWishlistsWithRegionalData>;
+}
+
+export type GameWishlistsWithRegionalData = {
+    adds: number;
+    deletes: number;
+    gifts: number;
+    activations: number;
 }
 
 export const dateWishlistsFieldMap: Record<string, keyof DateWishlists> = {
@@ -49,4 +56,24 @@ export const dateWishlistConversionsFieldMap: Record<string, keyof DateWishlistC
     'PurchasesAndActivations': 'purchasesAndActivations',
     'Gifts': 'gifts',
     'TotalConversions': 'totalConversions',
+}
+
+export type DateWishlistRegional = {
+    date: string;
+    country: string;
+    region: string;
+    adds: number;
+    deletes: number;
+    gifts: number;
+    activations: number;
+}
+
+export const dateWishlistRegionalFieldMap: Record<string, keyof DateWishlistRegional> = {
+    'DateLocal': 'date',
+    'Country': 'country',
+    'Region': 'region',
+    'Adds': 'adds',
+    'Deletes': 'deletes',
+    'Gifts': 'gifts',
+    'PurchasesAndActivations': 'activations',
 }

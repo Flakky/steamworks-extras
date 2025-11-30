@@ -4,10 +4,11 @@ let gameStatsStorage: IDBDatabase | undefined;
 
 const tables = [
     { name: 'Reviews', key: 'recommendationid' },
-    { name: 'Wishlists', key: 'Date' }, // Key is a combination of date and country
-    { name: 'WishlistConversions', key: ['Date', 'MonthCohort'] },
+    { name: 'Wishlists', key: 'date' }, // Key is a combination of date and country
+    { name: 'WishlistsRegional', key: ['date', 'country'] },
+    { name: 'WishlistConversions', key: ['Date', 'month'] },
     { name: 'Refunds', key: 'key' }, // Key is a hash of refund comment
-    { name: 'Traffic', key: ['Date', 'PageCategory', 'PageFeature'] },
+    { name: 'Traffic', key: ['date', 'pageCategory', 'pageFeature'] },
     { name: 'Sales', key: 'key' } // Key is unique identifier
 ];
 

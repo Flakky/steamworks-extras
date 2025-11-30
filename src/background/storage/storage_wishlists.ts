@@ -4,7 +4,7 @@ import { waitForDatabaseReady, readData, mergeData } from './db';
 import { getPageCreationDate, parseDataFromPage, mapObject } from '../bghelpers';
 import { OffscreenManager } from '../offscreen/offscreenmanager';
 import { DateRange, getDateRangeArray, isDateInRange } from '../../shared/types/daterange';
-import { DateWishlists, GameWishlists, dateWishlistsFieldMap } from '../../shared/types/wishlists';
+import { DateWishlistRegional, DateWishlists, GameWishlists, dateWishlistsFieldMap } from '../../shared/types/wishlists';
 
 export class StorageActionRequestWishlists extends StorageAction {
     async process() {
@@ -16,18 +16,10 @@ export class StorageActionRequestWishlists extends StorageAction {
     }
 }
 
-export class StorageActionRequestRegionalWishlists extends StorageAction implements DateAction {
-    date: Date;
-    offscreenManager: OffscreenManager;
-
-    constructor(appID: string, date: Date, offscreenManager: OffscreenManager, settings = new StorageActionSettings()) {
-        super(appID, settings);
-        this.date = date;
-        this.offscreenManager = offscreenManager;
-    }
+export class StorageActionRequestRegionalWishlists extends StorageAction {
 
     async process() {
-        await requestWishlistRegionalData(this.getAppID(), this.date, this.offscreenManager);
+        await requestAllRegionalWishlistData(this.getAppID());
     }
 
     getType() {
@@ -54,10 +46,13 @@ export class StorageActionGetWishlists extends StorageAction implements DateRang
     }
 }
 
+// Get Wishlists
+
 const getWishlistData = async (appID: string, dateRange: DateRange, returnLackData: boolean): Promise<GameWishlists[] | null> => {
     await waitForDatabaseReady();
 
     let records = await readData(appID, 'Wishlists') as DateWishlists[];
+    let regionalRecords = await readData(appID, 'WishlistsRegional') as DateWishlistRegional[];
 
     if (!returnLackData) {
         let datesNoData = getDateRangeArray(dateRange, false, true) as string[];
@@ -69,7 +64,7 @@ const getWishlistData = async (appID: string, dateRange: DateRange, returnLackDa
         if (datesNoData.length > 0) return null;
     }
 
-    const out = records
+    const wishlists = records
         .filter((item: DateWishlists) => {
             const date = new Date(item.date);
             return isDateInRange(date, dateRange);
@@ -78,15 +73,19 @@ const getWishlistData = async (appID: string, dateRange: DateRange, returnLackDa
             return convertDateWishlistsToGameWishlists(item);
         });
 
+    const out = appendRegionalDataToGameWishlists(wishlists, regionalRecords);
+
     return out;
 }
+
+// Request Wishlists
 
 const requestAllWishlistData = async (appID: string) => {
     console.debug(`Requesting all wishlist data for app ${appID}`);
 
     const pageCreationDate = await getPageCreationDate(appID, false) as Date;
 
-    const csvString = await requestGeneralWishlistsCSV(appID, pageCreationDate, new Date());
+    const csvString = await requestGeneralWishlistsCSV(appID, new DateRange(pageCreationDate, new Date()));
     if (csvString === null) {
         console.debug(`No wishlists data found in CSV`);
         throw new Error(`No wishlists data found in CSV`);
@@ -99,48 +98,9 @@ const requestAllWishlistData = async (appID: string) => {
     return wishlistActions;
 }
 
-const requestWishlistRegionalData = async (appID: string, date: Date, offscreenManager: OffscreenManager): Promise<DateWishlists> => {
-    const pageCreationDate = await getPageCreationDate(appID, false) as Date;
-
-    if (date < pageCreationDate) {
-        console.error(`Cannot request wishlist data for date ${date} because it is before page creation date`);
-    }
-
-    const formattedDate = dateToString(date);
-
-    const data = await requestRegionalWishlistData(appID, date, offscreenManager);
-
-    // Make sure empty dates also get saved with 'World' so we do not request it again
-    if (typeof data !== 'object' || Object.keys(data).length === 0) {
-
-        console.debug(`No wishlist data found for date ${formattedDate}. Writing empty data`);
-
-        const dataToWrite: DateWishlists = {
-            date: formattedDate,
-            adds: 0,
-            deletes: 0,
-            gifts: 0,
-            activations: 0,
-            "World": 0
-        };
-
-        await mergeData(appID, 'Wishlists', dataToWrite);
-
-        return dataToWrite;
-    }
-
-    const formattedData = convertRegionalWishlistDataToDateWishlists(data, date);
-
-    console.debug(`Wishlist result for app ${appID} for date ${formattedDate}: `, formattedData);
-
-    await mergeData(appID, 'Wishlists', formattedData);
-
-    return formattedData;
-}
-
-const requestGeneralWishlistsCSV = async (appID: string, startDate: Date, endDate: Date): Promise<string | null> => {
-    const formattedStartDate = dateToString(startDate);
-    const formattedEndDate = dateToString(endDate);
+const requestGeneralWishlistsCSV = async (appID: string, dateRange: DateRange): Promise<string | null> => {
+    const formattedStartDate = dateToString(dateRange.dateStart);
+    const formattedEndDate = dateToString(dateRange.dateEnd);
 
     const URL = `https://partner.steampowered.com/report_csv.php`;
 
@@ -157,7 +117,92 @@ const requestGeneralWishlistsCSV = async (appID: string, startDate: Date, endDat
     const response = await fetch(URL, { method: 'POST', headers: reqHeaders, body: data.toString(), credentials: 'include' });
     if (!response.ok) throw new Error('Network response was not ok');
 
-    const htmlText = await response.text();
+    return readCSVFromResponse(await response.text());
+}
+
+const convertCSVToDateWishlists = (csvString: string): DateWishlists[] => {
+    const objects: any[] = csvTextToArray(csvString);
+
+    const headers = (objects[0] as string[]).map((header: string) => header.trim());
+
+    // Map each line to an object using the headers as keys
+    return objects
+        .slice(1)
+        .map((obj: any) => {
+            return {
+                date: obj[headers.indexOf('DateLocal')],
+                adds: obj[headers.indexOf('Adds')],
+                deletes: obj[headers.indexOf('Deletes')],
+                gifts: obj[headers.indexOf('Gifts')],
+                activations: obj[headers.indexOf('PurchasesAndActivations')]
+            };
+        });
+}
+
+// Request Regional Wishlists
+
+const requestAllRegionalWishlistData = async (appID: string): Promise<DateWishlistRegional[]> => {
+    console.debug(`Requesting all wishlist data for app ${appID}`);
+
+    const pageCreationDate = await getPageCreationDate(appID, false) as Date;
+
+    const csvString = await requestRegionalWishlistDataCSV(appID, new DateRange(pageCreationDate, new Date()));
+    if (csvString === null) {
+        console.debug(`No wishlists data found in CSV`);
+        throw new Error(`No wishlists data found in CSV`);
+    }
+
+    const wishlistRegionalActions = convertCSVToDateWishlistRegional(csvString);
+
+    await mergeData(appID, 'WishlistsRegional', wishlistRegionalActions);
+
+    return wishlistRegionalActions;
+}
+
+const requestRegionalWishlistDataCSV = async (appID: string, dateRange: DateRange): Promise<string | null> => {
+
+    const formattedStartDate = dateToString(dateRange.dateStart);
+    const formattedEndDate = dateToString(dateRange.dateEnd);
+
+    const URL = `https://partner.steampowered.com/report_csv.php`;
+
+    const reqHeaders = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+    };
+
+    const data = new URLSearchParams();
+    data.append('file', `SteamRegionalWishlists_${appID}_${formattedStartDate}_to_${formattedEndDate}`);
+    data.append('params', `query=QueryWishlistActionsByCountryForCSV%appID=${appID}%dateStart=${formattedStartDate}%dateEnd=${formattedEndDate}%interpreter=WishlistCountryReportInterpreter`);
+
+    const response = await fetch(URL, { method: 'POST', headers: reqHeaders, body: data.toString(), credentials: 'include' });
+    if (!response.ok) throw new Error('Network response was not ok');
+
+    return readCSVFromResponse(await response.text());
+}
+
+const convertCSVToDateWishlistRegional = (csvString: string): DateWishlistRegional[] => {
+    const objects: any[] = csvTextToArray(csvString);
+
+    const headers = (objects[0] as string[]).map((header: string) => header.trim());
+
+    // Map each line to an object using the headers as keys
+    return objects
+        .slice(1)
+        .map((obj: any) => {
+            return {
+                date: obj[headers.indexOf('DateLocal')],
+                country: obj[headers.indexOf('CountryCode')],
+                region: obj[headers.indexOf('RegionCode')],
+                adds: obj[headers.indexOf('Adds')],
+                deletes: obj[headers.indexOf('Deletes')],
+                gifts: obj[headers.indexOf('Gifts')],
+                activations: obj[headers.indexOf('PurchasesAndActivations')]
+            };
+        });
+}
+
+const readCSVFromResponse = async (responseText: string): Promise<string | null> => {
+    const htmlText = responseText;
 
     if (htmlText === undefined || htmlText === '') {
         throw new Error(`Received no response instead of CSV while requesting wishlist data`);
@@ -181,85 +226,30 @@ const requestGeneralWishlistsCSV = async (appID: string, startDate: Date, endDat
     return csvString;
 }
 
-const convertCSVToDateWishlists = (csvString: string): DateWishlists[] => {
-    const objects: any[] = csvTextToArray(csvString);
-
-    const headers = (objects[0] as string[]).map((header: string) => header.trim());
-
-    // Map each line to an object using the headers as keys
-    return objects
-        .slice(1)
-        .map((obj: any) => {
-            return {
-                date: obj[headers.indexOf('DateLocal')],
-                adds: obj[headers.indexOf('Adds')],
-                deletes: obj[headers.indexOf('Deletes')],
-                gifts: obj[headers.indexOf('Gifts')],
-                activations: obj[headers.indexOf('PurchasesAndActivations')]
-            };
-        });
-}
-
-const requestRegionalWishlistData = async (appID: string, date: Date, offscreenManager: OffscreenManager): Promise<any> => {
-    let url = `https://partner.steampowered.com/region/`;
-    const params = {
-        appID: appID,
-        unitType: 'wishlist',
-        dateStart: dateToString(date),
-        dateEnd: dateToString(date)
-    }
-
-    const queryString = new URLSearchParams(params).toString();
-    url += `?${queryString}`;
-
-    const data = await parseDataFromPage(url, 'parseWishlistData', offscreenManager);
-
-    return data;
-}
-
-const convertRegionalWishlistDataToDateWishlists = (data: any, date: Date): DateWishlists => {
-    const formattedData: DateWishlists = Object.keys(data)
-        .reduce((acc: any, country: string) => {
-            let value = data[country];
-            if (typeof value === 'string' && value.startsWith('(') && value.endsWith(')')) {
-                value = -parseInt(value.slice(1, -1));
-            } else {
-                value = parseInt(value) || 0;
-            }
-            acc[country] = value;
-            return acc;
-        }, {})
-        .map((obj: any) => {
-            return mapObject<DateWishlists>(obj, dateWishlistsFieldMap);
-        });
-
-    formattedData.date = dateToString(date);
-
-    return formattedData;
-}
 const convertDateWishlistsToGameWishlists = (data: DateWishlists): GameWishlists => {
-    const commonFields = {
+    return {
         date: data.date,
         adds: data.adds,
         deletes: data.deletes,
         gifts: data.gifts,
-        activations: data.activations
+        activations: data.activations,
+        regionalData: {}
     };
+}
 
-    const regionalData: Record<string, number> = {};
-
-    // Extract all extra fields (region names) into regionalData
-    for (const key in data) {
-        if (key !== 'date' && key !== 'adds' && key !== 'deletes' && key !== 'gifts' && key !== 'activations') {
-            const value = data[key];
-            if (typeof value === 'number') {
-                regionalData[key] = value;
+const appendRegionalDataToGameWishlists = (gameWishlists: GameWishlists[], regionalData: DateWishlistRegional[]): GameWishlists[] => {
+    return gameWishlists.map((gameWishlist: GameWishlists) => {
+        regionalData.forEach((item: DateWishlistRegional) => {
+            if (item.date === gameWishlist.date) {
+                gameWishlist.regionalData[item.country] = {
+                    adds: item.adds,
+                    deletes: item.deletes,
+                    gifts: item.gifts,
+                    activations: item.activations
+                };
             }
-        }
-    }
+        });
 
-    return {
-        ...commonFields,
-        regionalData
-    };
+        return gameWishlist;
+    });
 }

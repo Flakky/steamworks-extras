@@ -57,6 +57,9 @@ export const updateStats = async (appIDs: string[], context: UpdateStatsContext)
         for (const appID of appIDs) {
             fetchGeneralWishlistsData(appID, context.queue);
         }
+        for (const appID of appIDs) {
+            fetchRegionalWishlistsData(appID, context.queue);
+        }
 
         fetchDailyData(appIDs, context.queue, context.offscreenManager);
     }
@@ -97,15 +100,15 @@ const fetchGeneralWishlistsData = async (appID: string, queue: StorageActionsQue
     await queue.addToQueue(requestAllWishlists);
 }
 
+const fetchRegionalWishlistsData = async (appID: string, queue: StorageActionsQueue) => {
+    const requestAllRegionalWishlists = new StorageActionRequestRegionalWishlists(appID);
+    await queue.addToQueue(requestAllRegionalWishlists);
+}
+
 const fetchDailyData = async (appIDs: string[], queue: StorageActionsQueue, offscreenManager: OffscreenManager) => {
-    const missingWishlistDates: { appid: string, date: Date }[] = [];
     const missingTrafficDates: { appid: string, date: Date }[] = [];
 
     for (const appID of appIDs) {
-        const wishlistDates = await getMissingDatesForWishlists(appID, queue);
-        for (const date of wishlistDates) {
-            missingWishlistDates.push({ appid: appID, date });
-        }
         const trafficDates = await getMissingDatesForTraffic(appID, queue);
         for (const date of trafficDates) {
             missingTrafficDates.push({ appid: appID, date });
@@ -113,14 +116,10 @@ const fetchDailyData = async (appIDs: string[], queue: StorageActionsQueue, offs
     }
 
     // We sort dates in descending order because we want to request the most recent dates first so the user can use it
-    missingWishlistDates.sort((a, b) => b.date.getTime() - a.date.getTime());
     missingTrafficDates.sort((a, b) => b.date.getTime() - a.date.getTime());
 
     const actionSettings = await makeActionSettings();
 
-    for (const date of missingWishlistDates) {
-        queue.addToQueue(new StorageActionRequestRegionalWishlists(date.appid, date.date, offscreenManager));
-    }
     for (const date of missingTrafficDates) {
         queue.addToQueue(new StorageActionRequestTraffic(date.appid, date.date, actionSettings));
     }
@@ -169,56 +168,6 @@ const getMissingDatesForTraffic = async (appID: string, queue: StorageActionsQue
     }
 
     missingDates = filterDatesByRequestedDates(appID, 'RequestTraffic', missingDates, queue);
-
-    return missingDates;
-}
-
-const getMissingDatesForWishlists = async (appID: string, queue: StorageActionsQueue) => {
-    const pageCreationDate = await getPageCreationDate(appID, false) as Date;
-
-    const dates = getDateRangeArray(new DateRange(pageCreationDate, getDateNoOffset()), true, false) as Date[];
-
-    const wishlistsData = await readData(appID, 'Wishlists');
-
-    let missingDates: Date[] = [];
-
-    if (wishlistsData === undefined || wishlistsData.length == 0) {
-        missingDates = dates;
-    }
-    else {
-        missingDates = dates.filter(date => {
-            const dateString = dateToString(date);
-
-            const hasData = wishlistsData.some((data: any) => {
-                const sameDate = data['Date'] === dateString;
-                if (!sameDate) return false;
-
-                if (data['World'] === undefined
-                    || data['Adds'] === undefined
-                    || data['Deletes'] === undefined
-                ) {
-                    return false;
-                }
-
-                const worldWishlists = data['World'];
-                const adds = data['Adds'];
-                const deletes = data['Deletes'];
-
-                let dataLooksFinal = (adds !== 0 || deletes !== 0) === (worldWishlists !== 0);
-
-                // Sometimes data may look wrong, but world may actually be zero because of deletes are equal to adds wich makes world zero.
-                if (!dataLooksFinal) {
-                    dataLooksFinal = Math.abs((adds - deletes) - worldWishlists) < 3; // 3 is a threshold. Sometimes adds - deletes are not equal to world.
-                }
-
-                return dataLooksFinal;
-            });
-
-            return !hasData;
-        });
-    }
-
-    missingDates = filterDatesByRequestedDates(appID, 'RequestRegionalWishlists', missingDates, queue);
 
     return missingDates;
 }
