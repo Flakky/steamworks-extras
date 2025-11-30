@@ -1,10 +1,9 @@
-import { DateRangeAction, DateAction, StorageAction, StorageActionSettings } from './storageaction';
+import { DateRangeAction, StorageAction, StorageActionSettings } from './storageaction';
 import { csvTextToArray, dateToString } from '../../scripts/helpers';
 import { waitForDatabaseReady, readData, mergeData } from './db';
-import { getPageCreationDate, parseDataFromPage, mapObject } from '../bghelpers';
-import { OffscreenManager } from '../offscreen/offscreenmanager';
+import { getPageCreationDate } from '../bghelpers';
 import { DateRange, getDateRangeArray, isDateInRange } from '../../shared/types/daterange';
-import { DateWishlistRegional, DateWishlists, GameWishlists, dateWishlistsFieldMap } from '../../shared/types/wishlists';
+import { DateWishlistRegional, DateWishlists, GameWishlists } from '../../shared/types/wishlists';
 
 export class StorageActionRequestWishlists extends StorageAction {
     async process() {
