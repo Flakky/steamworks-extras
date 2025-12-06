@@ -106,14 +106,14 @@ export const updateSalesTable = (doc: Document, sales: SalesData, grossNetRatio:
     const groupMap = makeGroupMap(sales.periodSales, salesTableSplit, salesTableColumns);
 
     // Add final dev revenue for groups
-    const groupArr = Object.entries(groupMap).map(([key, values]) => {
+    const groupArr: { key: string, values: Record<string, number>, finalDevRevenue: number }[] = Object.entries(groupMap).map(([key, values]) => {
 
         const gross = values["Gross Steam Sales (USD)"] || 0;
 
         if (gross == 0) return {
             key,
             values: { ...values },
-            FinalDevRevenue: 0
+            finalDevRevenue: 0
         };
 
         let usGross = 0;
@@ -127,7 +127,7 @@ export const updateSalesTable = (doc: Document, sales: SalesData, grossNetRatio:
         return {
             key,
             values: { ...values },
-            FinalDevRevenue: rev.finalRevenue
+            finalDevRevenue: rev.finalRevenue
         };
     });
 
@@ -140,13 +140,13 @@ export const updateSalesTable = (doc: Document, sales: SalesData, grossNetRatio:
     }
 
     // Calculate total row
-    const totalRow: Record<string, number> = salesTableColumns.reduce((acc, col) => {
-        acc[col.key] = groupArr.reduce((sum, row) => sum + (row.values[col.key] || 0), 0);
+    const totalRow: { key: string, values: Record<string, number>, finalDevRevenue: number } = salesTableColumns.reduce((acc, col) => {
+        acc.values[col.key] = groupArr.reduce((sum, row) => sum + (row.values[col.key] || 0), 0);
         return acc;
-    }, { "Total": 0 } as Record<string, number>);
+    }, { key: "Total", values: {}, finalDevRevenue: 0 } as { key: string, values: Record<string, number>, finalDevRevenue: number });
 
     // Calculate total dev revenue
-    const totalGross = totalRow["Gross Steam Sales (USD)"] || 0;
+    const totalGross = totalRow.values["Gross Steam Sales (USD)"] || 0;
     let totalUsGross = 0;
     if (salesTableSplit === SalesTableSplit.Country) {
         const usGroup = groupArr.find(row => row.key === "United States");
@@ -165,7 +165,7 @@ export const updateSalesTable = (doc: Document, sales: SalesData, grossNetRatio:
 
     const { finalRevenue } = getRevenueMap(totalGross, totalGross * grossNetRatio, totalUsGross, royaltiesAndTaxes);
 
-    totalRow["FinalDevRevenue"] = finalRevenue;
+    totalRow.finalDevRevenue = finalRevenue;
 
     // Update the first column label in the header (outside the scrollable table)
     const firstTh = doc.querySelector('#extras_sales_table_header table thead th');
@@ -175,15 +175,15 @@ export const updateSalesTable = (doc: Document, sales: SalesData, grossNetRatio:
 
     const tbody = tableElem.createTBody();
 
-    const insertSalesTableRow = (tbody: HTMLTableSectionElement, rowData: any) => {
+    const insertSalesTableRow = (tbody: HTMLTableSectionElement, rowData: { key: string, values: Record<string, number>, finalDevRevenue: number }) => {
         const tr = tbody.insertRow();
         const tdKey = tr.insertCell();
         tdKey.textContent = rowData.key.toString();
         salesTableColumns.forEach(col => {
             const td = tr.insertCell();
-            let val = rowData[col.key];
+            let val = rowData.values[col.key];
             if (col.key === "FinalDevRevenue") {
-                td.textContent = "$" + numberWithCommas(Math.floor(val));
+                td.textContent = "$" + numberWithCommas(Math.floor(rowData.finalDevRevenue));
                 td.setAttribute('align', 'right');
             } else if (col.key.includes("USD") || col.key.includes("$")) {
                 td.textContent = "$" + numberWithCommas(Number(val.toFixed(2)));

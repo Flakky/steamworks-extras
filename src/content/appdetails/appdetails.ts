@@ -88,7 +88,7 @@ const init = async () => {
 
     // Sales
     const salesChartViewSelection: SalesChartViewSelection = {
-        split: SalesChartSplit.Total,
+        split: singleDay ? SalesChartSplit.Country : SalesChartSplit.Total,
         valueType: SalesChartValueType.GrossSteamSalesUSD
     };
 
