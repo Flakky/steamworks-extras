@@ -1,5 +1,5 @@
 import { setFlexContentBlockContent } from "../pageblocks";
-import { Chart, ChartConfiguration } from "chart.js";
+import { Chart, ChartConfiguration, registerables } from "chart.js";
 import { ReviewChartSplit, ReviewsData } from "./types";
 import { dateToString, selectChartColor } from "../../scripts/helpers";
 import { getCurrentURL, getDateRangeFromURL } from "../site";
@@ -41,7 +41,7 @@ export const createReviewsChart = (doc: Document, reviews: ReviewsData, chartCol
     canvas.height = 400;
 
     const config: ChartConfiguration = {
-        type: 'line',
+        type: 'bar',
         data: { datasets: [], labels: [] },
         options: {
             plugins: {
@@ -57,7 +57,7 @@ export const createReviewsChart = (doc: Document, reviews: ReviewsData, chartCol
     createChartSelect(
         Object.values(ReviewChartSplit).map(type => type),
         'View by',
-        ReviewChartSplit.Total,
+        ReviewChartSplit.Vote,
         (select) => {
             console.log(select.value);
             const reviewChartSplit = select.value as ReviewChartSplit;
@@ -69,7 +69,7 @@ export const createReviewsChart = (doc: Document, reviews: ReviewsData, chartCol
     return chart
 }
 
-const updateReviewsChart = (chart: Chart, reviewChartSplit: ReviewChartSplit, reviews: ReviewsData, chartColors: Record<string, string>) => {
+export const updateReviewsChart = (chart: Chart, reviewChartSplit: ReviewChartSplit, reviews: ReviewsData, chartColors: Record<string, string>) => {
     if (reviews === undefined) return;
 
     const chartDays: string[] = [];
@@ -77,6 +77,8 @@ const updateReviewsChart = (chart: Chart, reviewChartSplit: ReviewChartSplit, re
     let dateRange = getDateRangeFromURL(getCurrentURL());
 
     const oneDay = dateToString(dateRange.dateStart) === dateToString(dateRange.dateEnd);
+
+    console.debug('Date range: ', dateRange);
 
     if (oneDay) {
         chartDays.push(dateToString(dateRange.dateStart));
@@ -163,8 +165,7 @@ const updateReviewsChart = (chart: Chart, reviewChartSplit: ReviewChartSplit, re
     chart.data.labels = chartDays;
     chart.data.datasets = datasets;
 
-    if (chart.options && 'type' in chart.options) {
-        chart.options.type = oneDay ? 'bar' : 'line';
+    if (chart.options && 'scales' in chart.options) {
         chart.options.scales = { x: { stacked: !oneDay }, y: { stacked: !oneDay } }
     }
 

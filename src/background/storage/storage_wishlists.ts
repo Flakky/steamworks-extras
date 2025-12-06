@@ -7,7 +7,7 @@ import { DateWishlistRegional, DateWishlists, GameWishlists } from '../../shared
 
 export class StorageActionRequestWishlists extends StorageAction {
     async process() {
-        await requestAllWishlistData(this.getAppID());
+        return await requestAllWishlistData(this.getAppID());
     }
 
     getType() {
@@ -18,7 +18,7 @@ export class StorageActionRequestWishlists extends StorageAction {
 export class StorageActionRequestRegionalWishlists extends StorageAction {
 
     async process() {
-        await requestAllRegionalWishlistData(this.getAppID());
+        return await requestAllRegionalWishlistData(this.getAppID());
     }
 
     getType() {

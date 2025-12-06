@@ -7,7 +7,7 @@ import { DateWishlistConversions, GameWishlistConversions } from '../../shared/t
 
 export class StorageActionRequestWishlistConversions extends StorageAction {
     async process() {
-        await requestWishlistConversionsData(this.getAppID());
+        return await requestWishlistConversionsData(this.getAppID());
     }
 
     getType() {

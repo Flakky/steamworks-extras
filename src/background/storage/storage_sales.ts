@@ -8,7 +8,7 @@ import { DateRange, isDateInRange, getDateRangeArray } from '../../shared/types/
 export class StorageActionRequestSales extends StorageAction {
 
     async process() {
-        await requestSalesData(this.getAppID());
+        return await requestSalesData(this.getAppID());
     }
 
     getType() {

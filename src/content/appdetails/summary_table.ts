@@ -6,7 +6,7 @@ import { getRevenueMap, getRevenuePercentageMap } from "./revenue";
 import { BackgroundMessageType } from "../../shared/types/background_requests";
 
 const updateSummaryRowUnderExtend = (doc: Document, index: number, title: string, description: string, showPercentages: boolean, calculation: () => { summ: number, share: number }) => {
-    const cell = findElementByText('td', title);
+    const cell = findElementByText('td', title, doc);
     let row = findParentByTag(cell, 'tr') as HTMLTableRowElement;
 
     let sumElem, descElem = undefined;
@@ -220,7 +220,7 @@ export const addFollowers = async (doc: Document, appID: string) => {
         throw new Error('Summary table not found');
     }
 
-    const wishlistsCell = findElementByText('td', 'Wishlists');
+    const wishlistsCell = findElementByText('td', 'Wishlists', doc);
     if (!wishlistsCell) {
         throw new Error('Wishlists cell not found');
     }
@@ -275,8 +275,8 @@ export const addFollowers = async (doc: Document, appID: string) => {
 
 }
 
-export const addRefundDataLink = (packageId: string) => {
-    const refundCell = findElementByText('td', 'Lifetime units returned');
+export const addRefundDataLink = (doc: Document, packageId: string) => {
+    const refundCell = findElementByText('td', 'Lifetime units returned', doc);
     if (!refundCell) {
         throw new Error('Lifetime units returned cell not found');
     }
@@ -314,7 +314,7 @@ export const updateReviewsSummary = (doc: Document, reviews: ReviewsData) => {
         else negative++;
     }
 
-    const lifeTimeUnitsReturnedCell = findElementByText('td', 'Lifetime units returned');
+    const lifeTimeUnitsReturnedCell = findElementByText('td', 'Lifetime units returned', doc);
 
     const lifetimeUnitsRow = findParentByTag(lifeTimeUnitsReturnedCell, 'tr') as HTMLTableRowElement;
     if (!lifetimeUnitsRow) {

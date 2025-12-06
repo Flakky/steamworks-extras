@@ -1,7 +1,12 @@
+import { Chart, registerables } from "chart.js";
 import { defaultSettings } from "../data/defaultsettings";
 import { getCalculationToday, isStringEmpty, dateFromString } from "../scripts/helpers";
 import { getBrowser } from "../shared/browser";
 import { correctDateRange, DateRange } from "../shared/types/daterange";
+
+export const prepareChart = () => {
+    Chart.register(...registerables);
+}
 
 export const readChartColors = async (): Promise<Record<string, string>> => {
     const jsonFilePath = getBrowser().runtime.getURL('data/chartcolors.json');

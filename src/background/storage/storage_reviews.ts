@@ -7,7 +7,7 @@ import { Review } from '../../shared/types/review';
 export class StorageActionRequestReviews extends StorageAction {
 
     async process() {
-        await requestAllReviewsData(this.getAppID());
+        return await requestAllReviewsData(this.getAppID());
     }
 
     getType() {
@@ -26,7 +26,7 @@ export class StorageActionGetReviews extends StorageAction implements DateRangeA
     }
 
     async process() {
-        await getReviewsData(this.getAppID(), this.dateRange, this.returnLackData);
+        return await getReviewsData(this.getAppID(), this.dateRange, this.returnLackData);
     }
 
     getType() {
@@ -47,6 +47,8 @@ const getReviewsData = async (appID: string, dateRange: DateRange, returnLackDat
             return isDateInRange(date, dateRange);
         });
 
+        console.debug('Filtered reviews records: ', filteredRecords);
+
         if (!returnLackData) {
             const dateRangeArray = getDateRangeArray(dateRange, false, true) as string[];
             const datesWithData = [...new Set(filteredRecords.map((record: Review) => dateToString(new Date(record.timestamp_created * 1000))))];
@@ -55,6 +57,8 @@ const getReviewsData = async (appID: string, dateRange: DateRange, returnLackDat
 
             return allDatesHaveData ? filteredRecords : null;
         }
+
+        console.debug('Filtered reviews records 2: ', filteredRecords);
 
         return filteredRecords;
     } else {

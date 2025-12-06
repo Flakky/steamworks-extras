@@ -86,7 +86,7 @@ export const createSalesTable = (doc: Document, sales: SalesData, singleDay: boo
     tableBlockElem.appendChild(tableContainerElem);
 }
 
-const updateSalesTable = (doc: Document, sales: SalesData, grossNetRatio: number, salesTableSplit: SalesTableSplit, salesTableColumns: SalesTableColumns, royaltiesAndTaxes: RoyaltiesAndTaxesMap) => {
+export const updateSalesTable = (doc: Document, sales: SalesData, grossNetRatio: number, salesTableSplit: SalesTableSplit, salesTableColumns: SalesTableColumns, royaltiesAndTaxes: RoyaltiesAndTaxesMap) => {
     const tableElem = doc.querySelector('#extras_sales_table table') as HTMLTableElement | null;
     if (!tableElem) {
         throw new Error("Table element not found");

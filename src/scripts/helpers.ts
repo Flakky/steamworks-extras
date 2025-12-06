@@ -43,8 +43,8 @@ export const isStringEmpty = (str: string | null | undefined): boolean => {
  * // returns {...}
  * findElementByText('td', 'Hello World', document);
  */
-export const findElementByText = (tag: string, text: string, doc: Document | undefined = undefined): Element | undefined => {
-    const elements = doc ? doc.getElementsByTagName(tag) : document.getElementsByTagName(tag);
+export const findElementByText = (tag: string, text: string, doc: Document): Element | undefined => {
+    const elements = doc.getElementsByTagName(tag);
 
     for (const element of Array.from(elements)) {
         if ((element.textContent as string).trim() === text) {

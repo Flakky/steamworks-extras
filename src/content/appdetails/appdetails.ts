@@ -1,22 +1,24 @@
-import { getCurrentURL, getDateRangeFromURL, getDefaultSettings, readChartColors } from "../site";
+import { getCurrentURL, getDateRangeFromURL, getDefaultSettings, prepareChart, readChartColors } from "../site";
 import { addStatusBlockToPage } from "../../shared/statusblock";
 import { createCustomContentBlock, createToolbarBlock, hideOriginalMainBlock, moveDateRangeSelectionToTop, moveGameTitle } from "../pageblocks";
 import { hideOldLinks, moveSummaryTableToNewBlock, moveHeatmapNewBlock, moveOldChartToNewBlock, getSalesTable, createSalesChartBlock, createSalesTableBlock, createReviewsChartBlock, createReviewsTableBlock } from "./layout";
 import { getDataFromStorage, dateToString } from "../../scripts/helpers";
-import { RoyaltiesAndTaxesMap, SalesData, ReviewsData, SalesChartValueType, SalesChartSplit, SalesChartViewSelection, SalesTableColumns } from "./types";
+import { RoyaltiesAndTaxesMap, SalesData, ReviewsData, SalesChartValueType, SalesChartSplit, SalesChartViewSelection, SalesTableColumns, ReviewChartSplit, SalesTableSplit } from "./types";
 import { isDateInRange } from "../../shared/types/daterange";
 import { addRefundDataLink, addFollowers, updateSummaryRows, updateReviewsSummary } from "./summary_table";
 import { getTotalRevenue } from "./revenue";
-import { createReviewsChart } from "./reviews_chart";
+import { createReviewsChart, updateReviewsChart } from "./reviews_chart";
 import { createReviewsTable, updateReviewsTable } from "./reviews_table";
-import { createSalesChart } from "./sales_chart";
-import { createSalesTable } from "./sales_table";
+import { createSalesChart, updateSalesChart } from "./sales_chart";
+import { createSalesTable, updateSalesTable } from "./sales_table";
 import { DateSales } from "../../shared/types/sales";
 import { Review } from "../../shared/types/review";
 import { GetDataType } from "../../shared/types/background_requests";
 
 const init = async () => {
     console.log('Init');
+
+    prepareChart();
 
     const doc = document;
 
@@ -48,14 +50,14 @@ const init = async () => {
     moveDateRangeSelectionToTop(doc);
     addStatusBlockToPage();
 
+    moveSummaryTableToNewBlock(doc);
+
     createSalesChartBlock(doc);
     createSalesTableBlock(doc);
     createReviewsChartBlock(doc);
     createReviewsTableBlock(doc);
 
-    moveSummaryTableToNewBlock(doc);
-
-    addRefundDataLink(packageID);
+    addRefundDataLink(doc, packageID);
     addFollowers(doc, appID);
 
     moveHeatmapNewBlock(doc);
@@ -100,16 +102,20 @@ const init = async () => {
         { key: "FinalDevRevenue", label: "Est. revenue" }
     ];
 
-    createSalesChart(doc, salesData, salesChartViewSelection, chartColors, settings.chartMaxBreakdown);
+    // Sales
+    const salesChart = createSalesChart(doc, salesData, salesChartViewSelection, chartColors, settings.chartMaxBreakdown);
     createSalesTable(doc, salesData, singleDay, gross / net, salesTableColumns, royaltiesAndTaxes);
+    updateSalesChart(salesChart, salesData, salesChartViewSelection, chartColors, settings.chartMaxBreakdown);
+    updateSalesTable(doc, salesData, gross / net, singleDay ? SalesTableSplit.Country : SalesTableSplit.Date, salesTableColumns, royaltiesAndTaxes);
 
     // Reviews
-    createReviewsChart(doc, reviewsData, chartColors);
+    const reviewsChart = createReviewsChart(doc, reviewsData, chartColors);
     createReviewsTable(doc);
     updateReviewsTable(doc, reviewsData);
+    updateReviewsChart(reviewsChart, ReviewChartSplit.Vote, reviewsData, chartColors);
 
+    // Summary
     updateSummaryRows(doc, gross, net, salesData.usRevenue, royaltiesAndTaxes, settings.showZeroRevenues, settings.showPercentages);
-
     updateReviewsSummary(doc, reviewsData);
 }
 
@@ -137,11 +143,15 @@ const getAppID = (doc: Document) => {
 const getPackageId = (doc: Document): string | null => {
     const salesTable = getSalesTable(doc);
 
+    console.debug('Sales table: ', salesTable);
+
     if (!salesTable) {
         return null;
     }
 
     const rows = salesTable.rows;
+
+    console.debug('Rows: ', rows);
 
     const packageRow = rows[2];
 
@@ -149,11 +159,14 @@ const getPackageId = (doc: Document): string | null => {
     if (!packageLink) {
         return null;
     }
+    console.debug('Package link: ', packageLink);
 
     const matchArray = packageLink.href.match(/\/package\/details\/(\d+)/);
     if (!matchArray || matchArray.length < 2) {
         return null;
     }
+
+    console.debug('Match array: ', matchArray);
 
     return matchArray[1] as string;
 }
@@ -161,9 +174,13 @@ const getPackageId = (doc: Document): string | null => {
 const requestSales = async (appID: string): Promise<SalesData> => {
     const dateRange = getDateRangeFromURL(getCurrentURL());
 
+    // Get all sales data
     const sales = await getDataFromStorage(
         GetDataType.Sales,
-        appID
+        appID,
+        '2010-01-01',
+        '2099-12-31',
+        true
     ) as DateSales[];
 
     // Filter to current date range
@@ -191,14 +208,12 @@ const requestSales = async (appID: string): Promise<SalesData> => {
 }
 
 const requestReviews = async (appID: string): Promise<ReviewsData> => {
-    const dateRange = getDateRangeFromURL(getCurrentURL());
-
     const reviews = await getDataFromStorage(
         GetDataType.Reviews,
         appID,
-        dateToString(dateRange.dateStart),
-        dateToString(dateRange.dateEnd),
-        false
+        '2010-01-01',
+        '2099-12-31',
+        true
     ) as Review[];
 
     return {

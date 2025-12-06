@@ -1,11 +1,11 @@
-import { Chart, ChartConfiguration, ChartDataset } from "chart.js";
+import { Chart, ChartConfiguration, ChartDataset } from "chart.js/auto";
 import { createFlexContentBlock, setFlexContentBlockContent } from "../pageblocks";
 import { ReviewChartSplit, SalesChartSplit, SalesChartValueType, SalesChartViewSelection, SalesData } from "./types";
 import { getCurrentURL, getDateRangeFromURL } from "../site";
 import { dateToString, isStringEmpty, selectChartColor } from "../../scripts/helpers";
 import { DateSales, dateSalesFieldMap } from "../../shared/types/sales";
 
-export const createSalesChart = (doc: Document, sales: SalesData, salesChartViewSelection: SalesChartViewSelection, chartColors: Record<string, string>, chartMaxBreakdown: number) => {
+export const createSalesChart = (doc: Document, sales: SalesData, salesChartViewSelection: SalesChartViewSelection, chartColors: Record<string, string>, chartMaxBreakdown: number): Chart => {
     const chartBlockElem = doc.createElement('div');
     chartBlockElem.id = 'extras_sales_chart';
 
@@ -77,9 +77,11 @@ export const createSalesChart = (doc: Document, sales: SalesData, salesChartView
     );
 
     chartBlockElem.appendChild(canvas);
+
+    return chart;
 }
 
-const updateSalesChart = (chart: Chart, sales: SalesData, salesChartViewSelection: SalesChartViewSelection, chartColors: Record<string, string>, chartMaxBreakdown: number) => {
+export const updateSalesChart = (chart: Chart, sales: SalesData, salesChartViewSelection: SalesChartViewSelection, chartColors: Record<string, string>, chartMaxBreakdown: number) => {
     if (!chart) return;
 
     if (sales.periodSales === undefined) {

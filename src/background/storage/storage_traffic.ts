@@ -14,7 +14,7 @@ export class StorageActionRequestTraffic extends StorageAction implements DateAc
     }
 
     async process() {
-        await requestTrafficData(this.getAppID(), this.date);
+        return await requestTrafficData(this.getAppID(), this.date);
     }
 
     getType() {

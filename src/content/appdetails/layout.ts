@@ -1,4 +1,4 @@
-import { findParentByTag } from "../../scripts/helpers";
+import { findParentByTag, findElementByText } from "../../scripts/helpers";
 import { createFlexContentBlock, setFlexContentBlockContentElem } from "../pageblocks";
 
 export const hideOldLinks = (doc: Document) => {
@@ -69,7 +69,12 @@ export const getSummaryTable = (doc: Document): HTMLTableElement | null => {
 }
 
 export const getSalesTable = (doc: Document): HTMLTableElement | null => {
-    return doc.querySelector('#gameDataLeft table') as HTMLTableElement | null;
+    const salesUnits = findElementByText('b', 'Steam units', doc);
+    if (!salesUnits) {
+        return null;
+    }
+
+    return findParentByTag(salesUnits, 'table') as HTMLTableElement | null;
 }
 
 export const createReviewsChartBlock = (doc: Document) => {
