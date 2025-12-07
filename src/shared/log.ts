@@ -20,7 +20,7 @@
     Object.keys(colors).forEach(level => {
         if (originalConsole[level]) {
             const color: string = colors[level] || colors.log;
-            const prefix = `[Steamworks Extras | ${level.charAt(0).toUpperCase() + level.slice(1)}]`;
+            const prefix = `[Steam Extras][${level.charAt(0).toUpperCase() + level.slice(1)}]`;
             const prefixArgs = [`%c${prefix}%c`, `color: ${color}; font-weight: bold;`, 'color: inherit;'];
             console[level as keyof Console] = originalConsole[level].bind(console, ...prefixArgs);
         }
