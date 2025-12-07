@@ -1,3 +1,4 @@
+import '../../shared/log';
 import { getCurrentURL, getDateRangeFromURL, getDefaultSettings, readChartColors } from "../site";
 import { createCustomContentBlock, createToolbarBlock, hideOriginalMainBlock, moveDateRangeSelectionToTop, moveGameTitle } from "../pageblocks";
 import { addStatusBlockToPage } from "../../shared/statusblock";

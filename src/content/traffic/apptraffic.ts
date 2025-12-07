@@ -1,3 +1,4 @@
+import '../../shared/log';
 import { getDefaultSettings, readChartColors } from "../site";
 import { addStatusBlockToPage } from "../../shared/statusblock";
 import { DateRange } from "../../shared/types/daterange";

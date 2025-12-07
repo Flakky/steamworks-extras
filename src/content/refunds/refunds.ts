@@ -1,3 +1,4 @@
+import '../../shared/log';
 import { createRefundsChart, updateRefundsChart } from './chart';
 import { addStatusBlockToPage } from "../../shared/statusblock";
 import { getDefaultSettings, readChartColors } from '../site';
