@@ -104,11 +104,12 @@ export const updateSalesTable = (doc: Document, sales: SalesData, grossNetRatio:
 
     // Group data by split
     const groupMap = makeGroupMap(sales.periodSales, salesTableSplit, salesTableColumns);
+    console.log('groupMap', groupMap);
 
     // Add final dev revenue for groups
     const groupArr: { key: string, values: Record<string, number>, finalDevRevenue: number }[] = Object.entries(groupMap).map(([key, values]) => {
 
-        const gross = values["Gross Steam Sales (USD)"] || 0;
+        const gross = values["grossSteamSalesUSD"] || 0;
 
         if (gross == 0) return {
             key,
@@ -131,6 +132,8 @@ export const updateSalesTable = (doc: Document, sales: SalesData, grossNetRatio:
         };
     });
 
+    console.log('groupArr', groupArr);
+
     // Sort
     if (salesTableSplit === SalesTableSplit.Date) {
         groupArr.sort((a, b) => new Date(b.key).getTime() - new Date(a.key).getTime());
@@ -146,11 +149,11 @@ export const updateSalesTable = (doc: Document, sales: SalesData, grossNetRatio:
     }, { key: "Total", values: {}, finalDevRevenue: 0 } as { key: string, values: Record<string, number>, finalDevRevenue: number });
 
     // Calculate total dev revenue
-    const totalGross = totalRow.values["Gross Steam Sales (USD)"] || 0;
+    const totalGross = totalRow.values["grossSteamSalesUSD"] || 0;
     let totalUsGross = 0;
     if (salesTableSplit === SalesTableSplit.Country) {
         const usGroup = groupArr.find(row => row.key === "United States");
-        if (usGroup) totalUsGross = usGroup.values["Gross Steam Sales (USD)"] || 0;
+        if (usGroup) totalUsGross = usGroup.values["grossSteamSalesUSD"] || 0;
     }
     else if (salesTableSplit === SalesTableSplit.Date) {
         // For date grouping, sum up all US sales across all dates

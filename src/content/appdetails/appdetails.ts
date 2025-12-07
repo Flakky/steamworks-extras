@@ -1,10 +1,11 @@
+import '../../shared/log';
 import { getCurrentURL, getDateRangeFromURL, getDefaultSettings, prepareChart, readChartColors } from "../site";
 import { addStatusBlockToPage } from "../../shared/statusblock";
 import { createCustomContentBlock, createToolbarBlock, hideOriginalMainBlock, moveDateRangeSelectionToTop, moveGameTitle } from "../pageblocks";
 import { hideOldLinks, moveSummaryTableToNewBlock, moveHeatmapNewBlock, moveOldChartToNewBlock, getSalesTable, createSalesChartBlock, createSalesTableBlock, createReviewsChartBlock, createReviewsTableBlock } from "./layout";
 import { getDataFromStorage, dateToString } from "../../scripts/helpers";
 import { RoyaltiesAndTaxesMap, SalesData, ReviewsData, SalesChartValueType, SalesChartSplit, SalesChartViewSelection, SalesTableColumns, ReviewChartSplit, SalesTableSplit } from "./types";
-import { isDateInRange } from "../../shared/types/daterange";
+import { isDateInRange, isSingleDay } from "../../shared/types/daterange";
 import { addRefundDataLink, addFollowers, updateSummaryRows, updateReviewsSummary } from "./summary_table";
 import { getTotalRevenue } from "./revenue";
 import { createReviewsChart, updateReviewsChart } from "./reviews_chart";
@@ -42,6 +43,13 @@ const init = async () => {
         throw new Error('Package ID not found');
     }
 
+    // Get date range to determine if it's a single day
+    const dateRange = getDateRangeFromURL(getCurrentURL());
+    const singleDay = isSingleDay(dateRange);
+
+    console.log('dateRange', dateRange);
+    console.log(singleDay);
+
     // Recreate the page structure
     createCustomContentBlock(doc);
     moveGameTitle(doc);
@@ -58,7 +66,9 @@ const init = async () => {
     createReviewsTableBlock(doc);
 
     addRefundDataLink(doc, packageID);
-    addFollowers(doc, appID);
+    addFollowers(doc, appID).catch(error => {
+        console.error('Failed to add followers:', error);
+    });
 
     moveHeatmapNewBlock(doc);
     moveOldChartToNewBlock(doc);
@@ -73,6 +83,10 @@ const init = async () => {
 
     const gross = getTotalRevenue(doc, true);
     const net = getTotalRevenue(doc, false);
+    const grossNetRatio = net / gross;
+
+    console.log('grossNetRatio', grossNetRatio);
+
     const royaltiesAndTaxes: RoyaltiesAndTaxesMap = {
         usSalesTax: settings.usSalesTax,
         grossRoyalties: settings.grossRoyalties,
@@ -81,10 +95,6 @@ const init = async () => {
         localTax: settings.localTax,
         royaltiesAfterTax: settings.royaltiesAfterTax
     };
-
-    // Get date range to determine if it's a single day
-    const dateRange = getDateRangeFromURL(getCurrentURL());
-    const singleDay = dateToString(dateRange.dateStart) === dateToString(dateRange.dateEnd);
 
     // Sales
     const salesChartViewSelection: SalesChartViewSelection = {
@@ -103,10 +113,10 @@ const init = async () => {
     ];
 
     // Sales
-    const salesChart = createSalesChart(doc, salesData, salesChartViewSelection, chartColors, settings.chartMaxBreakdown);
-    createSalesTable(doc, salesData, singleDay, gross / net, salesTableColumns, royaltiesAndTaxes);
-    updateSalesChart(salesChart, salesData, salesChartViewSelection, chartColors, settings.chartMaxBreakdown);
-    updateSalesTable(doc, salesData, gross / net, singleDay ? SalesTableSplit.Country : SalesTableSplit.Date, salesTableColumns, royaltiesAndTaxes);
+    const salesChart = createSalesChart(doc, salesData, dateRange, salesChartViewSelection, chartColors, settings.chartMaxBreakdown);
+    createSalesTable(doc, salesData, singleDay, grossNetRatio, salesTableColumns, royaltiesAndTaxes);
+    updateSalesChart(salesChart, salesData, dateRange, salesChartViewSelection, chartColors, settings.chartMaxBreakdown);
+    updateSalesTable(doc, salesData, grossNetRatio, singleDay ? SalesTableSplit.Country : SalesTableSplit.Date, salesTableColumns, royaltiesAndTaxes);
 
     // Reviews
     const reviewsChart = createReviewsChart(doc, reviewsData, chartColors);

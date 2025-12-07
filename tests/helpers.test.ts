@@ -97,7 +97,7 @@ describe('findElementByText', () => {
         div.textContent = 'Hello World';
         document.body.appendChild(div);
 
-        const result = findElementByText('div', 'Hello World');
+        const result = findElementByText('div', 'Hello World', document);
         expect(result).toBe(div);
     });
 
@@ -106,12 +106,12 @@ describe('findElementByText', () => {
         p.textContent = '  Test Text  ';
         document.body.appendChild(p);
 
-        const result = findElementByText('p', 'Test Text');
+        const result = findElementByText('p', 'Test Text', document);
         expect(result).toBe(p);
     });
 
     test('should return undefined if element not found', () => {
-        const result = findElementByText('div', 'NonExistent');
+        const result = findElementByText('div', 'NonExistent', document);
         expect(result).toBeUndefined();
     });
 
@@ -133,7 +133,7 @@ describe('findElementByText', () => {
         document.body.appendChild(div1);
         document.body.appendChild(div2);
 
-        const result = findElementByText('div', 'Duplicate');
+        const result = findElementByText('div', 'Duplicate', document);
         expect(result).toBe(div1);
     });
 });
@@ -264,6 +264,8 @@ describe('getCalculationToday', () => {
 
         const result = getCalculationToday();
         const expectedDate = new Date('2024-01-14T06:00:00.000Z');
+
+        console.log('result', result);
 
         expect(result.getUTCDate()).toBe(expectedDate.getUTCDate());
         expect(result.getUTCMonth()).toBe(expectedDate.getUTCMonth());

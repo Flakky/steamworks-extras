@@ -1,4 +1,4 @@
-import { DateRange, isDateInRange, correctDateRange, getDateRangeArray } from '../src/shared/types/daterange';
+import { DateRange, isDateInRange, correctDateRange, getDateRangeArray, isSingleDay } from '../src/shared/types/daterange';
 import { dateToString } from '../src/scripts/helpers';
 
 describe('DateRange', () => {
@@ -331,6 +331,107 @@ describe('getDateRangeArray', () => {
 
         // Original dateRange should not be affected
         expect(dateToString(dateRange.dateStart)).toBe('2025-01-20');
+    });
+});
+
+describe('isSingleDay', () => {
+    test('should return true when start and end are the same date', () => {
+        const date = new Date('2025-01-15');
+        const dateRange = new DateRange(date, date);
+
+        expect(isSingleDay(dateRange)).toBe(true);
+    });
+
+    test('should return true when dates are the same day but different times', () => {
+        const dateRange = new DateRange(
+            new Date('2025-01-15T00:00:00Z'),
+            new Date('2025-01-15T23:59:59Z')
+        );
+
+        expect(isSingleDay(dateRange)).toBe(true);
+    });
+
+    test('should return true when dates are the same day with different UTC times', () => {
+        const dateRange = new DateRange(
+            new Date('2025-01-15T12:30:45Z'),
+            new Date('2025-01-15T18:20:10Z')
+        );
+
+        expect(isSingleDay(dateRange)).toBe(true);
+    });
+
+    test('should return false when dates are different days in same month', () => {
+        const dateRange = new DateRange(
+            new Date('2025-01-15'),
+            new Date('2025-01-16')
+        );
+
+        expect(isSingleDay(dateRange)).toBe(false);
+    });
+
+    test('should return false when dates span multiple days', () => {
+        const dateRange = new DateRange(
+            new Date('2025-01-15'),
+            new Date('2025-01-20')
+        );
+
+        expect(isSingleDay(dateRange)).toBe(false);
+    });
+
+    test('should return false when dates are different months', () => {
+        const dateRange = new DateRange(
+            new Date('2025-01-31'),
+            new Date('2025-02-01')
+        );
+
+        expect(isSingleDay(dateRange)).toBe(false);
+    });
+
+    test('should return false when dates are different years', () => {
+        const dateRange = new DateRange(
+            new Date('2024-12-31'),
+            new Date('2025-01-01')
+        );
+
+        expect(isSingleDay(dateRange)).toBe(false);
+    });
+
+    test('should return false when dates are same day number but different months', () => {
+        const dateRange = new DateRange(
+            new Date('2025-01-15'),
+            new Date('2025-02-15')
+        );
+
+        expect(isSingleDay(dateRange)).toBe(false);
+    });
+
+    test('should return false when dates are same day and month but different years', () => {
+        const dateRange = new DateRange(
+            new Date('2024-01-15'),
+            new Date('2025-01-15')
+        );
+
+        expect(isSingleDay(dateRange)).toBe(false);
+    });
+
+    test('should work correctly after correctDateRange is called', () => {
+        const dateRange = new DateRange(
+            new Date('2025-01-15T12:30:45Z'),
+            new Date('2025-01-15T18:20:10Z')
+        );
+        correctDateRange(dateRange);
+
+        expect(isSingleDay(dateRange)).toBe(true);
+    });
+
+    test('should return false for multi-day range after correctDateRange is called', () => {
+        const dateRange = new DateRange(
+            new Date('2025-01-15T12:30:45Z'),
+            new Date('2025-01-20T18:20:10Z')
+        );
+        correctDateRange(dateRange);
+
+        expect(isSingleDay(dateRange)).toBe(false);
     });
 });
 

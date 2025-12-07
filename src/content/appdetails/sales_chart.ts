@@ -1,11 +1,11 @@
 import { Chart, ChartConfiguration, ChartDataset } from "chart.js/auto";
 import { createFlexContentBlock, setFlexContentBlockContent } from "../pageblocks";
 import { ReviewChartSplit, SalesChartSplit, SalesChartValueType, SalesChartViewSelection, SalesData } from "./types";
-import { getCurrentURL, getDateRangeFromURL } from "../site";
 import { dateToString, isStringEmpty, selectChartColor } from "../../scripts/helpers";
 import { DateSales, dateSalesFieldMap } from "../../shared/types/sales";
+import { isSingleDay, DateRange } from "../../shared/types/daterange";
 
-export const createSalesChart = (doc: Document, sales: SalesData, salesChartViewSelection: SalesChartViewSelection, chartColors: Record<string, string>, chartMaxBreakdown: number): Chart => {
+export const createSalesChart = (doc: Document, sales: SalesData, dateRange: DateRange, salesChartViewSelection: SalesChartViewSelection, chartColors: Record<string, string>, chartMaxBreakdown: number): Chart => {
     const chartBlockElem = doc.createElement('div');
     chartBlockElem.id = 'extras_sales_chart';
 
@@ -36,7 +36,7 @@ export const createSalesChart = (doc: Document, sales: SalesData, salesChartView
     }
 
     const config: ChartConfiguration = {
-        type: 'line',
+        type: isSingleDay(dateRange) ? 'bar' : 'line',
         data: { datasets: [], labels: [] },
         options: {
             plugins: {
@@ -61,7 +61,7 @@ export const createSalesChart = (doc: Document, sales: SalesData, salesChartView
         (select) => {
             console.log(select.value);
             salesChartViewSelection.split = select.value as SalesChartSplit;
-            updateSalesChart(chart, sales, salesChartViewSelection, chartColors, chartMaxBreakdown);
+            updateSalesChart(chart, sales, dateRange, salesChartViewSelection, chartColors, chartMaxBreakdown);
         }
     );
 
@@ -72,7 +72,7 @@ export const createSalesChart = (doc: Document, sales: SalesData, salesChartView
         (select) => {
             console.log(select.value);
             salesChartViewSelection.valueType = select.value as SalesChartValueType;
-            updateSalesChart(chart, sales, salesChartViewSelection, chartColors, chartMaxBreakdown);
+            updateSalesChart(chart, sales, dateRange, salesChartViewSelection, chartColors, chartMaxBreakdown);
         }
     );
 
@@ -81,15 +81,14 @@ export const createSalesChart = (doc: Document, sales: SalesData, salesChartView
     return chart;
 }
 
-export const updateSalesChart = (chart: Chart, sales: SalesData, salesChartViewSelection: SalesChartViewSelection, chartColors: Record<string, string>, chartMaxBreakdown: number) => {
+export const updateSalesChart = (chart: Chart, sales: SalesData, dateRange: DateRange, salesChartViewSelection: SalesChartViewSelection, chartColors: Record<string, string>, chartMaxBreakdown: number) => {
     if (!chart) return;
 
     if (sales.periodSales === undefined) {
         console.log("Sales for Date Rage are not yet ready to be used in sales chart");
     }
 
-    let dateRange = getDateRangeFromURL(getCurrentURL());
-    const oneDay = dateToString(dateRange.dateStart) === dateToString(dateRange.dateEnd);
+    const oneDay = isSingleDay(dateRange);
 
     // Fill labels (dates) for chart
     let labels: string[] = [];
@@ -182,10 +181,6 @@ export const updateSalesChart = (chart: Chart, sales: SalesData, salesChartViewS
 
     chart.data.labels = labels;
     chart.data.datasets = datasets;
-
-    if (chart.options && 'type' in chart.options) {
-        chart.options.type = oneDay ? 'bar' : 'line';
-    }
 
     chart.update();
 }
