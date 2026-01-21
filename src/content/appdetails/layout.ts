@@ -29,7 +29,8 @@ export const moveSummaryTableToNewBlock = (doc: Document) => {
 export const moveOldChartToNewBlock = (doc: Document) => {
     const oldChartElem = doc.getElementById('ChartUnitsHistory');
     if (!oldChartElem) {
-        throw new Error('Old chart element not found');
+        console.warn('Old chart element not found');
+        return;
     }
 
     const oldChartElemParentDiv = findParentByTag(oldChartElem, 'div');
@@ -56,7 +57,8 @@ export const moveOldChartToNewBlock = (doc: Document) => {
 export const moveHeatmapNewBlock = (doc: Document) => {
     const heatmapElem = doc.getElementById('heatmapArea');
     if (!heatmapElem) {
-        throw new Error('Heatmap element not found');
+        console.warn('Heatmap element not found');
+        return;
     }
 
     const contentBlock = createFlexContentBlock(doc, 'Sales heatmap', 'extra_sales_heatmap_block');

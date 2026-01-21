@@ -2,7 +2,7 @@ import { getCurrentURL, getDateRangeFromURL } from "../site";
 import { setFlexContentBlockContent } from "../pageblocks";
 import { WishlistRegionSelection, WishlistsData, WishlistChartActionsType, WishlistChart } from "./types";
 import { updateWishlistChart } from "./wishlist_chart";
-import { getDateRangeArray } from "../../shared/types/daterange";
+import { DateRange, getDateRangeArray } from "../../shared/types/daterange";
 
 export const createCountryTable = (doc: Document) => {
 
@@ -53,7 +53,7 @@ export const createCountryTable = (doc: Document) => {
     setFlexContentBlockContent(doc, 'extra_country_table_block', countryTableContainer);
 }
 
-export const updateCountryTable = (doc: Document, wishlistChart: WishlistChart, wishlistsData: WishlistsData, wishlistRegionSelection: WishlistRegionSelection, chartMaxBreakdown: number) => {
+export const updateCountryTable = (doc: Document, wishlistChart: WishlistChart, wishlistsData: WishlistsData, dateRange: DateRange, wishlistRegionSelection: WishlistRegionSelection, chartMaxBreakdown: number) => {
     console.log('Updating wishlist country table');
 
     const countryTable = doc.getElementById('extra_country_table');
@@ -73,7 +73,6 @@ export const updateCountryTable = (doc: Document, wishlistChart: WishlistChart, 
     countryTableBody.innerHTML = '';
     regionTableBody.innerHTML = '';
 
-    const dateRange = getDateRangeFromURL(getCurrentURL());
     const dateRangeArray = getDateRangeArray(dateRange, false, true) as string[];
 
     if (!wishlistsData.data || wishlistsData.data.length === 0) return;
@@ -126,7 +125,7 @@ export const updateCountryTable = (doc: Document, wishlistChart: WishlistChart, 
                     wishlistRegionSelection.selectedCountries.filter(c => c !== country);
                 }
 
-                if (wishlistChart.wishlistChartType === 'Country') updateWishlistChart(wishlistChart, wishlistsData, wishlistRegionSelection);
+                if (wishlistChart.wishlistChartType === 'Country') updateWishlistChart(wishlistChart, wishlistsData, dateRange, wishlistRegionSelection);
             });
 
             checkboxCell.appendChild(checkbox);

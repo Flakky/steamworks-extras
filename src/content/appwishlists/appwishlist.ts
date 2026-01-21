@@ -1,5 +1,5 @@
 import '../../shared/log';
-import { getCurrentURL, getDateRangeFromURL, getDefaultSettings, readChartColors } from "../site";
+import { getCurrentURL, getDateRangeFromURL, getDefaultSettings, prepareChart, readChartColors } from "../site";
 import { createCustomContentBlock, createToolbarBlock, hideOriginalMainBlock, moveDateRangeSelectionToTop, moveGameTitle } from "../pageblocks";
 import { addStatusBlockToPage } from "../../shared/statusblock";
 import { getDataFromStorage, dateToString } from "../../scripts/helpers";
@@ -25,6 +25,8 @@ import { GetDataType } from "../../shared/types/background_requests";
 const init = async (): Promise<void> => {
     console.log('Init');
 
+    prepareChart();
+
     const doc = document;
 
     const settings = await getDefaultSettings();
@@ -41,6 +43,8 @@ const init = async (): Promise<void> => {
     if (!appID) {
         throw new Error('App ID not found');
     }
+
+    const dateRange = getDateRangeFromURL(getCurrentURL());
 
     // Recreate the page structure
     createCustomContentBlock(doc);
@@ -76,11 +80,11 @@ const init = async (): Promise<void> => {
 
         const wishlistRegionSelection = new WishlistRegionSelection();
 
-        createWishlistChart(doc, wishlistChart, wishlistsData, wishlistRegionSelection);
+        createWishlistChart(doc, wishlistChart, wishlistsData, dateRange, wishlistRegionSelection);
         createCountryTable(doc);
 
-        updateWishlistChart(wishlistChart, wishlistsData, wishlistRegionSelection);
-        updateCountryTable(doc, wishlistChart, wishlistsData, wishlistRegionSelection, settings.chartMaxBreakdown);
+        updateWishlistChart(wishlistChart, wishlistsData, dateRange, wishlistRegionSelection);
+        updateCountryTable(doc, wishlistChart, wishlistsData, dateRange, wishlistRegionSelection, settings.chartMaxBreakdown);
 
         if (conversions) {
             const conversionsData = new WishlistConversionsData();

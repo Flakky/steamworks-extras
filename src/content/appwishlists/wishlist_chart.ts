@@ -2,11 +2,11 @@ import { dateToString, selectChartColor } from "../../scripts/helpers";
 import { getCurrentURL, getDateRangeFromURL } from "../site";
 import { setFlexContentBlockContent } from "../pageblocks";
 import { Chart, ChartConfiguration, ChartDataset } from "chart.js";
-import { getDateRangeArray } from "../../shared/types/daterange";
+import { DateRange, getDateRangeArray, isSingleDay } from "../../shared/types/daterange";
 import { WishlistChart, WishlistChartType, WishlistChartActionsType, WishlistsData, WishlistRegionSelection } from "./types";
 import { GameWishlists } from "../../shared/types/wishlists";
 
-export const createWishlistChart = (doc: Document, wishlistChart: WishlistChart, wishlistData: WishlistsData, wishlistRegionSelection: WishlistRegionSelection) => {
+export const createWishlistChart = (doc: Document, wishlistChart: WishlistChart, wishlistData: WishlistsData, dateRange: DateRange, wishlistRegionSelection: WishlistRegionSelection) => {
     const chartBlockElem = doc.createElement('div');
     chartBlockElem.id = 'extras_wishlist_chart';
 
@@ -39,7 +39,7 @@ export const createWishlistChart = (doc: Document, wishlistChart: WishlistChart,
     const data = { datasets: [], labels: [] };
 
     const config: ChartConfiguration = {
-        type: 'line',
+        type: isSingleDay(dateRange) ? 'bar' : 'line',
         data: data,
         options: {
             plugins: {
@@ -63,22 +63,21 @@ export const createWishlistChart = (doc: Document, wishlistChart: WishlistChart,
         'View by', wishlistChart.wishlistChartType,
         (select) => {
             wishlistChart.wishlistChartType = select.value as WishlistChartType;
-            updateWishlistChart(wishlistChart, wishlistData, wishlistRegionSelection);
+            updateWishlistChart(wishlistChart, wishlistData, dateRange, wishlistRegionSelection);
         }
     );
 
     chartBlockElem.appendChild(canvas);
 }
 
-export const updateWishlistChart = (wishlistChart: WishlistChart, wishlistData: WishlistsData, wishlistRegionSelection: WishlistRegionSelection) => {
+export const updateWishlistChart = (wishlistChart: WishlistChart, wishlistData: WishlistsData, dateRange: DateRange, wishlistRegionSelection: WishlistRegionSelection) => {
     if (!wishlistChart.chart) return;
 
     console.log('Updating wishlist chart');
 
-    const dateRange = getDateRangeFromURL(getCurrentURL());
     const dateRangeArray = getDateRangeArray(dateRange, false, true);
 
-    const oneDay = dateToString(dateRange.dateStart) === dateToString(dateRange.dateEnd);
+    const oneDay = isSingleDay(dateRange);
 
     let viewByList: string[] = getViewByList(wishlistChart.wishlistChartType, wishlistRegionSelection);
 
@@ -103,10 +102,6 @@ export const updateWishlistChart = (wishlistChart: WishlistChart, wishlistData: 
 
     wishlistChart.chart.data.labels = labels;
     wishlistChart.chart.data.datasets = datasets;
-
-    if (wishlistChart.chart.options && 'type' in wishlistChart.chart.options) {
-        wishlistChart.chart.options.type = oneDay ? 'bar' : 'line';
-    }
 
     wishlistChart.chart.update();
 }
