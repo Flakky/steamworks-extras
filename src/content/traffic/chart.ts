@@ -1,12 +1,12 @@
 import { getDateRangeArray } from "../../shared/types/daterange";
-import { TrafficChartDataType, TrafficCategorySelection, TrafficPresetType } from "./types";
+import { TrafficChartDataType, TrafficCategorySelection, TrafficTypeSelection } from "./types";
 import { getPageContentElem } from "./layout";
 import { Chart, ChartConfiguration, ChartDataset } from "chart.js";
 import { selectChartColor } from "../../scripts/helpers";
 import { getDateRangeOfCurrentPage } from "./apptraffic"
 import { GameTraffic } from "../../shared/types/traffic";
 
-export const createChart = (doc: Document, trafficData: GameTraffic[], dataType: TrafficChartDataType, categorySelection: TrafficCategorySelection, chartColors: Record<string, string>): Chart => {
+export const createChart = (doc: Document, trafficData: GameTraffic[], dataType: TrafficTypeSelection, categorySelection: TrafficCategorySelection, chartColors: Record<string, string>): Chart => {
     const chartBlockElem = doc.createElement('div');
     chartBlockElem.id = 'extras_chart';
 
@@ -42,8 +42,6 @@ export const createChart = (doc: Document, trafficData: GameTraffic[], dataType:
     canvas.width = 800;
     canvas.height = 400;
 
-    chartBlockElem.appendChild(canvas);
-
     const config: ChartConfiguration = {
         type: 'line',
         data: { datasets: [], labels: [] },
@@ -61,18 +59,21 @@ export const createChart = (doc: Document, trafficData: GameTraffic[], dataType:
     createChartSelect(
         Object.values(TrafficChartDataType).map(type => type),
         'View by',
-        dataType,
+        dataType.type,
         (select) => {
             console.log(select.value);
             const selectedDataType = select.value as TrafficChartDataType;
-            updateTrafficChart(doc, trafficData, trafficChart, selectedDataType, categorySelection, chartColors);
+            dataType.type = selectedDataType;
+            updateTrafficChart(doc, trafficData, trafficChart, dataType, categorySelection, chartColors);
         }
     );
+
+    chartBlockElem.appendChild(canvas);
 
     return trafficChart;
 }
 
-export const updateTrafficChart = (doc: Document, trafficData: GameTraffic[], chart: Chart, dataType: TrafficChartDataType, categorySelection: TrafficCategorySelection, chartColors: Record<string, string>) => {
+export const updateTrafficChart = (doc: Document, trafficData: GameTraffic[], chart: Chart, dataType: TrafficTypeSelection, categorySelection: TrafficCategorySelection, chartColors: Record<string, string>) => {
     const dateRange = getDateRangeOfCurrentPage(doc);
 
     const days = getDateRangeArray(dateRange, false, true) as string[];
@@ -84,12 +85,13 @@ export const updateTrafficChart = (doc: Document, trafficData: GameTraffic[], ch
     for (const [key, value] of Object.entries(chartData)) {
 
         const values: number[] = value.map(val => {
-            switch (dataType) {
+            switch (dataType.type) {
                 case TrafficChartDataType.Impressions: return val.impressions;
                 case TrafficChartDataType.Visits: return val.visits;
                 case TrafficChartDataType.ClickThroughRate:
                     const dataValue = Number((val.visits / val.impressions * 100.0).toFixed(2));
                     return isNaN(dataValue) ? 0.0 : dataValue;
+                default: return 0.0;
             }
         });
 

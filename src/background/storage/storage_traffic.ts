@@ -88,7 +88,11 @@ const requestTrafficData = async (appID: string, date: Date) => {
         return false;
     };
 
+    console.debug('Traffic results Objects: ', objects);
+
     let result = constructTrafficDataFromObjects(objects, formattedDate);
+
+    console.debug('Traffic results result: ', result);
 
     // Make sure empty dates also get saved so we do not request it again
     if (result.length === 0) {
@@ -111,20 +115,21 @@ const requestTrafficData = async (appID: string, date: Date) => {
 }
 
 const requestTrafficCSV = async (appID: string, date: Date): Promise<string> => {
-    const URL = `https://partner.steamgames.com/apps/navtrafficstats/${appID}?attribution_filter=all&preset_date_range=custom&start_date=${date}&end_date=${date}&format=csv`;
+    const dateString = dateToString(date);
+    const URL = `https://partner.steamgames.com/apps/navtrafficstats/${appID}?attribution_filter=all&preset_date_range=custom&start_date=${dateString}&end_date=${dateString}&format=csv`;
 
-    console.debug(`Request traffic in CSV for ${date}. URL: ${URL}`);
+    console.debug(`Request traffic in CSV for ${dateString}. URL: ${URL}`);
 
     const response = await fetch(URL);
 
     const responseText = await response.text();
 
     if (responseText === undefined || responseText === '') {
-        throw new Error(`Received no response instead of CSV while requesting traffic data for date ${date}`);
+        throw new Error(`Received no response instead of CSV while requesting traffic data for date ${dateString}`);
     }
 
     if (responseText.includes('<html')) {
-        throw new Error(`Received HTML response instead of CSV while requesting traffic data for date ${date}`);
+        throw new Error(`Received HTML response instead of CSV while requesting traffic data for date ${dateString}`);
     }
 
     let lines = responseText.split('\n');
@@ -140,19 +145,24 @@ const requestTrafficCSV = async (appID: string, date: Date): Promise<string> => 
 }
 
 const constructTrafficDataFromObjects = (objects: any[], formattedDate: string): DateTraffic[] => {
+    const headers = (objects[0] as string[]).map((header: string) => header.trim());
+
     let result = objects
         .slice(1)
         .map((obj: any) => {
-            return mapObject<DateTraffic>(obj, dateTrafficFieldMap);
+            return {
+                date: formattedDate,
+                pageCategory: obj[headers.indexOf('Page / Category')],
+                pageFeature: obj[headers.indexOf('Page / Feature')],
+                impressions: obj[headers.indexOf('Impressions')],
+                visits: obj[headers.indexOf('Visits')],
+                ownerImpressions: obj[headers.indexOf('Owner Impressions')],
+                ownerVisits: obj[headers.indexOf('Owner Visits')]
+            };
         })
         // Filter out lines with no page category or feature
         .filter(line => {
             return line.pageCategory !== undefined && line.pageFeature !== undefined;
-        })
-        // Add date to every record
-        .map((obj: DateTraffic) => {
-            obj.date = formattedDate;
-            return obj;
         });
 
     return result;

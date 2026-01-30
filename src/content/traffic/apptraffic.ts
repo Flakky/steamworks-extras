@@ -1,10 +1,10 @@
 import '../../shared/log';
-import { getDefaultSettings, readChartColors } from "../site";
+import { getDefaultSettings, prepareChart, readChartColors } from "../site";
 import { addStatusBlockToPage } from "../../shared/statusblock";
 import { DateRange } from "../../shared/types/daterange";
 import { hideOldElements } from "./layout";
 import { dateToString, getDataFromStorage } from "../../scripts/helpers";
-import { TrafficCategorySelection, TrafficChartDataType, TrafficPresetType } from "./types";
+import { TrafficCategorySelection, TrafficChartDataType, TrafficPresetType, TrafficTypeSelection } from "./types";
 import { createChart, updateTrafficChart } from "./chart";
 import { addTableCheckboxes, getExternalWebsiteSubcategories, getTopCategories, updateSelectedChartCategories } from "./table";
 import { createCheckPresets } from "./presets";
@@ -13,6 +13,10 @@ import { GetDataType } from "../../shared/types/background_requests";
 
 const init = async () => {
     console.log("Init");
+
+    prepareChart();
+
+    const doc = document;
 
     const settings = await getDefaultSettings();
     if (!settings) {
@@ -29,21 +33,24 @@ const init = async () => {
         throw new Error('App ID not found');
     }
 
-    const doc = document;
+    hideOldElements(doc);
 
     const trafficData = await getTrafficData(doc, appID);
     if (!trafficData) {
         throw new Error('Traffic data not found');
     }
 
-    hideOldElements(doc);
+    console.debug('Traffic data: ', trafficData);
 
     const categorySelection = new TrafficCategorySelection();
+    categorySelection.categories = getTopCategories(doc, 5);
 
-    const trafficChart = createChart(doc, trafficData, TrafficChartDataType.Impressions, categorySelection, chartColors);
+    const trafficType = new TrafficTypeSelection();
 
-    addTableCheckboxes(doc, categorySelection, (catSelection: TrafficCategorySelection) => {
-        updateTrafficChart(doc, trafficData, trafficChart, TrafficChartDataType.Impressions, catSelection, chartColors);
+    const trafficChart = createChart(doc, trafficData, trafficType, categorySelection, chartColors);
+
+    addTableCheckboxes(doc, categorySelection, () => {
+        updateTrafficChart(doc, trafficData, trafficChart, trafficType, categorySelection, chartColors);
     });
 
 
@@ -62,13 +69,18 @@ const init = async () => {
                 categorySelection.categories = getTopCategories(doc, 10);
                 break;
             case TrafficPresetType.External:
-                categorySelection.subcategories = getExternalWebsiteSubcategories(doc).map(subcategory => ({ category: 'External', subCategory: subcategory }));
+                categorySelection.categories = [];
+                categorySelection.subcategories = getExternalWebsiteSubcategories(doc).map(subcategory => ({ category: 'External Website', subCategory: subcategory }));
                 break;
         }
 
+        console.debug('Category selection: ', categorySelection);
+
         updateSelectedChartCategories(doc, categorySelection);
-        updateTrafficChart(doc, trafficData, trafficChart, TrafficChartDataType.Impressions, categorySelection, chartColors);
+        updateTrafficChart(doc, trafficData, trafficChart, trafficType, categorySelection, chartColors);
     });
+
+    updateTrafficChart(doc, trafficData, trafficChart, trafficType, categorySelection, chartColors);
 }
 
 const getAppID = () => {
