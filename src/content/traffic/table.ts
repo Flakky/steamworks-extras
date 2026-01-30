@@ -33,11 +33,6 @@ export const addTableCheckboxes = (doc: Document, categorySelection: TrafficCate
         });
 
         checkbox.addEventListener('change', (event: Event) => {
-            const target = event.target as HTMLInputElement;
-
-            const id = target.id;
-            const value = target.value;
-
             writeSelectedChartCategories(doc, categorySelection);
             updateTrafficCategoryCallback();
         });

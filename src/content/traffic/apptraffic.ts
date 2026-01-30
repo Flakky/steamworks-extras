@@ -4,7 +4,7 @@ import { addStatusBlockToPage } from "../../shared/statusblock";
 import { DateRange } from "../../shared/types/daterange";
 import { hideOldElements } from "./layout";
 import { dateToString, getDataFromStorage } from "../../scripts/helpers";
-import { TrafficCategorySelection, TrafficChartDataType, TrafficPresetType, TrafficTypeSelection } from "./types";
+import { TrafficCategorySelection, TrafficPresetType, TrafficTypeSelection } from "./types";
 import { createChart, updateTrafficChart } from "./chart";
 import { addTableCheckboxes, getExternalWebsiteSubcategories, getTopCategories, updateSelectedChartCategories } from "./table";
 import { createCheckPresets } from "./presets";
