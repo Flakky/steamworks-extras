@@ -3,7 +3,7 @@ import { BackgroundMessageType } from '../../shared/types/background_requests';
 import { setFlexContentBlockContent } from '../pageblocks';
 import { RefundsRangeSplit } from './types';
 
-export const createReasonsTable = (doc: Document, packageID: number, refundStats: any[]): void => {
+export const createReasonsTable = (doc: Document, packageID: number, refundStats: Record<RefundsRangeSplit, any>): void => {
     const tableBlockElem = doc.createElement('div');
 
     setFlexContentBlockContent(doc, 'extras_reasons_block', tableBlockElem);
@@ -29,10 +29,9 @@ export const createReasonsTable = (doc: Document, packageID: number, refundStats
         headerRow.appendChild(th);
     });
 
-
-    const reasonsLifetime = (refundStats[0] && refundStats[0].refundReasons) || [];
-    const reasonsLastWeek = (refundStats[1] && refundStats[1].refundReasons) || [];
-    const reasonsLastMonth = (refundStats[2] && refundStats[2].refundReasons) || [];
+    const reasonsLifetime = refundStats[RefundsRangeSplit.Lifetime].refundReasons || [];
+    const reasonsLastWeek = refundStats[RefundsRangeSplit.LastWeek].refundReasons || [];
+    const reasonsLastMonth = refundStats[RefundsRangeSplit.LastMonth].refundReasons || [];
 
     // Get all unique reasons
     const allReasons = new Set<string>([
@@ -48,6 +47,8 @@ export const createReasonsTable = (doc: Document, packageID: number, refundStats
 
     // Create table body
     const tbody = tableElem.createTBody();
+
+    console.debug('All Reasons: ', allReasons);
 
     allReasons.forEach((reason: string) => {
         const row = tbody.insertRow();
@@ -112,6 +113,8 @@ export const requestRefundCommentsAndShow = async (doc: Document, event: any, pa
         row.parentNode?.insertBefore(detailsRow, row.nextSibling);
 
         const comments = await getRefundComments(packageID, reasonObj.id);
+
+        console.debug('Refund comments for reason: ', reasonObj.category, ' are: ', comments);
 
         commentsDiv.removeChild(loader); // Remove loader
 

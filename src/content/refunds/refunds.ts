@@ -2,18 +2,22 @@ import '../../shared/log';
 import { createRefundsChart, updateRefundsChart } from './chart';
 import { addStatusBlockToPage } from "../../shared/statusblock";
 import { getDefaultSettings, readChartColors } from '../site';
-import { createCustomContentBlock, hideOriginalMainBlock, moveGameTitle, setFlexContentBlockContent } from '../pageblocks';
+import { createCustomContentBlock, hideOriginalMainBlock, moveGameTitle } from '../pageblocks';
 import { createToolbarBlock } from '../pageblocks';
 import { RefundsChartSelection, RefundsRangeSplit, RefundsTableSplitType } from './types';
 import { sendMessageAsync, getDataFromStorage } from '../../scripts/helpers';
-import { createReasonsTableBlock, createRefundsTableBlock, getRefundPercentageColor } from './layout';
+import { createReasonsTableBlock, createRefundsChartBlock, createRefundsStatsBlock, createRefundsTableBlock } from './layout';
 import { createRefundsTable, updateRefundsTable } from './table';
 import { createReasonsTable } from './reasonstable';
 import { DateSales } from '../../shared/types/sales';
 import { BackgroundMessageType, GetDataType } from '../../shared/types/background_requests';
+import { prepareChart } from '../site';
+import { fetchAllRefundStats, createRefundsStats } from './stats';
 
 const init = async (): Promise<void> => {
     console.log("Init refunds page");
+
+    prepareChart();
 
     const settings = await getDefaultSettings();
     if (!settings) {
@@ -44,19 +48,21 @@ const init = async (): Promise<void> => {
     addStatusBlockToPage();
     hideOriginalMainBlock(doc);
 
+    createRefundsStatsBlock(doc);
     createRefundsTableBlock(doc);
+    createRefundsChartBlock(doc);
+    createReasonsTableBlock(doc);
 
     const refundsStats = await fetchAllRefundStats(packageID);
     const sales = await requestSales(appID);
 
     createRefundsStats(doc, refundsStats);
 
-    const refundsTableSplit = RefundsTableSplitType.Country;
+    const refundsTableSplit = RefundsTableSplitType.Month;
     createRefundsTable(doc, sales, refundsTableSplit);
     updateRefundsTable(doc, sales, refundsTableSplit);
 
-    createReasonsTableBlock(doc);
-    createReasonsTable(doc, packageID, refundsStats[RefundsRangeSplit.Lifetime]);
+    createReasonsTable(doc, packageID, refundsStats);
 
     const chartSelection = new RefundsChartSelection();
 
@@ -100,119 +106,6 @@ const requestSales = async (appID: string): Promise<DateSales[]> => {
 
     return sales as DateSales[];
 }
-
-const fetchAllRefundStats = async (packageID: number): Promise<Record<RefundsRangeSplit, any>> => {
-    const refundsStats: Record<RefundsRangeSplit, any> = {
-        [RefundsRangeSplit.Lifetime]: {},
-        [RefundsRangeSplit.LastWeek]: {},
-        [RefundsRangeSplit.LastMonth]: {},
-    };
-
-    refundsStats[RefundsRangeSplit.Lifetime] = await fetchRefundStats(packageID, RefundsRangeSplit.Lifetime);
-    refundsStats[RefundsRangeSplit.LastWeek] = await fetchRefundStats(packageID, RefundsRangeSplit.LastWeek);
-    refundsStats[RefundsRangeSplit.LastMonth] = await fetchRefundStats(packageID, RefundsRangeSplit.LastMonth);
-
-    return refundsStats;
-}
-
-const fetchRefundStats = async (packageID: number, split: RefundsRangeSplit): Promise<void> => {
-    const url = `https://partner.steampowered.com/package/refunds/${packageID}/?range=${split}`;
-
-    const response = await sendMessageAsync({
-        request: BackgroundMessageType.parseDOM,
-        payload: { url: url, type: 'RefundStats' },
-    });
-
-    console.log('Refund stats response: ', response);
-
-    return response;
-};
-
-const createRefundsStats = (doc: Document, refundStats: Record<RefundsRangeSplit, any>) => {
-    const statsBlockElem = doc.createElement('div');
-    statsBlockElem.id = 'extras_refunds_stats';
-
-    // Create table
-    const tableElem = doc.createElement('table');
-    const thead = tableElem.createTHead();
-    const headerRow = thead.insertRow();
-
-    // Add header cells
-    // Custom headers with tooltips for returned and refunded units
-    const headerConfigs = [
-        {
-            text: 'Period'
-        },
-        {
-            text: 'Gross units returned',
-            tooltip: 'includes all returns - chargebacks, fraud, payment issues, refunds'
-        },
-        {
-            text: 'Gross units returned %'
-        },
-        {
-            text: 'Refunded units',
-            tooltip: 'user refunds as per the Steam Refund Policy (https://store.steampowered.com/steam_refunds/)'
-        },
-        {
-            text: 'Refunded units %'
-        }
-    ];
-
-    headerConfigs.forEach(header => {
-        const th = doc.createElement('th');
-        th.textContent = (header as any).text;
-        if ((header as any).tooltip) {
-            th.innerHTML += ' <a href="#" class="tooltip">(?)<span>' + (header as any).tooltip + '</span></a>';
-        }
-        headerRow.appendChild(th);
-    });
-
-    const tbody = tableElem.createTBody();
-    statsBlockElem.appendChild(tableElem);
-
-    const packageID = getPackageID();
-    if (!packageID) {
-        console.error('Package ID not found');
-        return;
-    }
-
-    const rangeLabels = [
-        'Lifetime',
-        'Last Week',
-        'Last Month'
-    ];
-
-    const addStatsRow = (label: string, data: any) => {
-        const row = tbody.insertRow();
-
-        const periodCell = row.insertCell();
-        periodCell.textContent = label;
-
-        const addValueCell = (value: any, cell: HTMLTableCellElement) => {
-            (cell as any).textContent = value;
-        }
-
-        const addPercentageCell = (value: number, cell: HTMLTableCellElement) => {
-            cell.textContent = value.toFixed(2) + '%';
-
-            const { r, g, b } = getRefundPercentageColor(value);
-            (cell.style as any).color = `rgb(${r},${g},${b})`;
-        }
-
-        addValueCell(data.grossUnits, row.insertCell());
-        addPercentageCell(data.grossUnitsPercentage, row.insertCell());
-        addValueCell(data.units, row.insertCell());
-        addPercentageCell(data.unitsPercentage, row.insertCell());
-    };
-
-    for (let i = 0; i < rangeLabels.length; i++) {
-        const stats = refundStats[i as RefundsRangeSplit];
-        addStatsRow(rangeLabels[i], stats);
-    }
-
-    setFlexContentBlockContent(doc, 'extras_refunds_stats_block', statsBlockElem);
-};
 
 init();
 

@@ -105,9 +105,8 @@ export const updateRefundsTable = (doc: Document, sales: DateSales[], split: Ref
 
         if (!groupMap[groupKey]) {
             groupMap[groupKey] = {};
-            refundsTableColumns.forEach(col => {
-                groupMap[groupKey][col.key] = 0;
-            });
+            groupMap[groupKey]["GrossUnitsSold"] = 0;
+            groupMap[groupKey]["Chargeback/Returns"] = 0;
         }
 
         // Gross Units Sold
@@ -119,10 +118,12 @@ export const updateRefundsTable = (doc: Document, sales: DateSales[], split: Ref
         groupMap[groupKey]["Chargeback/Returns"] += refundsVal;
     });
 
+    console.debug('groupMap: ', groupMap);
+
     // Prepare group array with Refunds %
     const groupArr = Object.entries(groupMap).map(([key, values]: any) => {
-        const refunds = values.chargebacksOrReturns || 0;
-        const grossUnits = values.grossUnitsSold || 0;
+        const grossUnits = values["GrossUnitsSold"] || 0;
+        const refunds = values["Chargeback/Returns"] || 0;
         const refundsPercent = grossUnits > 0 ? (refunds / grossUnits) * 100 : 0;
         return {
             key,
@@ -131,6 +132,8 @@ export const updateRefundsTable = (doc: Document, sales: DateSales[], split: Ref
             "RefundsPercent": refundsPercent,
         };
     });
+
+    console.debug('groupArr: ', groupArr);
 
     // Sort
     if (split === RefundsTableSplitType.Month) {
