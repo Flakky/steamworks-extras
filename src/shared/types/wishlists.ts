@@ -4,7 +4,6 @@ export type DateWishlists = {
     deletes: number;
     gifts: number;
     activations: number;
-    [region: string]: number | string; // region names as keys (should be number), date as string
 }
 
 export type GameWishlists = {
@@ -13,7 +12,8 @@ export type GameWishlists = {
     deletes: number;
     gifts: number;
     activations: number;
-    regionalData: Record<string, GameWishlistsWithRegionalData>;
+    countriesData: Record<string, GameWishlistsWithRegionalData>;
+    regionsData: Record<string, GameWishlistsWithRegionalData>;
 }
 
 export type GameWishlistsWithRegionalData = {

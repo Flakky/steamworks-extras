@@ -95,8 +95,6 @@ export const updateTrafficChart = (doc: Document, trafficData: GameTraffic[], ch
             }
         });
 
-        console.log(values);
-
         const color = selectChartColor(chartColors, key);
 
         datasets.push({

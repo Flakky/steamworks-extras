@@ -16,8 +16,8 @@ import {
     moveOriginalWishlistChartToNewBlockWithWarning
 } from "./layout";
 import { createWishlistChart, updateWishlistChart } from "./wishlist_chart";
-import { createCountryTable, updateCountryTable } from "./country_table";
-import { WishlistsData, WishlistChart, WishlistRegionSelection, WishlistConversionsData } from "./types";
+import { createCountryTable, updateCountryTable, addTableSelect } from "./country_table";
+import { WishlistsData, WishlistChart, WishlistRegionSelection, WishlistConversionsData, WishlistTableTypeSelection } from "./types";
 import { initConversionsChart } from "./conversions_chart";
 import { GameWishlists, GameWishlistConversions } from "../../shared/types/wishlists";
 import { GetDataType } from "../../shared/types/background_requests";
@@ -71,6 +71,11 @@ const init = async (): Promise<void> => {
 
     const { wishlists, conversions } = await requestWishlistsData(appID);
 
+    const wishlistTableTypeSelection = new WishlistTableTypeSelection();
+
+    console.log("wishlists: ", wishlists);
+    console.log("conversions: ", conversions);
+
     if (wishlists) {
         const wishlistsData = new WishlistsData();
         wishlistsData.data = wishlists;
@@ -78,13 +83,14 @@ const init = async (): Promise<void> => {
         const wishlistChart = new WishlistChart();
         wishlistChart.chartColors = chartColors;
 
-        const wishlistRegionSelection = new WishlistRegionSelection();
+        const wishlistRegionSelection = buildwishlistRegionSelection(wishlistsData, settings.chartMaxBreakdown);
 
         createWishlistChart(doc, wishlistChart, wishlistsData, dateRange, wishlistRegionSelection);
         createCountryTable(doc);
+        addTableSelect(doc, wishlistChart, wishlistsData, dateRange, wishlistTableTypeSelection, wishlistRegionSelection);
 
         updateWishlistChart(wishlistChart, wishlistsData, dateRange, wishlistRegionSelection);
-        updateCountryTable(doc, wishlistChart, wishlistsData, dateRange, wishlistRegionSelection, settings.chartMaxBreakdown);
+        updateCountryTable(doc, wishlistChart, wishlistsData, dateRange, wishlistTableTypeSelection, wishlistRegionSelection);
 
         if (conversions) {
             const conversionsData = new WishlistConversionsData();
@@ -139,6 +145,37 @@ const requestWishlistsData = async (appID: string): Promise<{ wishlists: GameWis
     ) as GameWishlistConversions[];
 
     return { wishlists, conversions };
+}
+
+const buildwishlistRegionSelection = (wishlistsData: WishlistsData, chartMaxBreakdown: number) => {
+    const wishlistRegionSelection = new WishlistRegionSelection();
+
+    const makeTopItems = (countries: boolean) => {
+        const wishlistSumm: Record<string, number> = {};
+
+        wishlistsData.data.forEach((wishlist: GameWishlists) => {
+            const arr = countries ? wishlist.countriesData : wishlist.regionsData;
+
+            for (const [key, item] of Object.entries(arr)) {
+                wishlistSumm[key] = (wishlistSumm[key] || 0) + item.adds;
+            }
+        });
+
+        return Object.entries(wishlistSumm).sort((a, b) => b[1] - a[1]).slice(0, chartMaxBreakdown);
+    };
+
+    let countriesTop = makeTopItems(true);
+    let regionsTop = makeTopItems(false);
+
+    countriesTop.forEach(([key, value]) => {
+        wishlistRegionSelection.selectedCountries.push(key);
+    });
+
+    regionsTop.forEach(([key, value]) => {
+        wishlistRegionSelection.regions.push(key);
+    });
+
+    return wishlistRegionSelection;
 }
 
 init();

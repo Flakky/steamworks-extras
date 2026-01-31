@@ -3,7 +3,7 @@ import { csvTextToArray, dateToString, isStringEmpty } from '../../scripts/helpe
 import { waitForDatabaseReady, readData, mergeData } from './db';
 import { getPageCreationDate } from '../bghelpers';
 import { DateRange, getDateRangeArray, isDateInRange } from '../../shared/types/daterange';
-import { DateWishlistRegional, DateWishlists, GameWishlists } from '../../shared/types/wishlists';
+import { DateWishlistRegional, DateWishlists, GameWishlists, GameWishlistsWithRegionalData } from '../../shared/types/wishlists';
 
 export class StorageActionRequestWishlists extends StorageAction {
     async process() {
@@ -63,7 +63,7 @@ const getWishlistData = async (appID: string, dateRange: DateRange, returnLackDa
         if (datesNoData.length > 0) return null;
     }
 
-    const wishlists = records
+    const wishlists: GameWishlists[] = records
         .filter((item: DateWishlists) => {
             const date = new Date(item.date);
             return isDateInRange(date, dateRange);
@@ -242,7 +242,8 @@ const convertDateWishlistsToGameWishlists = (data: DateWishlists): GameWishlists
         deletes: data.deletes,
         gifts: data.gifts,
         activations: data.activations,
-        regionalData: {}
+        countriesData: {},
+        regionsData: {}
     };
 }
 
@@ -250,12 +251,28 @@ const appendRegionalDataToGameWishlists = (gameWishlists: GameWishlists[], regio
     return gameWishlists.map((gameWishlist: GameWishlists) => {
         regionalData.forEach((item: DateWishlistRegional) => {
             if (item.date === gameWishlist.date) {
-                gameWishlist.regionalData[item.country] = {
+                gameWishlist.countriesData[item.country] = {
                     adds: item.adds,
                     deletes: item.deletes,
                     gifts: item.gifts,
                     activations: item.activations
                 };
+
+                let regionData: GameWishlistsWithRegionalData = gameWishlist.regionsData[item.region] || {
+                    adds: 0,
+                    deletes: 0,
+                    gifts: 0,
+                    activations: 0
+                };
+
+                regionData = {
+                    adds: regionData.adds + item.adds,
+                    deletes: regionData.deletes + item.deletes,
+                    gifts: regionData.gifts + item.gifts,
+                    activations: regionData.activations + item.activations
+                };
+
+                gameWishlist.regionsData[item.region] = regionData;
             }
         });
 

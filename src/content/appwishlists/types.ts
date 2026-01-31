@@ -20,6 +20,25 @@ export class WishlistRegionSelection {
     regions: string[] = [];
 }
 
+export enum WishlistTableType {
+    Date = 'Date',
+    Country = 'Country',
+    Region = 'Region'
+}
+
+export class WishlistTableTypeSelection {
+    type: WishlistTableType = WishlistTableType.Date;
+}
+
+export type WishlistTableData = {
+    split: string;
+    adds: number;
+    deletes: number;
+    gifts: number;
+    activations: number;
+}
+
+
 export enum WishlistChartType {
     Actions = 'Actions',
     Country = 'Country',

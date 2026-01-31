@@ -122,8 +122,9 @@ const getWishlistsFromDayData = (dayData: GameWishlists, wishlistChartType: Wish
                     return 0;
             }
         case WishlistChartType.Country:
+            return dayData.countriesData[view].adds;
         case WishlistChartType.Region:
-            return dayData.regionalData[view].adds;
+            return dayData.regionsData[view].adds;
     }
 }
 
