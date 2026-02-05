@@ -18,6 +18,9 @@ export const initConversionsChart = async (doc: Document, appID: string, wishlis
     const labels = getLabelsForConversionsChart(wishlistConversions);
     const conversionsData = getConversionRates(labels, wishlists, wishlistConversions);
 
+    console.log("labels: ", labels);
+    console.log("conversionsData: ", conversionsData);
+
     updateConversionsChart(conversionsChart, labels, conversionsData, dateRange.dateStart);
 }
 
@@ -72,6 +75,9 @@ const updateConversionsChart = (chart: Chart, labels: string[], conversionsData:
         }
     });
 
+    console.log("beforeRangeData: ", beforeRangeData);
+    console.log("afterRangeData: ", afterRangeData);
+
     const beforeRangeDataset = {
         label: "Conversion Rate (%)",
         data: beforeRangeData,
@@ -101,7 +107,7 @@ const getConversionRates = (labels: string[], wishlists: WishlistsData, wishlist
                 return wishlistDate >= monthStart && wishlistDate < monthEnd;
             })
             .reduce((sum, wishlist) => {
-                return sum + (wishlist.adds || 0);
+                return sum + (wishlist.adds);
             }, 0);
 
         const conversionsForMonth = wishlistConversions.data
@@ -115,6 +121,8 @@ const getConversionRates = (labels: string[], wishlists: WishlistsData, wishlist
                 });
                 return sum + total;
             }, 0);
+
+        console.log("label: ", label, "addsForMonth: ", addsForMonth, "conversionsForMonth: ", conversionsForMonth);
 
         const conversionRate = conversionsForMonth / addsForMonth;
 
