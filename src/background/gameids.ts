@@ -5,28 +5,28 @@ import { setExtentionStatus } from "./status";
 
 const initIDs = async (offscreenManager: OffscreenManager) => {
     console.log('Init AppIDs and PackageIDs');
-  
+
     const appIDs = await initializeAppIDs(offscreenManager);
     if (!Array.isArray(appIDs) || appIDs.length === 0) {
         console.error('No appIDs found');
         return false;
     }
-  
+
     // Get filtered appIDs (excluding ignored ones) for package ID initialization
     const filteredAppIDs = await getAppIDs();
-  
+
     let packageIDs: Record<string, string[]> = {};
     for (const appID of filteredAppIDs) {
-      const IDs = await initializePackageIDs(appID);
-  
-      packageIDs[appID] = IDs;
+        const IDs = await initializePackageIDs(appID);
+
+        packageIDs[appID] = IDs;
     }
-  
+
     console.log('AppIDs and PackageIDs have been initialized.', filteredAppIDs, packageIDs);
-  
+
     return true;
 }
-  
+
 export const initIDsWithRetry = async (interval = 5, offscreenManager: OffscreenManager) => {
     let success = false;
     while (!success) {
@@ -45,38 +45,58 @@ export const initIDsWithRetry = async (interval = 5, offscreenManager: Offscreen
 
 const initPageCreationDate = async (appID: string, offscreenManager: OffscreenManager): Promise<Date | undefined> => {
     console.log('Parsing page creation date for appID: ', appID);
-  
+
     let result = await getBrowser().storage.local.get("pagesCreationDate");
     let pagesCreationDate = result.pagesCreationDate || {};
-  
-    const url = `https://partner.steamgames.com/apps/navtrafficstats/${appID}?attribution_filter=all&preset_date_range=lifetime`;
-    const pageCreationDate = await parseDataFromPage(url, 'parsePageCreationDate', offscreenManager);
-    const date = new Date(pageCreationDate);
-  
-    if (date === undefined || !(date instanceof Date)) return undefined;
-  
+
+    // Get page ID
+    const url = `https://partner.steamgames.com/apps/landing/${appID}`;
+    const pageID = await parseDataFromPage(url, 'parsePageID', offscreenManager);
+
+    console.debug(`Page ID for app ${appID}: `, pageID);
+
+    // Get first revision info
+    const firstRevisionResponse = await fetch(`https://partner.steamgames.com/admin/game/ajaxgetapprevision/${pageID}/?revision=1`);
+    const firstRevisionData = await firstRevisionResponse.json();
+    console.debug(`First revision data for app ${appID}: `, firstRevisionData);
+
+    // Get date
+    const match = firstRevisionData.data.match(/"last_published_time"\s+"(\d+)"/);
+
+    console.debug(`Match for app ${appID}: `, match);
+
+    const timestamp = match ? match[1] : null;
+
+    console.log(`Timestamp of first revision for app ${appID}: `, timestamp);
+
+    if (!timestamp) {
+        throw new Error(`No timestamp of first revision found for app ${appID}`);
+    }
+
+    const date = new Date(Number(timestamp) * 1000);
+
     pagesCreationDate[appID] = date.toISOString();
-  
+
     await getBrowser().storage.local.set({ 'pagesCreationDate': pagesCreationDate });
-  
-    console.log(`Page creation date for ${appID}: `, date);
-  
+
+    console.log(`Page creation date for app ${appID}: `, date);
+
     return date;
 }
 
 const initPageCreationDates = async (offscreenManager: OffscreenManager) => {
     console.log('Init PageCreationDates');
-  
+
     const appIDs = await getAppIDs();
     if (appIDs.length === 0) {
-      console.error('No appIDs found.');
-      return;
+        console.error('No appIDs found.');
+        return;
     }
-  
+
     for (const appID of appIDs) {
-      await initPageCreationDate(appID, offscreenManager);
+        await initPageCreationDate(appID, offscreenManager);
     }
-  
+
     console.log('PageCreationDates have been initialized.');
 }
 
@@ -96,41 +116,41 @@ export const initPageCreationDatesWithRetry = async (interval = 5, offscreenMana
 
 const initializeAppIDs = async (offscreenManager: OffscreenManager): Promise<string[]> => {
     console.log('Parsing AppIDs');
-  
+
     const appIDs = await parseDataFromPage('https://partner.steampowered.com/nav_games.php', 'parseAppIDs', offscreenManager);
-  
+
     console.debug('All AppIDs from partner panel: ', appIDs);
-  
+
     const nonRedirectedAppIDs = [];
-  
+
     for (const appID of appIDs) {
-      try {
-        const response = await fetch(`https://store.steampowered.com/app/${appID}`, { redirect: 'manual' });
-  
-        console.log(`Checking appID ${appID} for redirection: `, response.status);
-  
-        if (response.status === 200) {
-          nonRedirectedAppIDs.push(appID);
+        try {
+            const response = await fetch(`https://store.steampowered.com/app/${appID}`, { redirect: 'manual' });
+
+            console.log(`Checking appID ${appID} for redirection: `, response.status);
+
+            if (response.status === 200) {
+                nonRedirectedAppIDs.push(appID);
+            }
+        } catch (error) {
+            console.error(`Error fetching appID ${appID}:`, error);
         }
-      } catch (error) {
-        console.error(`Error fetching appID ${appID}:`, error);
-      }
     }
-  
+
     console.debug('Non-redirected AppIDs:', nonRedirectedAppIDs);
-  
+
     let currentAppIDs = await getBrowser().storage.local.get("appIDs");
-  
+
     currentAppIDs = currentAppIDs.appIDs || [];
     const mergedAppIDs = [...new Set([...currentAppIDs, ...nonRedirectedAppIDs])];
-  
-  
+
+
     await getBrowser().storage.local.set({ appIDs: mergedAppIDs });
-  
+
     console.log('AppIDs: ', mergedAppIDs);
-  
+
     return mergedAppIDs;
-  }
+}
 
 const initializePackageIDs = async (appID: string): Promise<string[]> => {
     console.log('Parsing PackageIDs for appID: ', appID);
@@ -145,18 +165,18 @@ const initializePackageIDs = async (appID: string): Promise<string[]> => {
     const data = await response.json();
     const appData = data[appID];
 
-    if(!appData || !appData.data || !appData.data.packages){
+    if (!appData || !appData.data || !appData.data.packages) {
         throw new Error('Package IDs request returned no data');
     }
-  
+
     let result = await getBrowser().storage.local.get("packageIDs");
-  
+
     let packageIDs = result.packageIDs === undefined ? {} : result.packageIDs;
-  
+
     packageIDs[appID] = appData.data.packages;
-  
+
     await getBrowser().storage.local.set({ packageIDs: packageIDs });
-  
+
     console.log(`Package IDs have been updated for app ${appID}: `, packageIDs[appID]);
 
     return packageIDs[appID];
