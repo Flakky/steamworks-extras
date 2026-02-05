@@ -24,9 +24,6 @@ export const parseDocument = (htmlText: string, parseType: string): { success: b
             case 'RefundStats':
                 result = parseRefundStats(doc);
                 break;
-            case 'parsePageID':
-                result = parsePageID(doc);
-                break;
             case 'RefundComments':
                 result = parseRefundComments(doc);
                 break;
@@ -261,18 +258,4 @@ export const parseRefundComments = (doc: Document): any[] => {
         });
     }
     return comments;
-}
-
-const parsePageID = (doc: Document): string => {
-    const link = doc.querySelector('a[href*="partner.steamgames.com/admin/game/edit/"]');
-    console.log('Link: ', link);
-    if (!link) {
-        throw new Error('No valid page ID link found');
-    }
-    const href = (link as HTMLAnchorElement).href;
-    const match = href.match(/https:\/\/partner\.steamgames\.com\/admin\/game\/edit\/(\d+)/);
-    if (match) {
-        return match[1];
-    }
-    throw new Error('No valid page ID link found');
 }

@@ -49,9 +49,9 @@ const initPageCreationDate = async (appID: string, offscreenManager: OffscreenMa
     let result = await getBrowser().storage.local.get("pagesCreationDate");
     let pagesCreationDate = result.pagesCreationDate || {};
 
-    // Get page ID
-    const url = `https://partner.steamgames.com/apps/landing/${appID}`;
-    const pageID = await parseDataFromPage(url, 'parsePageID', offscreenManager);
+    // Get page ID by using redirect to edit page
+    const redirect = await fetch(`https://partner.steamgames.com/admin/game/editbyappid/${appID}`);
+    const pageID = redirect.url.split('/').pop();
 
     console.debug(`Page ID for app ${appID}: `, pageID);
 
