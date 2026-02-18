@@ -144,18 +144,15 @@ const createChartData = (trafficData: GameTraffic[], categorySelection: TrafficC
         }
         for (const category of Object.keys(data.categories)) {
             for (const feature of Object.keys(data.categories[category].featureTraffic)) {
+                const value = {
+                    impressions: data.categories[category].featureTraffic[feature].impressions,
+                    visits: data.categories[category].featureTraffic[feature].visits
+                };
+
                 if (categorySelection.categories.includes(category)) {
-                    const value = {
-                        impressions: data.categories[category].impressions,
-                        visits: data.categories[category].visits
-                    };
                     addDataToMap(category, data.date, value);
                 }
                 if (categorySelection.subcategories.some(subcategory => subcategory.category === category && subcategory.subCategory === feature)) {
-                    const value = {
-                        impressions: data.categories[category].featureTraffic[feature].impressions,
-                        visits: data.categories[category].featureTraffic[feature].visits
-                    };
                     addDataToMap(`${category} | ${feature}`, data.date, value);
                 }
             }
