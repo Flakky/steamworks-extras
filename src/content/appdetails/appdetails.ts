@@ -66,9 +66,6 @@ const init = async () => {
     createReviewsTableBlock(doc);
 
     addRefundDataLink(doc, packageID);
-    addFollowers(doc, appID).catch(error => {
-        console.error('Failed to add followers:', error);
-    });
 
     moveHeatmapNewBlock(doc);
     moveOldChartToNewBlock(doc);
@@ -127,6 +124,10 @@ const init = async () => {
     // Summary
     updateSummaryRows(doc, gross, net, salesData.usRevenue, royaltiesAndTaxes, settings.showZeroRevenues, settings.showPercentages);
     updateReviewsSummary(doc, reviewsData);
+
+    addFollowers(doc, appID).catch(error => {
+        console.error('Failed to add followers:', error);
+    });
 }
 
 const getAppID = (doc: Document) => {
