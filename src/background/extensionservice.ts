@@ -67,6 +67,8 @@ getBrowser().runtime.onStartup.addListener(async () => {
 const startInit = async () => {
     console.log('Start init');
 
+    setExtentionStatus(1);
+
     // We init those objects temporarily to for the offscreen to be able to send messages to the background script
     // because offscreen is used to parse IDs
     await initOffscreen();
@@ -89,11 +91,11 @@ const waitForStartupInit = async () => {
 }
 
 const init = async () => {
+    await waitForStartupInit();
+
     console.log('Init');
 
     setExtentionStatus(10);
-
-    await waitForStartupInit();
 
     await initOffscreen();
     const offscreenManager = new OffscreenManager();
