@@ -144,7 +144,6 @@ const initializeAppIDs = async (offscreenManager: OffscreenManager): Promise<str
     currentAppIDs = currentAppIDs.appIDs || [];
     const mergedAppIDs = [...new Set([...currentAppIDs, ...nonRedirectedAppIDs])];
 
-
     await getBrowser().storage.local.set({ appIDs: mergedAppIDs });
 
     console.log('AppIDs: ', mergedAppIDs);
