@@ -15,10 +15,16 @@ export class StorageActionRequestWishlists extends StorageAction {
     }
 }
 
-export class StorageActionRequestRegionalWishlists extends StorageAction {
+export class StorageActionRequestRegionalWishlists extends StorageAction implements DateRangeAction {
+    dateRange: DateRange;
+
+    constructor(appID: string, dateRange: DateRange, settings = new StorageActionSettings()) {
+        super(appID, settings);
+        this.dateRange = dateRange;
+    }
 
     async process() {
-        return await requestAllRegionalWishlistData(this.getAppID());
+        return await requestRegionalWishlistDataForDateRange(this.getAppID(), this.dateRange);
     }
 
     getType() {
@@ -146,6 +152,27 @@ const requestAllRegionalWishlistData = async (appID: string): Promise<DateWishli
     const pageCreationDate = await getPageCreationDate(appID, false) as Date;
 
     const csvString = await requestRegionalWishlistDataCSV(appID, new DateRange(pageCreationDate, new Date()));
+    if (csvString === null) {
+        console.debug(`No wishlists data found in CSV`);
+        throw new Error(`No wishlists data found in CSV`);
+    }
+
+    const wishlistRegionalActions = convertCSVToDateWishlistRegional(csvString)
+        .filter((element: DateWishlistRegional) => {
+            return element.country !== undefined && !isStringEmpty(element.date);
+        });
+
+    console.log('Regional wishlists: ', wishlistRegionalActions);
+
+    await mergeData(appID, 'WishlistsRegional', wishlistRegionalActions);
+
+    return wishlistRegionalActions;
+}
+
+const requestRegionalWishlistDataForDateRange = async (appID: string, dateRange: DateRange): Promise<DateWishlistRegional[]> => {
+    console.debug(`Requesting regional wishlist data for date range ${dateToString(dateRange.dateStart)} - ${dateToString(dateRange.dateEnd)} for app ${appID}`);
+
+    const csvString = await requestRegionalWishlistDataCSV(appID, dateRange);
     if (csvString === null) {
         console.debug(`No wishlists data found in CSV`);
         throw new Error(`No wishlists data found in CSV`);

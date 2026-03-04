@@ -12,8 +12,6 @@ import '../shared/log';
 
 declare var browser: typeof chrome | undefined;
 
-let startupInit = true;
-
 if (typeof browser == "undefined") {
     // Chrome does not support the browser namespace yet.
     (globalThis as any).browser = chrome;
@@ -36,7 +34,17 @@ if (typeof browser == "undefined") {
     // importScripts('statsupdater.js');
 }
 
+const getStartupInit = async () => {
+    const result = await getBrowser().storage.local.get('startupInit');
+    return result.startupInit;
+}
+
+const setStartupInit = async (value: boolean) => {
+    await getBrowser().storage.local.set({ startupInit: value });
+}
+
 getBrowser().runtime.onInstalled.addListener(async () => {
+
     getBrowser().storage.local.get(Object.keys(defaultSettings), (storedSettings: Record<string, any>) => {
         const settingsToStore: Record<string, any> = {};
 
@@ -55,13 +63,13 @@ getBrowser().runtime.onInstalled.addListener(async () => {
 
     await startInit();
 
-    startupInit = false;
+    await setStartupInit(false);
 });
 
 getBrowser().runtime.onStartup.addListener(async () => {
     await startInit();
 
-    startupInit = false;
+    await setStartupInit(false);
 });
 
 const startInit = async () => {
@@ -84,7 +92,7 @@ const startInit = async () => {
 }
 
 const waitForStartupInit = async () => {
-    while (startupInit) {
+    while (await getStartupInit() === true) {
         console.log('Waiting for startup to be initialized...');
         await new Promise(resolve => setTimeout(resolve, 1000));
     }

@@ -14,6 +14,7 @@ import { StorageActionRequestTraffic } from './storage/storage_traffic';
 import { OffscreenManager } from './offscreen/offscreenmanager';
 import { DateRange, getDateRangeArray } from '../shared/types/daterange';
 import { DateTraffic } from '../shared/types/traffic';
+import { DateWishlistRegional } from '../shared/types/wishlists';
 class UpdateStatsContext {
     queue: StorageActionsQueue;
     offscreenManager: OffscreenManager;
@@ -97,12 +98,29 @@ const fetchWishlistConversionsData = (appID: string, queue: StorageActionsQueue)
 
 const fetchGeneralWishlistsData = async (appID: string, queue: StorageActionsQueue) => {
     const requestAllWishlists = new StorageActionRequestWishlists(appID);
-    await queue.addToQueue(requestAllWishlists);
+    queue.addToQueue(requestAllWishlists);
 }
 
 const fetchRegionalWishlistsData = async (appID: string, queue: StorageActionsQueue) => {
-    const requestAllRegionalWishlists = new StorageActionRequestRegionalWishlists(appID);
-    await queue.addToQueue(requestAllRegionalWishlists);
+    const pageCreationDate = await getPageCreationDate(appID, false) as Date;
+
+    const now = new Date();
+    const totalDays = Math.ceil((now.getTime() - pageCreationDate.getTime()) / (1000 * 60 * 60 * 24));
+    const numRanges = 10;
+    const daysPerRange = Math.ceil(totalDays / numRanges);
+
+    for (let i = 0; i < numRanges; i++) {
+        const start = new Date(pageCreationDate.getTime());
+        start.setDate(pageCreationDate.getDate() + i * daysPerRange);
+        let end = new Date(start.getTime());
+        end.setDate(start.getDate() + daysPerRange - 1);
+        if (end > now) end = new Date(now.getTime());
+
+        const requestAllRegionalWishlists = new StorageActionRequestRegionalWishlists(appID, new DateRange(start, end));
+        queue.addToQueue(requestAllRegionalWishlists);
+
+        if (end >= now) return;
+    }
 }
 
 const fetchDailyData = async (appIDs: string[], queue: StorageActionsQueue, offscreenManager: OffscreenManager) => {
@@ -171,6 +189,31 @@ const getMissingDatesForTraffic = async (appID: string, queue: StorageActionsQue
     }
 
     missingDates = filterDatesByRequestedDates(appID, 'RequestTraffic', missingDates, queue);
+
+    return missingDates;
+}
+
+const getMissingDatesForRegionalWishlist = async (appID: string, queue: StorageActionsQueue) => {
+    const pageCreationDate = await getPageCreationDate(appID, false) as Date;
+
+    const dates = getDateRangeArray(new DateRange(pageCreationDate, getDateNoOffset()), true, false) as Date[];
+
+    const regionalWishlistData = await readData(appID, 'WishlistsRegional') as DateWishlistRegional[];
+
+    const alwaysUpdateDate = new Date();
+    alwaysUpdateDate.setDate(alwaysUpdateDate.getDate() - 3);
+
+    let missingDates = dates.filter(date => {
+        if (date > alwaysUpdateDate) {
+            return true;
+        }
+
+        const dateString = dateToString(date);
+        return !regionalWishlistData.some((data: DateWishlistRegional) => {
+            return data.date === dateString;
+        });
+    });
+
 
     return missingDates;
 }

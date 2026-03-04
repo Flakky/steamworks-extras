@@ -140,3 +140,7 @@ export interface DateAction {
 export interface DateRangeAction {
     dateRange: DateRange;
 }
+
+export interface DatesAction {
+    dates: Date[];
+}
