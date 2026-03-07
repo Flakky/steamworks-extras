@@ -1,6 +1,6 @@
 {
     "name": "steamworksextras",
-    "version": "0.1.0",
+    "version": "3.0.0",
     "private": true,
     "description": "Build tooling for the Steamworks Extras browser extension with TypeScript support",
     "license": "MIT",
