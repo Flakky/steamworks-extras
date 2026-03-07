@@ -26,14 +26,15 @@ class UpdateStatsContext {
 }
 
 export const startUpdatingStats = async (appIDs: string[], context: UpdateStatsContext) => {
-    updateStats(appIDs, context);
-
     const updateIntervalObject = await getBrowser().storage.local.get(`statsUpdateInterval`);
     const updateInterval = updateIntervalObject.statsUpdateInterval || 60;
+
+    await updateStatsIfNeeded(appIDs, updateInterval, context);
+
     console.debug(`Stats update interval:`, updateInterval);
 
-    setInterval(() => {
-        updateStats(appIDs, context);
+    setInterval(async () => {
+        await updateStatsIfNeeded(appIDs, updateInterval, context);
     }, updateInterval * 60 * 1000);
 
     updateStatsStatus(context.queue);
@@ -42,8 +43,17 @@ export const startUpdatingStats = async (appIDs: string[], context: UpdateStatsC
     }, 3 * 1000);
 }
 
+export const updateStatsIfNeeded = async (appIDs: string[], updateInterval: number, context: UpdateStatsContext) => {
+    if (await shouldUpdateStatsByInterval(updateInterval)) {
+        updateStats(appIDs, context);
+    }
+}
+
 export const updateStats = async (appIDs: string[], context: UpdateStatsContext) => {
     console.log(`Updating stats for apps:`, appIDs);
+
+    await recordLastUpdate();
+
     try {
         // First handle requests which we can request at once, then daily
         for (const appID of appIDs) {
@@ -67,6 +77,24 @@ export const updateStats = async (appIDs: string[], context: UpdateStatsContext)
     catch (error) {
         console.error('Error while updating stats: ', error);
     }
+}
+
+const recordLastUpdate = async () => {
+    await getBrowser().storage.local.set({ lastUpdate: new Date().getTime() });
+}
+
+const shouldUpdateStatsByInterval = async (updateInterval: number) => {
+    const lastUpdateObject = await getBrowser().storage.local.get(`lastUpdate`);
+    const lastUpdate = lastUpdateObject.lastUpdate || 0;
+    const now = new Date().getTime();
+
+    if (now - lastUpdate < updateInterval * 60 * 1000) {
+        return false;
+    }
+
+    await getBrowser().storage.local.set({ lastUpdate: now });
+
+    return true;
 }
 
 export const updateStatsStatus = (queue: StorageActionsQueue) => {
