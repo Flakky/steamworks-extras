@@ -51,6 +51,25 @@ export class StorageActionGetWishlists extends StorageAction implements DateRang
     }
 }
 
+export class StorageActionGetRegionalWishlists extends StorageAction implements DateRangeAction {
+    dateRange: DateRange;
+    returnLackData: boolean;
+
+    constructor(appID: string, dateRange: DateRange, returnLackData: boolean, settings = new StorageActionSettings()) {
+        super(appID, settings);
+        this.dateRange = dateRange;
+        this.returnLackData = returnLackData;
+    }
+
+    async process() {
+        return await getRegionalWishlistData(this.getAppID(), this.dateRange, this.returnLackData);
+    }
+
+    getType() {
+        return 'GetWishlists';
+    }
+}
+
 // Get Wishlists
 
 const getWishlistData = async (appID: string, dateRange: DateRange, returnLackData: boolean): Promise<GameWishlists[] | null> => {
@@ -81,6 +100,29 @@ const getWishlistData = async (appID: string, dateRange: DateRange, returnLackDa
     const out = appendRegionalDataToGameWishlists(wishlists, regionalRecords);
 
     return out;
+}
+
+const getRegionalWishlistData = async (appID: string, dateRange: DateRange, returnLackData: boolean): Promise<DateWishlistRegional[] | null> => {
+    await waitForDatabaseReady();
+
+    let regionalRecords = await readData(appID, 'WishlistsRegional') as DateWishlistRegional[];
+
+    if (!returnLackData) {
+        let datesNoData = getDateRangeArray(dateRange, false, true) as string[];
+
+        for (const record of regionalRecords) {
+            datesNoData = datesNoData.filter((item: string) => item !== record.date);
+        }
+
+        if (datesNoData.length > 0) return null;
+    }
+
+    regionalRecords = regionalRecords.filter((item: DateWishlistRegional) => {
+        const date = new Date(item.date);
+        return isDateInRange(date, dateRange);
+    });
+
+    return regionalRecords;
 }
 
 // Request Wishlists

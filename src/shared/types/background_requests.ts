@@ -41,5 +41,6 @@ export enum GetDataType {
     Sales = 'Sales',
     Reviews = 'Reviews',
     Wishlists = 'Wishlists',
+    WishlistsRegional = 'WishlistsRegional',
     WishlistConversions = 'WishlistConversions'
 }

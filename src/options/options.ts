@@ -143,11 +143,13 @@ const generateCacheTable = async () => {
 
         addLinkCell("Sales");
         addLinkCell("Wishlists");
+        addLinkCell("WishlistsRegional");
         addLinkCell("Reviews");
         addLinkCell("Traffic");
 
         downloadAndInsertLink(GetDataType.Sales);
         downloadAndInsertLink(GetDataType.Wishlists);
+        downloadAndInsertLink(GetDataType.WishlistsRegional);
         downloadAndInsertLink(GetDataType.Reviews);
         downloadAndInsertLink(GetDataType.Traffic);
 
