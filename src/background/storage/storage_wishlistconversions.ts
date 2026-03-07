@@ -45,6 +45,7 @@ const requestWishlistConversionsData = async (appID: string) => {
 
     console.debug(`Wishlist conversions CSV result:`, result);
 
+    await clearData(appID, 'WishlistConversions');
     await writeData(appID, 'WishlistConversions', result);
 
     return result;
@@ -59,7 +60,6 @@ const getWishlistConversionsData = async (appID: string, dateRange: DateRange, r
         let date = new Date(item.date);
         return isDateInRange(date, dateRange);
     });
-
     if (!returnLackData) {
         const dateRangeArray = getDateRangeArray(dateRange, false, true) as string[];
         const datesWithData = [...new Set(filteredRecords.map((record: DateWishlistConversions) => record.date))];
@@ -107,8 +107,6 @@ const requestWishlistConversionsCSV = async (appID: string, dateRange: DateRange
     if (lines.length === 0) {
         throw new Error(`No wishlist conversions data found in CSV`);
     }
-
-    await clearData(appID, 'WishlistConversions');
 
     const csvString = lines.join('\n');
 
