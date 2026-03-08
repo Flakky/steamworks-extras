@@ -4,7 +4,7 @@ import { extensionStatus, setExtentionStatus } from './status';
 import { OffscreenManager, initOffscreen } from './offscreen/offscreenmanager';
 import { initIDsWithRetry, initPageCreationDatesWithRetry } from './gameids';
 import { StorageActionsQueue } from './storage/storagequeue';
-import { initStorageForAppIDs } from './storage/db';
+import { clearAllData, initStorageForAppIDs } from './storage/db';
 import { startUpdatingStats } from './statsupdater';
 import { initMessageListener } from './messagelistener';
 import { getAppIDs } from './bghelpers';
@@ -50,6 +50,11 @@ getBrowser().runtime.onInstalled.addListener(async (details: any) => {
         const previousVersion = details.previousVersion;
         const currentVersion = getBrowser().runtime.getManifest().version;
         console.log(`Extension updated from ${previousVersion} to ${currentVersion}`);
+
+        if (previousVersion.startsWith('2.')) {
+            await clearAllData();
+            console.log('All data has been cleared.');
+        }
     }
 
     getBrowser().storage.local.get(Object.keys(defaultSettings), (storedSettings: Record<string, any>) => {
