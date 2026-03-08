@@ -43,7 +43,14 @@ const setStartupInit = async (value: boolean) => {
     await getBrowser().storage.local.set({ startupInit: value });
 }
 
-getBrowser().runtime.onInstalled.addListener(async () => {
+getBrowser().runtime.onInstalled.addListener(async (details: any) => {
+    console.debug('On installed details: ', details);
+
+    if (details.reason === "update") {
+        const previousVersion = details.previousVersion;
+        const currentVersion = getBrowser().runtime.getManifest().version;
+        console.log(`Extension updated from ${previousVersion} to ${currentVersion}`);
+    }
 
     getBrowser().storage.local.get(Object.keys(defaultSettings), (storedSettings: Record<string, any>) => {
         const settingsToStore: Record<string, any> = {};
@@ -63,13 +70,13 @@ getBrowser().runtime.onInstalled.addListener(async () => {
 
     await startInit();
 
-    await setStartupInit(false);
+    await setStartupInit(true);
 });
 
 getBrowser().runtime.onStartup.addListener(async () => {
     await startInit();
 
-    await setStartupInit(false);
+    await setStartupInit(true);
 });
 
 const startInit = async () => {
@@ -92,7 +99,7 @@ const startInit = async () => {
 }
 
 const waitForStartupInit = async () => {
-    while (await getStartupInit() === true) {
+    while (await getStartupInit() !== true) {
         console.log('Waiting for startup to be initialized...');
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
