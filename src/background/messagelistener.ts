@@ -117,9 +117,9 @@ export const initMessageListener = (context: InitMessageListenerContext) => {
                 {
                     (async () => {
                         const appIDs = await getAppIDs();
-                        updateStats(appIDs, { queue: context.queue, offscreenManager: context.offscreenManager });
+                        await updateStats(appIDs, { queue: context.queue, offscreenManager: context.offscreenManager });
                         updateStatsStatus(context.queue);
-                        return appIDs;
+                        sendResponse({});
                     })(); break;
                 };
             default:

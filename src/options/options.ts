@@ -1,8 +1,8 @@
 import { getBrowser } from '../shared/browser';
 import { defaultSettings } from '../data/defaultsettings';
 import { createStatusBlock, startUpdateStatus } from '../shared/statusblock';
-import { getDataFromStorage } from '../scripts/helpers';
-import { GetDataType } from '../shared/types/background_requests';
+import { getDataFromStorage, sendMessageAsync } from '../scripts/helpers';
+import { BackgroundMessageType, GetDataType } from '../shared/types/background_requests';
 
 const initSettings = () => {
     getBrowser().storage.local.get(Object.keys(defaultSettings), (result: Record<string, any>) => {
@@ -25,8 +25,9 @@ const initSettings = () => {
 
     (document.getElementById('save') as HTMLButtonElement).addEventListener('click', saveSettings);
     (document.getElementById('clear_cache') as HTMLButtonElement).addEventListener('click', clearCacheData);
-
+    (document.getElementById('update_data') as HTMLButtonElement).addEventListener('click', updateData);
     generateCacheTable();
+    updateLastUpdateTime();
     initVersion();
 
     createStatusBlock();
@@ -157,8 +158,19 @@ const generateCacheTable = async () => {
     });
 }
 
+const updateData = async () => {
+    await sendMessageAsync({ request: BackgroundMessageType.updateStats, payload: undefined });
+
+    updateLastUpdateTime();
+}
+
 const clearCacheData = () => {
     //clearAllData();
+}
+
+const updateLastUpdateTime = async () => {
+    const lastUpdateTime = await getBrowser().storage.local.get('lastUpdate');
+    (document.getElementById('last_update_time') as HTMLElement).textContent = `Last update: ${lastUpdateTime.lastUpdate ? new Date(lastUpdateTime.lastUpdate).toLocaleString() : 'never'}`;
 }
 
 const initVersion = () => {
