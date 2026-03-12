@@ -24,8 +24,8 @@ const initSettings = () => {
     });
 
     (document.getElementById('save') as HTMLButtonElement).addEventListener('click', saveSettings);
-    (document.getElementById('clear_cache') as HTMLButtonElement).addEventListener('click', clearCacheData);
     (document.getElementById('update_data') as HTMLButtonElement).addEventListener('click', updateData);
+    
     generateCacheTable();
     updateLastUpdateTime();
     initVersion();
