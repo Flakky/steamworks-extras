@@ -138,8 +138,7 @@ export const updateSalesTable = (doc: Document, sales: SalesData, grossNetRatio:
     if (salesTableSplit === SalesTableSplit.Date) {
         groupArr.sort((a, b) => new Date(b.key).getTime() - new Date(a.key).getTime());
     } else {
-        const sortKey = "Gross Steam Sales (USD)";
-        groupArr.sort((a, b) => b.values[sortKey] - a.values[sortKey]);
+        groupArr.sort((a, b) => b.finalDevRevenue - a.finalDevRevenue);
     }
 
     // Calculate total row
