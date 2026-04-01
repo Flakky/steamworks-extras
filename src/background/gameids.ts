@@ -17,7 +17,7 @@ const initIDs = async (offscreenManager: OffscreenManager) => {
 
     let packageIDs: Record<string, string[]> = {};
     for (const appID of filteredAppIDs) {
-        const IDs = await initializePackageIDs(appID);
+        const IDs = await initializePackageIDs(appID, offscreenManager);
 
         packageIDs[appID] = IDs;
     }
@@ -151,9 +151,37 @@ const initializeAppIDs = async (offscreenManager: OffscreenManager): Promise<str
     return mergedAppIDs;
 }
 
-const initializePackageIDs = async (appID: string): Promise<string[]> => {
+const initializePackageIDs = async (appID: string, offscreenManager: OffscreenManager): Promise<string[]> => {
     console.log('Parsing PackageIDs for appID: ', appID);
 
+    let packageIDsFound: string[] = [];
+
+    try {
+        packageIDsFound = await findPackageIDsFromAPI(appID);
+    } catch (error) {
+        console.error('Error getting package IDs from API:', error);
+        try {
+            packageIDsFound = await findPackageIDsFromPartnerPanel(appID, offscreenManager);
+        } catch (error) {
+            console.error('Error getting package IDs from partner panel:', error);
+            throw new Error('Error getting package IDs');
+        }
+    }
+
+    let result = await getBrowser().storage.local.get("packageIDs");
+
+    let packageIDs = result.packageIDs === undefined ? {} : result.packageIDs;
+
+    packageIDs[appID] = result.packageIDs;
+
+    await getBrowser().storage.local.set({ packageIDs: packageIDs });
+
+    console.log(`Package IDs have been updated for app ${appID}: `, packageIDs[appID]);
+
+    return packageIDs;
+}
+
+const findPackageIDsFromAPI = async (appID: string): Promise<string[]> => {
     const url = `https://store.steampowered.com/api/appdetails?appids=${appID}`;
 
     console.log(`Fetching package IDs from URL: ${url}`);
@@ -168,15 +196,17 @@ const initializePackageIDs = async (appID: string): Promise<string[]> => {
         throw new Error('Package IDs request returned no data');
     }
 
-    let result = await getBrowser().storage.local.get("packageIDs");
+    return appData.data.packages;
+}
 
-    let packageIDs = result.packageIDs === undefined ? {} : result.packageIDs;
+const findPackageIDsFromPartnerPanel = async (appID: string, offscreenManager: OffscreenManager): Promise<string[]> => {
+    const url = `https://partner.steamgames.com/apps/associated/${appID}`;
 
-    packageIDs[appID] = appData.data.packages;
+    const packageIDs = await parseDataFromPage(url, 'parsePackageIDs', offscreenManager);
 
-    await getBrowser().storage.local.set({ packageIDs: packageIDs });
+    if(packageIDs.length === 0) {
+        throw new Error('No package IDs found from partner panel');
+    }
 
-    console.log(`Package IDs have been updated for app ${appID}: `, packageIDs[appID]);
-
-    return packageIDs[appID];
+    return packageIDs;
 }

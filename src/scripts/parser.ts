@@ -1,3 +1,5 @@
+import { findElementByText, isStringEmpty, tryConvertStringToNumber } from "./helpers";
+
 export const parseDocument = (htmlText: string, parseType: string): { success: boolean; result: any } => {
     console.log('Parsing document: ', parseType);
 
@@ -17,6 +19,9 @@ export const parseDocument = (htmlText: string, parseType: string): { success: b
                 break;
             case 'parseAppIDs':
                 result = parseAppIDs(doc);
+                break;
+            case 'parsePackageIDs':
+                result = parsePackageIDs(doc);
                 break;
             case 'followers':
                 result = parseFollowers(doc);
@@ -38,27 +43,35 @@ export const parseDocument = (htmlText: string, parseType: string): { success: b
     return { success: success, result: result };
 }
 
-const parsePackageIDs = (doc: Document): any[] => {
-    const table = doc.querySelector('.appLandingStorePackagesCtn');
-    if (!table) {
-        throw new Error('No table found');
+const parsePackageIDs = (doc: Document): string[] => {
+    const storePackageTitle = findElementByText('div', 'Store packages', doc);
+    if (!storePackageTitle) {
+        throw new Error('No store package title found');
     }
 
-    const packageIDs: any[] = [];
-    const rows = table.querySelectorAll('.tr');
-
-    if (rows.length === 0) {
-        throw new Error('No rows found');
+    const storePackageSection = storePackageTitle.parentElement;
+    if (!storePackageSection) {
+        throw new Error('No store package section found');
     }
 
-    rows.forEach((row: Element) => {
-        const link = row.querySelector('a[href^="https://partner.steamgames.com/store/packagelanding/"]') as HTMLAnchorElement | null;
-        if (link) {
-            const urlParts = link.href.split('/');
-            const packageID = urlParts[urlParts.length - 1];
-            packageIDs.push(packageID);
-        }
-    });
+    const storePackageRows = storePackageSection.getElementsByClassName('tr');
+    if (storePackageRows.length === 0) {
+        throw new Error('No store package rows found');
+    }
+
+    const packageIDs: string[] = [];
+
+    console.log('Store package rows: ', storePackageRows);
+
+    // Skip the first row because it is the header
+    for (let i = 1; i < storePackageRows.length; i++) {
+        const packageElement = storePackageRows[i].children[0] as Element;
+
+        console.log('Package element: ', packageElement);
+
+        if (packageElement === undefined || isStringEmpty(packageElement.textContent)) continue;
+        packageIDs.push(packageElement.textContent.trim());
+    }
 
     return packageIDs;
 }
