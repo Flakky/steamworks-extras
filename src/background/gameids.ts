@@ -172,7 +172,7 @@ const initializePackageIDs = async (appID: string, offscreenManager: OffscreenMa
 
     let packageIDs = result.packageIDs === undefined ? {} : result.packageIDs;
 
-    packageIDs[appID] = result.packageIDs;
+    packageIDs[appID] = packageIDsFound;
 
     await getBrowser().storage.local.set({ packageIDs: packageIDs });
 
