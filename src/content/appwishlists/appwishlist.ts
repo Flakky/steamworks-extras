@@ -133,7 +133,7 @@ const requestWishlistsData = async (appID: string): Promise<{ wishlists: GameWis
         appID,
         dateToString(dateRange.dateStart),
         dateToString(dateRange.dateEnd),
-        false
+        true
     ) as GameWishlists[];
 
     const conversions = await getDataFromStorage(

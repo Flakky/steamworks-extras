@@ -75,7 +75,7 @@ export const updateWishlistChart = (wishlistChart: WishlistChart, wishlistData: 
 
     console.log('Updating wishlist chart');
 
-    const dateRangeArray = getDateRangeArray(dateRange, false, true);
+    const dateRangeArray = getDateRangeArray(dateRange, false, true) as string[];
 
     const oneDay = isSingleDay(dateRange);
 
@@ -95,6 +95,7 @@ export const updateWishlistChart = (wishlistChart: WishlistChart, wishlistData: 
     else {
         datasets = getDataSetFromWishlists(
             wishlistData.data,
+            dateRangeArray,
             viewByList,
             wishlistChart.wishlistChartType,
             wishlistChart.chartColors);
@@ -151,15 +152,22 @@ const getDayDataSetFromWishlists = (wishlists: GameWishlists[], date: string, vi
     return [dataset];
 }
 
-const getDataSetFromWishlists = (wishlists: GameWishlists[], viewByList: string[], wishlistChartType: WishlistChartType, chartColors: Record<string, string>): ChartDataset[] => {
+const getDataSetFromWishlists = (wishlists: GameWishlists[], dateArray: string[], viewByList: string[], wishlistChartType: WishlistChartType, chartColors: Record<string, string>): ChartDataset[] => {
     const datasets: ChartDataset[] = [];
+
     viewByList.forEach((view: string) => {
         const color = selectChartColor(chartColors, view);
 
         let data: number[] = [];
 
-        wishlists.forEach(item => {
-            data.push(getWishlistsFromDayData(item, wishlistChartType, view));
+        dateArray.forEach(date => {
+            const dayData = getWishlistsFromDate(wishlists, date);
+            if (dayData) {
+                data.push(getWishlistsFromDayData(dayData, wishlistChartType, view));
+            }
+            else {
+                data.push(0);
+            }
         });
 
         const dataset = {
@@ -173,6 +181,10 @@ const getDataSetFromWishlists = (wishlists: GameWishlists[], viewByList: string[
     });
 
     return datasets
+}
+
+const getWishlistsFromDate = (wishlists: GameWishlists[], date: string): GameWishlists | undefined => {
+    return wishlists.find(item => item.date === date);
 }
 
 const getViewByList = (wishlistChartType: WishlistChartType, wishlistRegionSelection: WishlistRegionSelection): string[] => {
