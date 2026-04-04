@@ -111,14 +111,14 @@ export const getDateRangeOfCurrentPage = (doc: Document): DateRange => {
 
 const getTrafficData = async (doc: Document, appID: string): Promise<GameTraffic[]> => {
     console.log("Requesting traffic data");
-
+    
     const { dateStart, dateEnd } = getDateRangeOfCurrentPage(doc);
 
     const trafficData = await getDataFromStorage(
         GetDataType.Traffic,
         appID,
-        dateToString(dateStart),
-        dateToString(dateEnd),
+        dateToString(dateStart, true),
+        dateToString(dateEnd, true),
         true
     );
 

@@ -103,8 +103,12 @@ export const tryConvertStringToNumber = (str: string): number | null => {
  * // returns '2020-01-20'
  * await dateToString(new Date('2020-01-20'));
  */
-export const dateToString = (date: Date): string => {
-    return date.toISOString().split('T')[0];
+export const dateToString = (date: Date, local: boolean = true): string => {
+    if (local) {
+        return date.toLocaleDateString('en-CA');
+    } else {
+        return date.toISOString().split('T')[0];
+    }
 }
 
 export const getDateNoOffset = (): Date => {
