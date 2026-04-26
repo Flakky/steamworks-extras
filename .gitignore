@@ -1,2 +1,10 @@
 *.zip
 /temp
+node_modules/
+.pnpm-debug.log
+.DS_Store
+.env
+.env.*
+dist/
+build/
+out/

@@ -1,50 +1,72 @@
-#extra_country_table {
-  width: 40%;
-  float: left;
+#extras_wishlists_table table {
+  width: 100%;
 }
 
-#extra_country_table td:first-child {
-  text-align: center;
+#extras_wishlists_table {
+  width: 100%;
 }
 
-#extra_country_table tr:nth-child(2) {
-  font-weight: bold;
-}
-
-#extra_country_table td:nth-child(2) {
-  text-align: left;
-  font-weight: bold;
-}
-
-#extra_country_table td {
-  width: auto;
-}
-
-#extra_regions_table {
-  margin-right: 10px;
-  width: 40%;
-  float: right;
-}
-
-#extra_country_table_block>div {
+#extras_wishlists_table_scrollable {
+  width: 100%;
+  overflow-y: scroll;
+  max-height: 400px;
   scrollbar-color: #333 #555;
   scrollbar-width: thin;
-  overflow: auto;
-  max-height: 400px;
 }
 
-#extra_country_table_block>div::-webkit-scrollbar {
+#extras_wishlists_table td:first-child {
+  width: 10px;
+  padding: 0px;
+}
+
+#extras_wishlists_table td:nth-child(2) {
+  width: 38%;
+  font-weight: bold;
+  text-align: left;
+}
+
+#extras_wishlists_table td {
+  width: 15%;
+  text-align: right;
+}
+
+#extras_wishlists_table>div::-webkit-scrollbar {
   width: 12px;
 }
 
-#extra_country_table_block>div::-webkit-scrollbar-track {
+#extras_wishlists_table>div::-webkit-scrollbar-track {
   background: #555;
 }
 
-#extra_country_table_block>div::-webkit-scrollbar-thumb {
+#extras_wishlists_table>div::-webkit-scrollbar-thumb {
   background-color: #333;
   border-radius: 10px;
   border: 3px solid #555;
+}
+
+#extras_wishlists_table_header {
+  width: 100%;
+}
+
+#extras_wishlists_table_header table {
+  width: 100%;
+}
+
+#extras_wishlists_table_header {
+  margin-top: 10px;
+}
+
+#extras_wishlists_table_header th:first-child {
+  width: 10px;
+  padding: 0px;
+}
+
+#extras_wishlists_table_header th:nth-child(2) {
+  width: 38%;
+}
+
+#extras_wishlists_table_header th {
+  width: 15%;
 }
 
 #extra_conversions_block td:first-child {

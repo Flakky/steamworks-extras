@@ -158,3 +158,10 @@ th {
 #cache .description {
   text-align: center;
 }
+
+#last_update_time {
+  display: inline-block;
+  color: #8b969c;
+  font-size: 12px;
+  font-weight: lighter;
+}
