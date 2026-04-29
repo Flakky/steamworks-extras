@@ -1,6 +1,6 @@
 import { getBrowser } from '../shared/browser';
 import { setExtentionStatus } from './status';
-import { getPageCreationDate } from './bghelpers';
+import { getPageCreationDate, hasPackageIDs } from './bghelpers';
 import { getDateNoOffset, dateToString } from '../scripts/helpers';
 import { readData } from './storage/db';
 import { StorageAction, StorageActionSettings } from './storage/storageaction';
@@ -108,18 +108,33 @@ export const updateStatsStatus = (queue: StorageActionsQueue) => {
     }
 }
 
-const fetchSalesData = (appID: string, queue: StorageActionsQueue) => {
+const fetchSalesData = async (appID: string, queue: StorageActionsQueue) => {
+    if (!(await hasPackageIDs(appID))) {
+        console.log(`No package IDs for app ${appID}. Skipping sales data fetch.`);
+        return;
+    }
+
     // We do not check for missing dates because we can request all sales data at once
     queue.addToQueue(new StorageActionRequestSales(appID));
 }
 
-const fetchReviewsData = (appID: string, queue: StorageActionsQueue) => {
+const fetchReviewsData = async (appID: string, queue: StorageActionsQueue) => {
+    if (!(await hasPackageIDs(appID))) {
+        console.log(`No package IDs for app ${appID}. Skipping reviews data fetch.`);
+        return;
+    }
+
     // We do not check for missing dates because reviews cannot be requested for certain dates.
     // We can request all reviews with couple requests in a single action
     queue.addToQueue(new StorageActionRequestReviews(appID));
 }
 
-const fetchWishlistConversionsData = (appID: string, queue: StorageActionsQueue) => {
+const fetchWishlistConversionsData = async (appID: string, queue: StorageActionsQueue) => {
+    if (!(await hasPackageIDs(appID))) {
+        console.log(`No package IDs for app ${appID}. Skipping wishlist conversions data fetch.`);
+        return;
+    }
+
     // We do not check for missing dates because we can request all conversions data at once
     queue.addToQueue(new StorageActionRequestWishlistConversions(appID));
 }

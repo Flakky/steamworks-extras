@@ -164,7 +164,7 @@ const initializePackageIDs = async (appID: string, offscreenManager: OffscreenMa
             packageIDsFound = await findPackageIDsFromPartnerPanel(appID, offscreenManager);
         } catch (error) {
             console.error('Error getting package IDs from partner panel:', error);
-            throw new Error('Error getting package IDs');
+            return [];
         }
     }
 

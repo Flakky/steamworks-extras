@@ -61,6 +61,17 @@ export const getPackageIDs = async (appID: string): Promise<string[]> => {
 }
 
 /**
+ * Checks if the app has package IDs.
+ *
+ * @param {string} appID - AppID of the game
+ * @returns {boolean} - True if the app has package IDs, false otherwise
+ */
+export const hasPackageIDs = async (appID: string): Promise<boolean> => {
+    const packageIDs = await getAppPackageIDs(appID);
+    return packageIDs !== undefined && Array.isArray(packageIDs) && packageIDs.length > 0;
+}
+
+/**
  * Returns the app IDs.
  *
  * @returns {Array} - App IDs
