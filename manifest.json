@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Steamworks Extras",
-    "version": "3.0.0",
+    "version": "3.1.0",
     "author": "Alex Blintsov",
     "homepage_url": "https://steamextras.com",
     "permissions": [

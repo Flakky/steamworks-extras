@@ -27,7 +27,7 @@
 
 ## Get the extension
 
-<h3><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Google_Chrome_icon_%28February_2022%29.svg/64px-Google_Chrome_icon_%28February_2022%29.svg.png" width=30px height=30x> Chrome</h3>
+<h3><img src="https://www.google.com/chrome/static/images/chrome-logo.svg" width=20px height=20x> Chrome</h3>
 
 [![][chrome_store_rating_badge]][chrome_ext_link]
 [![][chrome_store_users_badge]][chrome_ext_link]
@@ -38,7 +38,7 @@ https://chromewebstore.google.com/detail/steamworks-extra-reports/cdobnjfogldjai
 
 You can also [install the extension in developer mode](https://github.com/Flakky/steamworks-extras/wiki/How-to-install#install-in-developer-mode).
 
-<h3><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Firefox_logo%2C_2019.png/960px-Firefox_logo%2C_2019.png" width=30px height=30x> Firefox</h3>
+<h3><img src="https://upload.wikimedia.org/wikipedia/commons/a/a0/Firefox_logo%2C_2019.svg" width=20px height=20x> Firefox</h3>
 
 [![][firefox_users_badge]][firefox_ext_link]
 
@@ -49,6 +49,10 @@ https://addons.mozilla.org/en-US/firefox/addon/steamworks-extras/
 ## Setup
 
 The extension has an options page where you can set up all the revenue shares and taxes. To open settings, activate the plugin, find its icon on your browser toolbar, press the right mouse button and select "Options". Another way to find the settings page is simply by going to your app details page and pressing the "Setup" button near the final revenue display.
+
+## Build from sources
+
+If you want to contribute to the extension or simply debug it, you might need to build the extension from sources. You will need NodeJS installed on your system. To build it, run `npm install` then `npm run build` inside working folder (where this Readme is located). The extension will be built into /dist folder. Then use development mode in your browser to load it from /dist folder.
 
 <!-- Links for readme -->
 
