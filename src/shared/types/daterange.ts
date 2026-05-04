@@ -26,9 +26,9 @@ export class DateRange {
  * @returns {boolean} - True if the date is in the range, false otherwise
  */
 export const isDateInRange = (date: Date, dateRange: DateRange): boolean => {
-    const start = new Date(dateRange.dateStart.getFullYear(), dateRange.dateStart.getMonth(), dateRange.dateStart.getUTCDate());
-    const end = new Date(dateRange.dateEnd.getFullYear(), dateRange.dateEnd.getMonth(), dateRange.dateEnd.getUTCDate(), 23, 59, 59, 999);
-    const target = new Date(date.getFullYear(), date.getMonth(), date.getUTCDate(), 12, 0, 0, 0); // To be sure the date is inside start and end
+    const start = new Date(dateRange.dateStart.getFullYear(), dateRange.dateStart.getMonth(), dateRange.dateStart.getDate());
+    const end = new Date(dateRange.dateEnd.getFullYear(), dateRange.dateEnd.getMonth(), dateRange.dateEnd.getDate(), 23, 59, 59, 999);
+    const target = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0); // To be sure the date is inside start and end
 
     return target >= start && target <= end;
 }
