@@ -36,9 +36,11 @@ export const createSalesTable = (doc: Document, sales: SalesData, singleDay: boo
     // Get date range to determine if we should show Date filter
     let viewByOptions = Object.values(SalesTableSplit).map(type => type)
 
-    if (!singleDay) {
+    if (singleDay) {
         viewByOptions = viewByOptions.filter(type => type !== SalesTableSplit.Date);;
     }
+
+    console.log('viewByOptions', viewByOptions);
 
     const salesTableSplit: SalesTableSplit = singleDay ? SalesTableSplit.Country : SalesTableSplit.Date;
 
