@@ -23,6 +23,9 @@ export const parseDocument = (htmlText: string, parseType: string): { success: b
             case 'parsePackageIDs':
                 result = parsePackageIDs(doc);
                 break;
+            case 'parsePageCreationDate':
+                result = parsePageCreationDate(doc);
+                break;
             case 'followers':
                 result = parseFollowers(doc);
                 break;
@@ -75,6 +78,25 @@ const parsePackageIDs = (doc: Document): string[] => {
 
     return packageIDs;
 }
+
+const parsePageCreationDate = (doc: Document): Date => {
+    const startDateElem = doc.getElementById('start_date');
+    if (!startDateElem) {
+        throw new Error('No "start_date" element found');
+    }
+  
+    const startDate = (startDateElem as HTMLInputElement).value;
+  
+    if (!startDate) {
+      throw new Error('No "start_date" element found');
+    }
+  
+    if (!startDate) {
+      throw new Error('No valid link with "all history" text found');
+    }
+  
+    return new Date(startDate);
+  }
 
 const parseWishlistData = (doc: Document): any => {
     const table = doc.querySelector('.grouping_table');

@@ -3,8 +3,6 @@ import { getAppIDs, getPageCreationDate, parseDataFromPage } from "./bghelpers";
 import { OffscreenManager } from "./offscreen/offscreenmanager";
 import { setExtentionStatus } from "./status";
 
-const DEFAULT_PAGE_CREATION_DATE = new Date(Date.UTC(2014, 0, 1));
-
 const parseTimestampFromKV = (source: string, key: string): number | null => {
     const match = source.match(new RegExp(`"${key}"\\s+"(\\d+)"`));
     if (!match || !match[1]) {
@@ -32,8 +30,6 @@ const parseRevisionTimestamp = (revisionData: unknown): number | null => {
     // Some apps do not expose last_published_time.
     const fallbackCandidates = [
         parseTimestampFromKV(revisionData, 'time_created'),
-        parseTimestampFromKV(revisionData, 'coming_soon_date'),
-        parseTimestampFromKV(revisionData, 'steam_release_date'),
         parseTimestampFromKV(revisionData, 'asset_mtime')
     ].filter((value): value is number => value !== null);
 
@@ -48,24 +44,24 @@ const parseRevisionTimestamp = (revisionData: unknown): number | null => {
         return Math.min(...nonFutureCandidates);
     }
 
-    return Math.min(...fallbackCandidates);
+    return null;
 }
 
-const resolvePageCreationDate = (timestamp: number | null, appID: string): Date => {
+const resolvePageCreationDateFromTimestamp = (timestamp: number | null, appID: string): Date | null => {
     if (timestamp === null) {
         console.warn(`No timestamp found for app ${appID}. Falling back to default page creation date.`);
-        return DEFAULT_PAGE_CREATION_DATE;
+        return null;
     }
 
     const date = new Date(timestamp * 1000);
     if (Number.isNaN(date.getTime())) {
         console.warn(`Invalid timestamp "${timestamp}" for app ${appID}. Falling back to default page creation date.`);
-        return DEFAULT_PAGE_CREATION_DATE;
+        return null;
     }
 
     if (date.getTime() > Date.now()) {
         console.warn(`Future timestamp "${timestamp}" for app ${appID}. Falling back to default page creation date.`);
-        return DEFAULT_PAGE_CREATION_DATE;
+        return null;
     }
 
     return date;
@@ -128,11 +124,19 @@ const initPageCreationDate = async (appID: string, offscreenManager: OffscreenMa
     const firstRevisionData = await firstRevisionResponse.json();
     console.debug(`First revision data for app ${appID}: `, firstRevisionData);
 
-    const timestamp = parseRevisionTimestamp(firstRevisionData?.data);
+    let timestamp = parseRevisionTimestamp(firstRevisionData?.data);
+    
+    console.debug(`Parsed timestamp for app ${appID}: `, timestamp);
 
-    console.log(`Timestamp of first revision for app ${appID}: `, timestamp);
+    let date = resolvePageCreationDateFromTimestamp(timestamp, appID);
 
-    const date = resolvePageCreationDate(timestamp, appID);
+    if(date === null) {
+        date = await findPageCreationDateFromTrafficPage(appID, offscreenManager);
+    }
+    if(date === null) {
+        console.error(`No page creation date found for app ${appID}. Falling back to default page creation date.`);
+        date = new Date(Date.UTC(2014, 0, 1));
+    }
 
     pagesCreationDate[appID] = date.toISOString();
 
@@ -268,4 +272,12 @@ const findPackageIDsFromPartnerPanel = async (appID: string, offscreenManager: O
     }
 
     return packageIDs;
+}
+
+const findPageCreationDateFromTrafficPage = async (appID: string, offscreenManager: OffscreenManager): Promise<Date | null> => {
+    console.log(`Fetching page creation date from traffic page for appID: ${appID}`);
+
+    const url = `https://partner.steamgames.com/apps/navtrafficstats/${appID}?attribution_filter=all&preset_date_range=lifetime`;
+    const pageCreationDate = await parseDataFromPage(url, 'parsePageCreationDate', offscreenManager);
+    return new Date(pageCreationDate);
 }
