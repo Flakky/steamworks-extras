@@ -3,6 +3,74 @@ import { getAppIDs, getPageCreationDate, parseDataFromPage } from "./bghelpers";
 import { OffscreenManager } from "./offscreen/offscreenmanager";
 import { setExtentionStatus } from "./status";
 
+const DEFAULT_PAGE_CREATION_DATE = new Date(Date.UTC(2014, 0, 1));
+
+const parseTimestampFromKV = (source: string, key: string): number | null => {
+    const match = source.match(new RegExp(`"${key}"\\s+"(\\d+)"`));
+    if (!match || !match[1]) {
+        return null;
+    }
+
+    const timestamp = Number(match[1]);
+    if (!Number.isFinite(timestamp) || timestamp <= 0) {
+        return null;
+    }
+
+    return timestamp;
+}
+
+const parseRevisionTimestamp = (revisionData: unknown): number | null => {
+    if (typeof revisionData !== 'string') {
+        return null;
+    }
+
+    const primaryTimestamp = parseTimestampFromKV(revisionData, 'last_published_time');
+    if (primaryTimestamp !== null) {
+        return primaryTimestamp;
+    }
+
+    // Some apps do not expose last_published_time.
+    const fallbackCandidates = [
+        parseTimestampFromKV(revisionData, 'time_created'),
+        parseTimestampFromKV(revisionData, 'coming_soon_date'),
+        parseTimestampFromKV(revisionData, 'steam_release_date'),
+        parseTimestampFromKV(revisionData, 'asset_mtime')
+    ].filter((value): value is number => value !== null);
+
+    if (fallbackCandidates.length === 0) {
+        return null;
+    }
+
+    const nowTimestamp = Math.floor(Date.now() / 1000);
+    const nonFutureCandidates = fallbackCandidates.filter(value => value <= nowTimestamp);
+
+    if (nonFutureCandidates.length > 0) {
+        return Math.min(...nonFutureCandidates);
+    }
+
+    return Math.min(...fallbackCandidates);
+}
+
+const resolvePageCreationDate = (timestamp: number | null, appID: string): Date => {
+    if (timestamp === null) {
+        console.warn(`No timestamp found for app ${appID}. Falling back to default page creation date.`);
+        return DEFAULT_PAGE_CREATION_DATE;
+    }
+
+    const date = new Date(timestamp * 1000);
+    if (Number.isNaN(date.getTime())) {
+        console.warn(`Invalid timestamp "${timestamp}" for app ${appID}. Falling back to default page creation date.`);
+        return DEFAULT_PAGE_CREATION_DATE;
+    }
+
+    if (date.getTime() > Date.now()) {
+        console.warn(`Future timestamp "${timestamp}" for app ${appID}. Falling back to default page creation date.`);
+        return DEFAULT_PAGE_CREATION_DATE;
+    }
+
+    return date;
+}
+
 const initIDs = async (offscreenManager: OffscreenManager) => {
     console.log('Init AppIDs and PackageIDs');
 
@@ -60,20 +128,11 @@ const initPageCreationDate = async (appID: string, offscreenManager: OffscreenMa
     const firstRevisionData = await firstRevisionResponse.json();
     console.debug(`First revision data for app ${appID}: `, firstRevisionData);
 
-    // Get date
-    const match = firstRevisionData.data.match(/"last_published_time"\s+"(\d+)"/);
-
-    console.debug(`Match for app ${appID}: `, match);
-
-    const timestamp = match ? match[1] : null;
+    const timestamp = parseRevisionTimestamp(firstRevisionData?.data);
 
     console.log(`Timestamp of first revision for app ${appID}: `, timestamp);
 
-    if (!timestamp) {
-        throw new Error(`No timestamp of first revision found for app ${appID}`);
-    }
-
-    const date = new Date(Number(timestamp) * 1000);
+    const date = resolvePageCreationDate(timestamp, appID);
 
     pagesCreationDate[appID] = date.toISOString();
 
@@ -204,7 +263,7 @@ const findPackageIDsFromPartnerPanel = async (appID: string, offscreenManager: O
 
     const packageIDs = await parseDataFromPage(url, 'parsePackageIDs', offscreenManager);
 
-    if(packageIDs.length === 0) {
+    if (packageIDs.length === 0) {
         throw new Error('No package IDs found from partner panel');
     }
 

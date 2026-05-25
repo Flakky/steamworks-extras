@@ -12,7 +12,9 @@ import { OffscreenManager } from './offscreen/offscreenmanager';
  */
 export const getPageCreationDate = async (appID: string, stringify: boolean = false): Promise<Date | string> => {
     const pagesCreationDate = await getBrowser().storage.local.get("pagesCreationDate");
-    const pageCreationDate = new Date(pagesCreationDate.pagesCreationDate[appID]) || new Date(2014, 0, 0);
+    const storedDate = pagesCreationDate?.pagesCreationDate?.[appID];
+    const parsedDate = storedDate ? new Date(storedDate) : new Date(Number.NaN);
+    const pageCreationDate = Number.isNaN(parsedDate.getTime()) ? new Date(2014, 0, 1) : parsedDate;
 
     if (stringify) return dateToString(pageCreationDate);
 
