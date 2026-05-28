@@ -18,7 +18,9 @@ export class StorageActionRequestWishlists extends StorageAction {
 export class StorageActionRequestRegionalWishlists extends StorageAction implements DateRangeAction {
     dateRange: DateRange;
 
+
     constructor(appID: string, dateRange: DateRange, settings = new StorageActionSettings()) {
+        settings.minimalExecutionTime = 1000; // A second to avoid rate limiting
         super(appID, settings);
         this.dateRange = dateRange;
     }

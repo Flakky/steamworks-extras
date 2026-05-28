@@ -153,16 +153,21 @@ const fetchRegionalWishlistsData = async (appID: string, queue: StorageActionsQu
     const daysPerRange = Math.ceil(totalDays / numRanges);
 
     for (let i = 0; i < numRanges; i++) {
-        const start = new Date(pageCreationDate.getTime());
-        start.setDate(pageCreationDate.getDate() + i * daysPerRange);
-        let end = new Date(start.getTime());
-        end.setDate(start.getDate() + daysPerRange - 1);
-        if (end > now) end = new Date(now.getTime());
+        const end = new Date(now.getTime());
+        end.setDate(end.getDate() - (i * daysPerRange));
+        let start = new Date(end.getTime());
+        start.setDate(start.getDate() - (daysPerRange - 1));
+
+        const reachedPageCreationDate = start <= pageCreationDate;
+        
+        if (reachedPageCreationDate) start = pageCreationDate;
+
+        console.debug(`Requesting regional wishlists data for date range for app ${appID}: ${dateToString(start)} - ${dateToString(end)}`);
 
         const requestAllRegionalWishlists = new StorageActionRequestRegionalWishlists(appID, new DateRange(start, end));
         queue.addToQueue(requestAllRegionalWishlists);
 
-        if (end >= now) return;
+        if (reachedPageCreationDate) return;
     }
 }
 
