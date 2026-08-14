@@ -1,6 +1,7 @@
 import { getBrowser } from '../shared/browser';
 import { dateToString } from '../scripts/helpers';
 import { OffscreenManager } from './offscreen/offscreenmanager';
+import { makeRecentFallbackDate } from './pagecreationdate';
 
 
 /**
@@ -14,7 +15,7 @@ export const getPageCreationDate = async (appID: string, stringify: boolean = fa
     const pagesCreationDate = await getBrowser().storage.local.get("pagesCreationDate");
     const storedDate = pagesCreationDate?.pagesCreationDate?.[appID];
     const parsedDate = storedDate ? new Date(storedDate) : new Date(Number.NaN);
-    const pageCreationDate = Number.isNaN(parsedDate.getTime()) ? new Date(2014, 0, 1) : parsedDate;
+    const pageCreationDate = Number.isNaN(parsedDate.getTime()) ? makeRecentFallbackDate() : parsedDate;
 
     if (stringify) return dateToString(pageCreationDate);
 

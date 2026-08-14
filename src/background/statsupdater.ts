@@ -15,6 +15,7 @@ import { OffscreenManager } from './offscreen/offscreenmanager';
 import { DateRange, getDateRangeArray } from '../shared/types/daterange';
 import { DateTraffic } from '../shared/types/traffic';
 import { DateWishlistRegional } from '../shared/types/wishlists';
+import { MissingTrafficDate, selectTrafficBackfillBatch } from './trafficbackfill';
 class UpdateStatsContext {
     queue: StorageActionsQueue;
     offscreenManager: OffscreenManager;
@@ -172,20 +173,18 @@ const fetchRegionalWishlistsData = async (appID: string, queue: StorageActionsQu
 }
 
 const fetchDailyData = async (appIDs: string[], queue: StorageActionsQueue, offscreenManager: OffscreenManager) => {
-    const missingTrafficDates: { appid: string, date: Date }[] = [];
+    const missingTrafficDatesByApp: MissingTrafficDate[][] = [];
 
     for (const appID of appIDs) {
         const trafficDates = await getMissingDatesForTraffic(appID, queue);
-
-        for (const date of trafficDates) {
-            missingTrafficDates.push({ appid: appID, date });
-        }
+        missingTrafficDatesByApp.push(trafficDates.map(date => ({ appid: appID, date })));
     }
 
-    // We sort dates in descending order because we want to request the most recent dates first so the user can use it
-    missingTrafficDates.sort((a, b) => b.date.getTime() - a.date.getTime());
+    // Do not enqueue the entire history at once. A bounded, fair batch keeps
+    // startup responsive, and later scheduled updates continue the backfill.
+    const missingTrafficDates = selectTrafficBackfillBatch(missingTrafficDatesByApp);
 
-    console.debug(`Missing traffic dates:`, missingTrafficDates);
+    console.debug(`Traffic dates selected for this update:`, missingTrafficDates);
 
     const actionSettings = await makeActionSettings();
 

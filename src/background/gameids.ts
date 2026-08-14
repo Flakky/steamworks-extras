@@ -2,6 +2,7 @@ import { getBrowser } from "../shared/browser";
 import { getAppIDs, getPageCreationDate, parseDataFromPage } from "./bghelpers";
 import { OffscreenManager } from "./offscreen/offscreenmanager";
 import { setExtentionStatus } from "./status";
+import { clampUntrustedPageDate, makeRecentFallbackDate, parseStoreReleaseDate } from "./pagecreationdate";
 
 const parseTimestampFromKV = (source: string, key: string): number | null => {
     const match = source.match(new RegExp(`"${key}"\\s+"(\\d+)"`));
@@ -49,18 +50,18 @@ const parseRevisionTimestamp = (revisionData: unknown): number | null => {
 
 const resolvePageCreationDateFromTimestamp = (timestamp: number | null, appID: string): Date | null => {
     if (timestamp === null) {
-        console.warn(`No timestamp found for app ${appID}. Falling back to default page creation date.`);
+        console.warn(`No timestamp found for app ${appID}. Trying another date source.`);
         return null;
     }
 
     const date = new Date(timestamp * 1000);
     if (Number.isNaN(date.getTime())) {
-        console.warn(`Invalid timestamp "${timestamp}" for app ${appID}. Falling back to default page creation date.`);
+        console.warn(`Invalid timestamp "${timestamp}" for app ${appID}. Trying another date source.`);
         return null;
     }
 
     if (date.getTime() > Date.now()) {
-        console.warn(`Future timestamp "${timestamp}" for app ${appID}. Falling back to default page creation date.`);
+        console.warn(`Future timestamp "${timestamp}" for app ${appID}. Trying another date source.`);
         return null;
     }
 
@@ -110,39 +111,102 @@ export const initIDsWithRetry = async (interval = 5, offscreenManager: Offscreen
 const initPageCreationDate = async (appID: string, offscreenManager: OffscreenManager): Promise<Date | undefined> => {
     console.log('Parsing page creation date for appID: ', appID);
 
-    let result = await getBrowser().storage.local.get("pagesCreationDate");
+    let result = await getBrowser().storage.local.get(["pagesCreationDate", "pagesCreationDateSources"]);
     let pagesCreationDate = result.pagesCreationDate || {};
+    let pagesCreationDateSources = result.pagesCreationDateSources || {};
 
-    // Get page ID by using redirect to edit page
-    const redirect = await fetch(`https://partner.steamgames.com/admin/game/editbyappid/${appID}`);
-    const pageID = redirect.url.split('/').pop();
+    let date: Date | null = null;
+    let dateSource = '';
+    let pageID: string | null = null;
+    let editPageHTML: string | null = null;
 
-    console.debug(`Page ID for app ${appID}: `, pageID);
+    try {
+        // Get page ID by using redirect to edit page
+        const redirect = await fetch(`https://partner.steamgames.com/admin/game/editbyappid/${appID}?l=english`);
+        if (!redirect.ok) {
+            throw new Error(`Edit page request failed with status ${redirect.status}`);
+        }
 
-    // Get first revision info
-    const firstRevisionResponse = await fetch(`https://partner.steamgames.com/admin/game/ajaxgetapprevision/${pageID}/?revision=1`);
-    const firstRevisionData = await firstRevisionResponse.json();
-    console.debug(`First revision data for app ${appID}: `, firstRevisionData);
+        editPageHTML = await redirect.text();
+        pageID = new URL(redirect.url).pathname.split('/').filter(Boolean).pop() || null;
+        if (!pageID || !/^\d+$/.test(pageID)) {
+            throw new Error(`Could not resolve a valid page ID from ${redirect.url}`);
+        }
 
-    let timestamp = parseRevisionTimestamp(firstRevisionData?.data);
-    
-    console.debug(`Parsed timestamp for app ${appID}: `, timestamp);
+        console.debug(`Page ID for app ${appID}: `, pageID);
+    } catch (error) {
+        console.warn(`Could not load the edit page for app ${appID}.`, error);
+    }
 
-    let date = resolvePageCreationDateFromTimestamp(timestamp, appID);
+    if (pageID !== null) {
+        try {
+            // Get first revision info
+            const firstRevisionResponse = await fetch(`https://partner.steamgames.com/admin/game/ajaxgetapprevision/${pageID}/?revision=1`);
+            if (!firstRevisionResponse.ok) {
+                throw new Error(`First revision request failed with status ${firstRevisionResponse.status}`);
+            }
+
+            const firstRevisionData = await firstRevisionResponse.json();
+            console.debug(`First revision data for app ${appID}: `, firstRevisionData);
+
+            const timestamp = parseRevisionTimestamp(firstRevisionData?.data);
+            console.debug(`Parsed timestamp for app ${appID}: `, timestamp);
+
+            date = resolvePageCreationDateFromTimestamp(timestamp, appID);
+            if (date !== null) dateSource = 'first-revision';
+        } catch (error) {
+            console.warn(`Could not get the first revision date for app ${appID}.`, error);
+        }
+    }
+
+    if (date === null && editPageHTML !== null) {
+        try {
+            const historyDate = await offscreenManager.parseDOM(editPageHTML, 'parsePageCreationDateFromHistory');
+            const parsedHistoryDate = new Date(historyDate);
+            if (!Number.isNaN(parsedHistoryDate.getTime()) && parsedHistoryDate.getTime() <= Date.now()) {
+                date = parsedHistoryDate;
+                dateSource = 'publish-history';
+            }
+        } catch (error) {
+            console.warn(`Could not get the publish-history date for app ${appID}.`, error);
+        }
+    }
+
+    if (date === null) {
+        try {
+            date = await findPageCreationDateFromStoreAPI(appID);
+            if (date !== null) dateSource = 'store-release';
+        } catch (error) {
+            console.warn(`Could not get the Store release date for app ${appID}.`, error);
+        }
+    }
 
     if(date === null) {
-        date = await findPageCreationDateFromTrafficPage(appID, offscreenManager);
+        try {
+            const trafficDate = await findPageCreationDateFromTrafficPage(appID, offscreenManager);
+            if (trafficDate !== null) {
+                date = clampUntrustedPageDate(trafficDate);
+                dateSource = date.getTime() === trafficDate.getTime() ? 'traffic' : 'traffic-capped';
+            }
+        } catch (error) {
+            console.warn(`Could not get the traffic start date for app ${appID}.`, error);
+        }
     }
     if(date === null) {
-        console.error(`No page creation date found for app ${appID}. Falling back to default page creation date.`);
-        date = new Date(Date.UTC(2014, 0, 1));
+        console.error(`No page creation date found for app ${appID}. Using a bounded recent fallback.`);
+        date = makeRecentFallbackDate();
+        dateSource = 'recent-fallback';
     }
 
     pagesCreationDate[appID] = date.toISOString();
+    pagesCreationDateSources[appID] = dateSource;
 
-    await getBrowser().storage.local.set({ 'pagesCreationDate': pagesCreationDate });
+    await getBrowser().storage.local.set({
+        'pagesCreationDate': pagesCreationDate,
+        'pagesCreationDateSources': pagesCreationDateSources
+    });
 
-    console.log(`Page creation date for app ${appID}: `, date);
+    console.log(`Page creation date for app ${appID} (${dateSource}): `, date);
 
     return date;
 }
@@ -163,18 +227,21 @@ const initPageCreationDates = async (offscreenManager: OffscreenManager) => {
     console.log('PageCreationDates have been initialized.');
 }
 
-export const initPageCreationDatesWithRetry = async (interval = 5, offscreenManager: OffscreenManager) => {
-    let success = false;
-    while (!success) {
+export const initPageCreationDatesWithRetry = async (interval = 5, offscreenManager: OffscreenManager, maxAttempts = 3) => {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
             await initPageCreationDates(offscreenManager);
-            success = true;
+            return;
         } catch (error) {
             console.error('Error during initPageCreationDates:', error);
             setExtentionStatus(102, { error: error instanceof Error ? error.message : 'Unknown error' });
-            await new Promise(resolve => setTimeout(resolve, interval * 1000));
+            if (attempt < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, interval * 1000));
+            }
         }
     }
+
+    console.error(`Could not initialize page creation dates after ${maxAttempts} attempts. Continuing startup with stored/default dates.`);
 }
 
 const initializeAppIDs = async (offscreenManager: OffscreenManager): Promise<string[]> => {
@@ -279,5 +346,22 @@ const findPageCreationDateFromTrafficPage = async (appID: string, offscreenManag
 
     const url = `https://partner.steamgames.com/apps/navtrafficstats/${appID}?attribution_filter=all&preset_date_range=lifetime`;
     const pageCreationDate = await parseDataFromPage(url, 'parsePageCreationDate', offscreenManager);
-    return new Date(pageCreationDate);
+    const date = pageCreationDate instanceof Date ? pageCreationDate : new Date(pageCreationDate);
+
+    if (Number.isNaN(date.getTime()) || date.getTime() > Date.now()) {
+        return null;
+    }
+
+    return date;
+}
+
+const findPageCreationDateFromStoreAPI = async (appID: string): Promise<Date | null> => {
+    const url = `https://store.steampowered.com/api/appdetails?appids=${appID}&l=english&cc=us`;
+    const response = await fetch(url, { credentials: 'omit' });
+    if (!response.ok) {
+        throw new Error(`Store API request failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    return parseStoreReleaseDate(data?.[appID]?.data?.release_date);
 }
