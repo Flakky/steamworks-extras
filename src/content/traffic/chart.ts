@@ -1,4 +1,4 @@
-import { getDateRangeArray } from "../../shared/types/daterange";
+import { clampDateRangeStartToData, getDateRangeArray } from "../../shared/types/daterange";
 import { TrafficChartDataType, TrafficCategorySelection, TrafficTypeSelection } from "./types";
 import { getPageContentElem } from "./layout";
 import { Chart, ChartConfiguration, ChartDataset } from "chart.js";
@@ -75,8 +75,12 @@ export const createChart = (doc: Document, trafficData: GameTraffic[], dataType:
 
 export const updateTrafficChart = (doc: Document, trafficData: GameTraffic[], chart: Chart, dataType: TrafficTypeSelection, categorySelection: TrafficCategorySelection, chartColors: Record<string, string>) => {
     const dateRange = getDateRangeOfCurrentPage(doc);
+    const activityDates = trafficData
+        .filter(item => Object.values(item.categories).some(category => category.impressions !== 0 || category.visits !== 0))
+        .map(item => item.date);
+    const chartDateRange = clampDateRangeStartToData(dateRange, activityDates);
 
-    const days = getDateRangeArray(dateRange, false, true) as string[];
+    const days = getDateRangeArray(chartDateRange, false, true) as string[];
 
     const chartData = createChartData(trafficData, categorySelection, days);
 

@@ -2,7 +2,7 @@ import { dateToString, selectChartColor } from "../../scripts/helpers";
 import { getCurrentURL, getDateRangeFromURL } from "../site";
 import { setFlexContentBlockContent } from "../pageblocks";
 import { Chart, ChartConfiguration, ChartDataset } from "chart.js";
-import { DateRange, getDateRangeArray, isSingleDay } from "../../shared/types/daterange";
+import { clampDateRangeStartToData, DateRange, getDateRangeArray, isSingleDay } from "../../shared/types/daterange";
 import { WishlistChart, WishlistChartType, WishlistChartActionsType, WishlistsData, WishlistRegionSelection } from "./types";
 import { GameWishlists } from "../../shared/types/wishlists";
 
@@ -75,9 +75,13 @@ export const updateWishlistChart = (wishlistChart: WishlistChart, wishlistData: 
 
     console.log('Updating wishlist chart');
 
-    const dateRangeArray = getDateRangeArray(dateRange, false, true) as string[];
+    const activityDates = wishlistData.data
+        .filter(item => item.adds !== 0 || item.deletes !== 0 || item.gifts !== 0 || item.activations !== 0)
+        .map(item => item.date);
+    const chartDateRange = clampDateRangeStartToData(dateRange, activityDates);
+    const dateRangeArray = getDateRangeArray(chartDateRange, false, true) as string[];
 
-    const oneDay = isSingleDay(dateRange);
+    const oneDay = isSingleDay(chartDateRange);
 
     let viewByList: string[] = getViewByList(wishlistChart.wishlistChartType, wishlistRegionSelection);
 
@@ -87,7 +91,7 @@ export const updateWishlistChart = (wishlistChart: WishlistChart, wishlistData: 
     if (oneDay) {
         datasets = getDayDataSetFromWishlists(
             wishlistData.data,
-            dateToString(dateRange.dateStart),
+            dateToString(chartDateRange.dateStart),
             viewByList,
             wishlistChart.wishlistChartType,
             wishlistChart.chartColors);

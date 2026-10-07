@@ -1,6 +1,6 @@
 import { DateRangeAction, StorageAction, StorageActionSettings } from './storageaction';
 import { csvTextToArray, dateToString } from '../../scripts/helpers';
-import { waitForDatabaseReady, readData, clearData, writeData } from './db';
+import { waitForDatabaseReady, readData, replaceData } from './db';
 import { getPageCreationDate, getAppPackageIDs, mapObject } from '../bghelpers';
 import { DateSales, dateSalesFieldMap } from '../../shared/types/sales';
 import { DateRange, isDateInRange, getDateRangeArray } from '../../shared/types/daterange';
@@ -93,8 +93,6 @@ const requestSalesData = async (appID: string): Promise<DateSales[] | null> => {
         return [];
     }
 
-    await clearData(appID, 'Sales');
-
     const csvString = lines.join('\n');
 
     const objects: any[] = csvTextToArray(csvString);
@@ -122,7 +120,7 @@ const requestSalesData = async (appID: string): Promise<DateSales[] | null> => {
 
     console.debug(`Sales from CSV result:`, result);
 
-    await writeData(appID, 'Sales', result);
+    await replaceData(appID, 'Sales', result);
 
     return result;
 }

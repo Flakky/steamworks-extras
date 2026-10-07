@@ -34,6 +34,24 @@ if (typeof browser == "undefined") {
     // importScripts('statsupdater.js');
 }
 
+// Shared by all background code. Created and wired synchronously, so the
+// message listener exists before Chrome delivers the message which woke us up.
+const offscreenManager = new OffscreenManager();
+const queue = new StorageActionsQueue();
+
+let offscreenInitPromise: Promise<void> | undefined;
+const ensureOffscreen = (): Promise<void> => {
+    if (!offscreenInitPromise) {
+        offscreenInitPromise = initOffscreen().catch(error => {
+            offscreenInitPromise = undefined;
+            console.error('Failed to init offscreen document: ', error);
+        });
+    }
+    return offscreenInitPromise;
+}
+
+initMessageListener({ offscreenManager, queue, offscreenReady: ensureOffscreen() });
+
 const getStartupInit = async () => {
     const result = await getBrowser().storage.local.get('startupInit');
     return result.startupInit;
@@ -89,12 +107,7 @@ const startInit = async () => {
 
     setExtentionStatus(1);
 
-    // We init those objects temporarily to for the offscreen to be able to send messages to the background script
-    // because offscreen is used to parse IDs
-    await initOffscreen();
-    const offscreenManager = new OffscreenManager();
-    const queue = new StorageActionsQueue();
-    await initMessageListener({ offscreenManager, queue });
+    await ensureOffscreen();
 
     await initIDsWithRetry(5, offscreenManager);
 
@@ -117,12 +130,7 @@ const init = async () => {
 
     setExtentionStatus(10);
 
-    await initOffscreen();
-    const offscreenManager = new OffscreenManager();
-
-    const queue = new StorageActionsQueue();
-
-    await initMessageListener({ offscreenManager, queue });
+    await ensureOffscreen();
 
     const appIDs = await getAppIDs(false);
     if (appIDs.length === 0) {

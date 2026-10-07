@@ -3,7 +3,7 @@ import { createFlexContentBlock, setFlexContentBlockContent } from "../pageblock
 import { ReviewChartSplit, SalesChartSplit, SalesChartValueType, SalesChartViewSelection, SalesData } from "./types";
 import { dateToString, isStringEmpty, selectChartColor } from "../../scripts/helpers";
 import { DateSales, dateSalesFieldMap } from "../../shared/types/sales";
-import { isSingleDay, DateRange } from "../../shared/types/daterange";
+import { clampDateRangeStartToData, isSingleDay, DateRange } from "../../shared/types/daterange";
 
 export const createSalesChart = (doc: Document, sales: SalesData, dateRange: DateRange, salesChartViewSelection: SalesChartViewSelection, chartColors: Record<string, string>, chartMaxBreakdown: number): Chart => {
     const chartBlockElem = doc.createElement('div');
@@ -88,13 +88,14 @@ export const updateSalesChart = (chart: Chart, sales: SalesData, dateRange: Date
         console.log("Sales for Date Rage are not yet ready to be used in sales chart");
     }
 
-    const oneDay = isSingleDay(dateRange);
+    const chartDateRange = clampDateRangeStartToData(dateRange, sales.periodSales.map(item => item.date));
+    const oneDay = isSingleDay(chartDateRange);
 
     // Fill labels (dates) for chart
     let labels: string[] = [];
 
-    let dayLoop = new Date(dateRange.dateStart);
-    while (dayLoop <= dateRange.dateEnd) {
+    let dayLoop = new Date(chartDateRange.dateStart);
+    while (dayLoop <= chartDateRange.dateEnd) {
         const formattedDate = dateToString(dayLoop);
         labels.push(formattedDate);
 

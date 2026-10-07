@@ -57,6 +57,9 @@ export const updateStatus = (statuses: Record<string, any>): void => {
     getBrowser().runtime.sendMessage({ request: "getStatus" }, (status: any) => {
         console.debug('Status:', status);
 
+        // Background may be restarting, the next poll will catch up
+        if (getBrowser().runtime.lastError || !status || status.code === undefined) return;
+
         if (!statuses) {
             console.warn('Extension statuses not loaded yet.');
             return;
@@ -68,6 +71,7 @@ export const updateStatus = (statuses: Record<string, any>): void => {
         const statusExtraText = document.getElementById('extra_status_extramessage') as HTMLParagraphElement;
 
         const statusInfo = statuses[`${status.code}`];
+        if (!statusInfo) return;
 
         statusElement.classList.remove('extra_info', 'extra_warning', 'extra_error');
 

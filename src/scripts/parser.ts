@@ -26,6 +26,9 @@ export const parseDocument = (htmlText: string, parseType: string): { success: b
             case 'parsePageCreationDate':
                 result = parsePageCreationDate(doc);
                 break;
+            case 'parsePageCreationDateFromHistory':
+                result = parsePageCreationDateFromHistory(doc);
+                break;
             case 'followers':
                 result = parseFollowers(doc);
                 break;
@@ -97,6 +100,43 @@ const parsePageCreationDate = (doc: Document): Date => {
   
     return new Date(startDate);
   }
+
+export const parsePageCreationDateFromHistory = (doc: Document): string => {
+    const historyTable = doc.querySelector('#tab_publish_content .landingTable');
+    if (!historyTable) {
+        throw new Error('No publish history table found');
+    }
+
+    const monthMap: Record<string, number> = {
+        jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+        jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11
+    };
+    const timestamps: number[] = [];
+
+    for (const row of Array.from(historyTable.children)) {
+        const text = row.textContent || '';
+        const dayFirstMatches = text.matchAll(/(\d{1,2})\s+([A-Za-z]{3,9})[,]?\s+(\d{4})/g);
+        const monthFirstMatches = text.matchAll(/([A-Za-z]{3,9})\s+(\d{1,2})[,]?\s+(\d{4})/g);
+
+        for (const match of dayFirstMatches) {
+            const month = monthMap[match[2].slice(0, 3).toLowerCase()];
+            if (month === undefined) continue;
+            timestamps.push(Date.UTC(Number(match[3]), month, Number(match[1])));
+        }
+        for (const match of monthFirstMatches) {
+            const month = monthMap[match[1].slice(0, 3).toLowerCase()];
+            if (month === undefined) continue;
+            timestamps.push(Date.UTC(Number(match[3]), month, Number(match[2])));
+        }
+    }
+
+    const validTimestamps = timestamps.filter(timestamp => Number.isFinite(timestamp) && timestamp <= Date.now());
+    if (validTimestamps.length === 0) {
+        throw new Error('No valid date found in publish history');
+    }
+
+    return new Date(Math.min(...validTimestamps)).toISOString();
+}
 
 const parseWishlistData = (doc: Document): any => {
     const table = doc.querySelector('.grouping_table');
@@ -172,22 +212,25 @@ export const parseAppIDs = (doc: Document): any[] => {
     return appIDs;
 }
 
-export const parseFollowers = (doc: Document): number | void => {
+export const parseFollowers = (doc: Document): number => {
     const groupPagingElement = doc.querySelector('.group_paging');
     if (!groupPagingElement) {
         throw new Error('No element with class "group_paging" found');
     }
 
     const text = groupPagingElement.textContent || '';
-    const match = text.match(/of\s+([\d,]+)\s+Members/);
+    // Steam localizes this string (for example, "1 - 26 of 41 Members"),
+    // so do not depend on English words. The total is the largest number in
+    // the paging summary because it is never smaller than the range endpoints.
+    const numbers = (text.match(/\d[\d\s,.]*/g) || [])
+        .map(value => Number(value.replace(/\D/g, '')))
+        .filter(value => Number.isFinite(value));
 
-    if (match) {
-        const membersStr = match[1];
-        const followers = parseInt(membersStr.replace(/,/g, ''));
-        return followers;
-    } else {
-        console.log("No followers match found");
+    if (numbers.length === 0) {
+        throw new Error(`No followers count found in paging text: "${text.trim()}"`);
     }
+
+    return Math.max(...numbers);
 }
 
 export const parseRefundStats = (doc: Document): any => {

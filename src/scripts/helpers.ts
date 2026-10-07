@@ -1,5 +1,5 @@
 import { getBrowser } from '../shared/browser';
-import { BackgroundMessage, BackgroundMessageType, GetDataType } from '../shared/types/background_requests';
+import { BackgroundMessage, BackgroundMessageType, BACKGROUND_ERROR_KEY, GetDataType } from '../shared/types/background_requests';
 import { DateSales } from '../shared/types/sales';
 
 /**
@@ -351,12 +351,36 @@ export const getDOMLocal = async (url: string): Promise<Document> => {
  * @param {object} message - Message to send. Must contain 'request' property in order to be recognized.
  * @returns {Promise} - Promise with the response
  */
-export const sendMessageAsync = (message: BackgroundMessage): Promise<any> => {
+export const sendMessageAsync = async (message: BackgroundMessage, retries: number = 3): Promise<any> => {
+    for (let attempt = 0; ; attempt++) {
+        try {
+            return await sendMessageOnce(message);
+        }
+        catch (error) {
+            // The background service worker may be stopped or restarting.
+            // Such messages are lost, so they are safe to send again.
+            const errorText = error instanceof Error ? error.message : `${(error as any)?.message ?? error}`;
+            const connectionLost = /Receiving end does not exist|message port closed|Could not establish connection/i.test(errorText);
+
+            if (!connectionLost || attempt >= retries) throw error;
+
+            console.warn(`Background is not reachable, retrying (${attempt + 1}/${retries}): `, errorText);
+            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+        }
+    }
+}
+
+const sendMessageOnce = (message: BackgroundMessage): Promise<any> => {
     return new Promise((resolve, reject) => {
         getBrowser().runtime.sendMessage(message, (response: any) => {
-            if (getBrowser().runtime.lastError) {
-                reject(getBrowser().runtime.lastError);
-            } else {
+            const lastError = getBrowser().runtime.lastError;
+            if (lastError) {
+                reject(new Error(lastError.message));
+            }
+            else if (response && typeof response === 'object' && BACKGROUND_ERROR_KEY in response) {
+                reject(new Error(response[BACKGROUND_ERROR_KEY]));
+            }
+            else {
                 resolve(response);
             }
         });

@@ -3,12 +3,11 @@ import { StorageActionGetReviews } from './storage_reviews';
 import { StorageActionGetWishlistConversions } from './storage_wishlistconversions';
 import { StorageActionGetRegionalWishlists, StorageActionGetWishlists } from './storage_wishlists';
 import { StorageActionGetTraffic } from './storage_traffic';
-import { StorageActionsQueue } from './storagequeue';
 import { StorageAction } from './storageaction';
 import { DateRange } from '../../shared/types/daterange';
 import { GetDataType } from '../../shared/types/background_requests';
 
-export const getDataFromDB = async (queue: StorageActionsQueue, type: GetDataType, appId: string, dateRange: DateRange, returnLackData = true): Promise<any> => {
+export const getDataFromDB = async (type: GetDataType, appId: string, dateRange: DateRange, returnLackData = true): Promise<any> => {
 
     let action: StorageAction | null = null;
 
@@ -43,5 +42,7 @@ export const getDataFromDB = async (queue: StorageActionsQueue, type: GetDataTyp
         throw new Error(`Unknown data type: ${type}`);
     }
 
-    return await queue.insertToQueue(action);
+    // Reads do not go through the requests queue: they are read-only, writes
+    // are atomic, and otherwise the page would wait behind long network requests.
+    return await action.execute();
 }

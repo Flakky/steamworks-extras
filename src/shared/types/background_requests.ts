@@ -22,6 +22,9 @@ export type BackgroundMessage =
     | { request: BackgroundMessageType.parsedDOM; payload: OffscreenParseResponse } // OffscreenParseResponse - defined in offscreenmanager
     | { request: BackgroundMessageType.updateStats; payload: undefined };
 
+// Key of the response object the background sends when a request failed
+export const BACKGROUND_ERROR_KEY = '__steamworksExtrasError';
+
 export enum BackgroundMessageType {
     showOptions = "showOptions",
     makeRequest = "makeRequest",

@@ -3,7 +3,7 @@ import { getCurrentURL, getDateRangeFromURL, getDefaultSettings, prepareChart, r
 import { addStatusBlockToPage } from "../../shared/statusblock";
 import { createCustomContentBlock, createToolbarBlock, hideOriginalMainBlock, moveDateRangeSelectionToTop, moveGameTitle } from "../pageblocks";
 import { hideOldLinks, moveSummaryTableToNewBlock, moveHeatmapNewBlock, moveOldChartToNewBlock, getSalesTable, createSalesChartBlock, createSalesTableBlock, createReviewsChartBlock, createReviewsTableBlock } from "./layout";
-import { getDataFromStorage, dateToString } from "../../scripts/helpers";
+import { getDataFromStorage, createMessageBlock } from "../../scripts/helpers";
 import { RoyaltiesAndTaxesMap, SalesData, ReviewsData, SalesChartValueType, SalesChartSplit, SalesChartViewSelection, SalesTableColumns, ReviewChartSplit, SalesTableSplit } from "./types";
 import { isDateInRange, isSingleDay } from "../../shared/types/daterange";
 import { addRefundDataLink, addFollowers, updateSummaryRows, updateReviewsSummary } from "./summary_table";
@@ -72,12 +72,6 @@ const init = async () => {
 
     hideOriginalMainBlock(doc);
 
-    const salesData = await requestSales(appID);
-    console.debug('Sales data: ', salesData);
-
-    const reviewsData = await requestReviews(appID);
-    console.debug('Reviews data: ', reviewsData);
-
     const gross = getTotalRevenue(doc, true);
     const net = getTotalRevenue(doc, false);
     const grossNetRatio = net / gross;
@@ -93,41 +87,103 @@ const init = async () => {
         royaltiesAfterTax: settings.royaltiesAfterTax
     };
 
-    // Sales
-    const salesChartViewSelection: SalesChartViewSelection = {
-        split: singleDay ? SalesChartSplit.Country : SalesChartSplit.Total,
-        valueType: SalesChartValueType.GrossSteamSalesUSD
-    };
+    // Every block below is independent: a failure in one of them must not
+    // hide the others (previously a single error removed revenue and reviews).
+    let salesData: SalesData | undefined;
+    try {
+        salesData = await requestSales(appID);
+        console.debug('Sales data: ', salesData);
+    }
+    catch (error) {
+        console.error('Failed to get sales data: ', error);
+        showPageError(doc, `Failed to load sales data: ${errorToString(error)}. Reload the page to try again.`);
+    }
 
-    const salesTableColumns: SalesTableColumns = [
-        { key: "grossSteamSalesUSD", label: "Gross" },
-        { key: "netSteamSalesUSD", label: "Net" },
-        { key: "grossUnitsSold", label: "Gross units" },
-        { key: "netUnitsSold", label: "Net units" },
-        { key: "chargebacksOrReturnsUSD", label: "Refunds" },
-        { key: "chargebacksOrReturns", label: "Refund units" },
-        { key: "FinalDevRevenue", label: "Est. revenue" }
-    ];
+    // Summary. US sales are only needed for the US tax deduction.
+    runSafely('summary revenue', () => {
+        updateSummaryRows(doc, gross, net, salesData?.usRevenue ?? 0, royaltiesAndTaxes, settings.showZeroRevenues, settings.showPercentages);
+    });
 
-    // Sales
-    const salesChart = createSalesChart(doc, salesData, dateRange, salesChartViewSelection, chartColors, settings.chartMaxBreakdown);
-    createSalesTable(doc, salesData, singleDay, grossNetRatio, salesTableColumns, royaltiesAndTaxes);
-    updateSalesChart(salesChart, salesData, dateRange, salesChartViewSelection, chartColors, settings.chartMaxBreakdown);
-    updateSalesTable(doc, salesData, grossNetRatio, singleDay ? SalesTableSplit.Country : SalesTableSplit.Date, salesTableColumns, royaltiesAndTaxes);
+    if (salesData) {
+        const sales = salesData;
+
+        // Sales
+        const salesChartViewSelection: SalesChartViewSelection = {
+            split: singleDay ? SalesChartSplit.Country : SalesChartSplit.Total,
+            valueType: SalesChartValueType.GrossSteamSalesUSD
+        };
+
+        const salesTableColumns: SalesTableColumns = [
+            { key: "grossSteamSalesUSD", label: "Gross" },
+            { key: "netSteamSalesUSD", label: "Net" },
+            { key: "grossUnitsSold", label: "Gross units" },
+            { key: "netUnitsSold", label: "Net units" },
+            { key: "chargebacksOrReturnsUSD", label: "Refunds" },
+            { key: "chargebacksOrReturns", label: "Refund units" },
+            { key: "FinalDevRevenue", label: "Est. revenue" }
+        ];
+
+        runSafely('sales chart', () => {
+            const salesChart = createSalesChart(doc, sales, dateRange, salesChartViewSelection, chartColors, settings.chartMaxBreakdown);
+            updateSalesChart(salesChart, sales, dateRange, salesChartViewSelection, chartColors, settings.chartMaxBreakdown);
+        });
+
+        runSafely('sales table', () => {
+            createSalesTable(doc, sales, singleDay, grossNetRatio, salesTableColumns, royaltiesAndTaxes);
+            updateSalesTable(doc, sales, grossNetRatio, singleDay ? SalesTableSplit.Country : SalesTableSplit.Date, salesTableColumns, royaltiesAndTaxes);
+        });
+    }
 
     // Reviews
-    const reviewsChart = createReviewsChart(doc, reviewsData, chartColors);
-    createReviewsTable(doc);
-    updateReviewsTable(doc, reviewsData);
-    updateReviewsChart(reviewsChart, ReviewChartSplit.Vote, reviewsData, chartColors);
+    let reviewsData: ReviewsData | undefined;
+    try {
+        reviewsData = await requestReviews(appID);
+        console.debug('Reviews data: ', reviewsData);
+    }
+    catch (error) {
+        console.error('Failed to get reviews data: ', error);
+        showPageError(doc, `Failed to load reviews: ${errorToString(error)}. Reload the page to try again.`);
+    }
 
-    // Summary
-    updateSummaryRows(doc, gross, net, salesData.usRevenue, royaltiesAndTaxes, settings.showZeroRevenues, settings.showPercentages);
-    updateReviewsSummary(doc, reviewsData);
+    if (reviewsData) {
+        const reviews = reviewsData;
+
+        runSafely('reviews summary', () => updateReviewsSummary(doc, reviews));
+
+        runSafely('reviews chart', () => {
+            const reviewsChart = createReviewsChart(doc, reviews, dateRange, chartColors);
+            updateReviewsChart(reviewsChart, ReviewChartSplit.Vote, reviews, dateRange, chartColors);
+        });
+
+        runSafely('reviews table', () => {
+            createReviewsTable(doc);
+            updateReviewsTable(doc, reviews);
+        });
+    }
 
     addFollowers(doc, appID).catch(error => {
         console.error('Failed to add followers:', error);
     });
+}
+
+const runSafely = (blockName: string, action: () => void) => {
+    try {
+        action();
+    }
+    catch (error) {
+        console.error(`Failed to show ${blockName}: `, error);
+    }
+}
+
+const errorToString = (error: unknown): string => {
+    return error instanceof Error ? error.message : `${error}`;
+}
+
+const showPageError = (doc: Document, text: string) => {
+    const container = doc.getElementById('extra_main_content_block') ?? doc.body;
+    const block = createMessageBlock('error', text);
+    block.style.flexBasis = '100%';
+    container.prepend(block);
 }
 
 const getAppID = (doc: Document) => {
@@ -194,6 +250,10 @@ const requestSales = async (appID: string): Promise<SalesData> => {
         true
     ) as DateSales[];
 
+    if (!Array.isArray(sales)) {
+        throw new Error('Background returned no sales data');
+    }
+
     // Filter to current date range
     const salesForDateRange = sales.filter((item: DateSales) => {
         if (!item.date) return false;
@@ -226,6 +286,10 @@ const requestReviews = async (appID: string): Promise<ReviewsData> => {
         '2099-12-31',
         true
     ) as Review[];
+
+    if (!Array.isArray(reviews)) {
+        throw new Error('Background returned no reviews data');
+    }
 
     return {
         reviews: reviews

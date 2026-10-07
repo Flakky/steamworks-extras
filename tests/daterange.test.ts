@@ -1,4 +1,4 @@
-import { DateRange, isDateInRange, correctDateRange, getDateRangeArray, isSingleDay } from '../src/shared/types/daterange';
+import { DateRange, isDateInRange, correctDateRange, getDateRangeArray, isSingleDay, clampDateRangeStartToData } from '../src/shared/types/daterange';
 import { dateToString } from '../src/scripts/helpers';
 
 describe('DateRange', () => {
@@ -432,6 +432,36 @@ describe('isSingleDay', () => {
         correctDateRange(dateRange);
 
         expect(isSingleDay(dateRange)).toBe(false);
+    });
+});
+
+describe('clampDateRangeStartToData', () => {
+    test('clamps a lifetime range to the first real data date', () => {
+        const range = new DateRange(new Date('2000-01-01'), new Date('2025-12-31'));
+
+        const result = clampDateRangeStartToData(range, ['2025-12-06', '2025-12-07']);
+
+        expect(dateToString(result.dateStart)).toBe('2025-12-06');
+        expect(dateToString(result.dateEnd)).toBe('2025-12-31');
+    });
+
+    test('does not move an explicitly selected later start backwards', () => {
+        const range = new DateRange(new Date('2025-12-10'), new Date('2025-12-31'));
+
+        const result = clampDateRangeStartToData(range, ['2025-12-06']);
+
+        expect(dateToString(result.dateStart)).toBe('2025-12-10');
+    });
+
+    test('keeps the selected range when there are no data points in it', () => {
+        const range = new DateRange(new Date('2000-01-01'), new Date('2025-12-31'));
+
+        const result = clampDateRangeStartToData(range, ['not-a-date', '2026-01-01']);
+
+        expect(result).not.toBe(range);
+        expect(result.dateStart).not.toBe(range.dateStart);
+        expect(dateToString(result.dateStart)).toBe('2000-01-01');
+        expect(dateToString(result.dateEnd)).toBe('2025-12-31');
     });
 });
 

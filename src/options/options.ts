@@ -3,6 +3,7 @@ import { defaultSettings } from '../data/defaultsettings';
 import { createStatusBlock, startUpdateStatus } from '../shared/statusblock';
 import { getDataFromStorage, sendMessageAsync } from '../scripts/helpers';
 import { BackgroundMessageType, GetDataType } from '../shared/types/background_requests';
+import { makeRecentFallbackDate } from '../background/pagecreationdate';
 
 const initSettings = () => {
     getBrowser().storage.local.get(Object.keys(defaultSettings), (result: Record<string, any>) => {
@@ -73,11 +74,14 @@ const generateCacheTable = async () => {
     }
 
     const pagesCreationDateResult = await getBrowser().storage.local.get("pagesCreationDate");
-    const pagesCreationDate = pagesCreationDateResult.pagesCreationDate;
+    const pagesCreationDate = pagesCreationDateResult.pagesCreationDate || {};
 
     const createDownloadLink = async (appID: string, type: GetDataType) => {
 
-        const pageCreationDate = pagesCreationDate[appID] || new Date(2014, 0, 0);
+        const storedDate = pagesCreationDate[appID] ? new Date(pagesCreationDate[appID]) : null;
+        const pageCreationDate = storedDate && !Number.isNaN(storedDate.getTime())
+            ? storedDate
+            : makeRecentFallbackDate();
 
         const startDate = pageCreationDate;
         const endDate = new Date();

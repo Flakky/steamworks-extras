@@ -2,10 +2,9 @@ import { setFlexContentBlockContent } from "../pageblocks";
 import { Chart, ChartConfiguration, registerables } from "chart.js";
 import { ReviewChartSplit, ReviewsData } from "./types";
 import { dateToString, selectChartColor } from "../../scripts/helpers";
-import { getCurrentURL, getDateRangeFromURL } from "../site";
-import { isDateInRange } from "../../shared/types/daterange";
+import { clampDateRangeStartToData, DateRange, isDateInRange } from "../../shared/types/daterange";
 
-export const createReviewsChart = (doc: Document, reviews: ReviewsData, chartColors: Record<string, string>): Chart => {
+export const createReviewsChart = (doc: Document, reviews: ReviewsData, dateRange: DateRange, chartColors: Record<string, string>): Chart => {
     const chartBlockElem = doc.createElement('div');
     chartBlockElem.id = 'extras_reviews_chart';
 
@@ -61,7 +60,7 @@ export const createReviewsChart = (doc: Document, reviews: ReviewsData, chartCol
         (select) => {
             console.log(select.value);
             const reviewChartSplit = select.value as ReviewChartSplit;
-            updateReviewsChart(chart, reviewChartSplit, reviews, chartColors);
+            updateReviewsChart(chart, reviewChartSplit, reviews, dateRange, chartColors);
         });
 
     chartBlockElem.appendChild(canvas);
@@ -69,23 +68,25 @@ export const createReviewsChart = (doc: Document, reviews: ReviewsData, chartCol
     return chart
 }
 
-export const updateReviewsChart = (chart: Chart, reviewChartSplit: ReviewChartSplit, reviews: ReviewsData, chartColors: Record<string, string>) => {
-    if (reviews === undefined) return;
+export const updateReviewsChart = (chart: Chart, reviewChartSplit: ReviewChartSplit, reviews: ReviewsData, dateRange: DateRange, chartColors: Record<string, string>) => {
+    if (reviews === undefined || !Array.isArray(reviews.reviews)) return;
 
     const chartDays: string[] = [];
 
-    let dateRange = getDateRangeFromURL(getCurrentURL());
+    const chartDateRange = clampDateRangeStartToData(
+        dateRange,
+        reviews.reviews.map(review => new Date(review.timestamp_created * 1000)));
 
-    const oneDay = dateToString(dateRange.dateStart) === dateToString(dateRange.dateEnd);
+    const oneDay = dateToString(chartDateRange.dateStart) === dateToString(chartDateRange.dateEnd);
 
-    console.debug('Date range: ', dateRange);
+    console.debug('Chart date range: ', chartDateRange);
 
     if (oneDay) {
-        chartDays.push(dateToString(dateRange.dateStart));
+        chartDays.push(dateToString(chartDateRange.dateStart));
     }
     else {
-        let dayLoop = new Date(dateRange.dateStart);
-        while (dayLoop <= dateRange.dateEnd) {
+        let dayLoop = new Date(chartDateRange.dateStart);
+        while (dayLoop <= chartDateRange.dateEnd) {
             const formattedDate = dateToString(dayLoop);
             chartDays.push(formattedDate);
 
@@ -108,7 +109,7 @@ export const updateReviewsChart = (chart: Chart, reviewChartSplit: ReviewChartSp
 
         const formattedDate = dateToString(reviewDate);
 
-        if (!isDateInRange(reviewDate, dateRange)) return;
+        if (!isDateInRange(reviewDate, chartDateRange)) return;
 
         let fieldName = undefined;
 

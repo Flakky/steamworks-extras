@@ -1,6 +1,6 @@
 import { DateRangeAction, StorageAction, StorageActionSettings } from './storageaction';
 import { dateToString } from '../../scripts/helpers';
-import { waitForDatabaseReady, readData, clearData, writeData } from './db';
+import { waitForDatabaseReady, readData, replaceData } from './db';
 import { DateRange, getDateRangeArray, isDateInRange } from '../../shared/types/daterange';
 import { Review } from '../../shared/types/review';
 
@@ -71,31 +71,48 @@ const requestAllReviewsData = async (appID: string): Promise<Review[]> => {
 
     console.debug(`Reviews result: `, reviews);
 
-    await clearData(appID, 'Reviews');
-
-    await writeData(appID, 'Reviews', reviews);
+    await replaceData(appID, 'Reviews', reviews);
 
     return reviews;
 }
 
 const requestAllReviews = async (appID: string): Promise<Review[]> => {
-    let reviews: Review[] = [];
+    const reviews = new Map<string, Review>();
 
     let cursor: string = '*';
+    let expectedTotal: number | undefined;
+    const seenCursors = new Set<string>();
 
     while (true) {
         const reviewsResponse = await requestReviews(appID, cursor);
 
-        if (reviewsResponse.reviews === undefined || reviewsResponse.reviews.length == 0) break;
+        if (reviewsResponse.success !== 1) {
+            throw new Error(`Steam returned unsuccessful reviews response for app ${appID}`);
+        }
 
-        cursor = reviewsResponse.cursor;
+        if (expectedTotal === undefined && typeof reviewsResponse.query_summary?.total_reviews === 'number') {
+            expectedTotal = reviewsResponse.query_summary.total_reviews;
+        }
+
+        if (!Array.isArray(reviewsResponse.reviews) || reviewsResponse.reviews.length == 0) break;
 
         for (const review of reviewsResponse.reviews) {
-            if (review !== undefined) reviews.push(review);
+            if (review !== undefined && review !== null) reviews.set(`${review.recommendationid}`, review);
         }
+
+        seenCursors.add(cursor);
+        cursor = reviewsResponse.cursor;
+
+        // Steam may return the same cursor again instead of an empty page
+        if (!cursor || seenCursors.has(cursor)) break;
     }
 
-    return reviews;
+    // Never replace stored reviews with an empty list caused by a broken response
+    if (reviews.size === 0 && expectedTotal !== undefined && expectedTotal > 0) {
+        throw new Error(`Steam returned no reviews for app ${appID} while ${expectedTotal} were expected`);
+    }
+
+    return Array.from(reviews.values());
 }
 
 const requestReviews = async (appID: string, cursor: string): Promise<Record<string, any>> => {
@@ -129,10 +146,7 @@ const requestReviews = async (appID: string, cursor: string): Promise<Record<str
     console.debug(`Sending review request to "${request_url}"`);
 
     const response = await fetch(request_url, request_options);
+    if (!response.ok) throw new Error(`Reviews request failed with status ${response.status}`);
 
-    const responseText = await response.text();
-
-    const responseObj = JSON.parse(responseText);
-
-    return responseObj;
+    return await response.json();
 }

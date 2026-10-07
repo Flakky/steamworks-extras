@@ -37,7 +37,7 @@ export class OffscreenManager {
     }
 
     parseDOM = (htmlText: string, request: string): Promise<any> => {
-        return new Promise(async (resolve, reject) => {
+        return new Promise((resolve, reject) => {
 
             console.debug('Parsing DOM started: ', request);
 
@@ -56,12 +56,38 @@ export class OffscreenManager {
             }
             else {
                 const id = crypto.randomUUID();
-                this.parsingQueue.push(new OffscreenParsingAction(id, resolve, reject));
+                let settled = false;
+                const removeAction = () => {
+                    this.parsingQueue = this.parsingQueue.filter(action => action.id !== id);
+                };
+                const timeoutHandle = setTimeout(() => {
+                    if (settled) return;
+                    settled = true;
+                    removeAction();
+                    reject(new Error(`DOM parsing timed out for "${request}"`));
+                }, 15000);
+                const resolveOnce = (result: any) => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timeoutHandle);
+                    resolve(result);
+                };
+                const rejectOnce = (error: any) => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timeoutHandle);
+                    reject(error);
+                };
 
-                await getBrowser().runtime.sendMessage({
+                this.parsingQueue.push(new OffscreenParsingAction(id, resolveOnce, rejectOnce));
+
+                Promise.resolve(getBrowser().runtime.sendMessage({
                     parseDOMId: id,
                     action: request,
                     htmlText: htmlText
+                })).catch(error => {
+                    removeAction();
+                    rejectOnce(error);
                 });
             }
         });
@@ -70,9 +96,7 @@ export class OffscreenManager {
     processParsedDOM = (message: OffscreenParseResponse) => {
         console.debug('Processing parsed DOM message: ', message);
 
-        if (message === undefined
-            || message.id === undefined
-            || message.result === undefined) {
+        if (message === undefined || message.id === undefined) {
             console.warn('Invalid parsed DOM message received: ', message);
             return;
         }
@@ -81,14 +105,17 @@ export class OffscreenManager {
 
         const { id, result, success } = message;
 
-        const parsingAction = this.parsingQueue.find(action => action.id === id);
+        const parsingActionIndex = this.parsingQueue.findIndex(action => action.id === id);
+        const parsingAction = this.parsingQueue[parsingActionIndex];
         if (!parsingAction) {
             console.warn('Parsing action not found in queue: ', id);
             return;
         }
 
+        this.parsingQueue.splice(parsingActionIndex, 1);
+
         if (message.success) parsingAction.resolve(result);
-        else parsingAction.reject(new Error(result));
+        else parsingAction.reject(new Error(result || `DOM parsing failed for "${message.request}"`));
     }
 
 }

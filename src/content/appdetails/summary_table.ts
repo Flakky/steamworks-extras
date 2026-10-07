@@ -252,7 +252,10 @@ export const addFollowers = async (doc: Document, appID: string) => {
     let followers = NaN;
 
     try {
-        const url = `https://steamcommunity.com/games/${appID}/membersManage`;
+        // The public members page contains the same total and avoids an
+        // authorization-dependent management-page response. Force English as
+        // an additional compatibility measure; the parser is locale-agnostic.
+        const url = `https://steamcommunity.com/games/${appID}/members?l=english`;
         console.log(`Requesting followers from `, url);
         followers = await sendMessageAsync({ request: BackgroundMessageType.parseDOM, payload: { url: url, type: 'followers' } });
     }
@@ -350,7 +353,7 @@ export const updateReviewsSummary = (doc: Document, reviews: ReviewsData) => {
 
     addReviewRow(
         'Positive reviews',
-        `${(positive / (positive + negative) * 100).toFixed(1)}%`,
+        positive + negative > 0 ? `${(positive / (positive + negative) * 100).toFixed(1)}%` : '---',
         ''
     );
 

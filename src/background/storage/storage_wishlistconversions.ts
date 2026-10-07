@@ -1,6 +1,6 @@
 import { DateRangeAction, StorageAction, StorageActionSettings } from './storageaction';
 import { csvTextToArray, dateToString } from '../../scripts/helpers';
-import { waitForDatabaseReady, readData, clearData, writeData } from './db';
+import { waitForDatabaseReady, readData, replaceData } from './db';
 import { getPageCreationDate } from '../bghelpers';
 import { DateRange, isDateInRange, getDateRangeArray } from '../../shared/types/daterange';
 import { DateWishlistConversions, GameWishlistConversions } from '../../shared/types/wishlists';
@@ -37,16 +37,13 @@ export class StorageActionGetWishlistConversions extends StorageAction implement
 const requestWishlistConversionsData = async (appID: string) => {
     const pageCreationDate = await getPageCreationDate(appID, false) as Date;
 
-    await clearData(appID, 'WishlistConversions');
-
     const csvString = await requestWishlistConversionsCSV(appID, new DateRange(pageCreationDate, new Date()));
 
     const result = convertCSVToDateWishlistConversions(csvString);
 
     console.debug(`Wishlist conversions CSV result:`, result);
 
-    await clearData(appID, 'WishlistConversions');
-    await writeData(appID, 'WishlistConversions', result);
+    await replaceData(appID, 'WishlistConversions', result);
 
     return result;
 }

@@ -95,3 +95,41 @@ export const isSingleDay = (dateRange: DateRange): boolean => {
         dateRange.dateStart.getUTCMonth() === dateRange.dateEnd.getUTCMonth() &&
         dateRange.dateStart.getUTCDate() === dateRange.dateEnd.getUTCDate();
 }
+
+/**
+ * Returns a copy of the selected range whose start is clamped to the first
+ * available data point. This prevents lifetime reports from rendering years of
+ * synthetic zeroes before an app had any activity, while preserving an
+ * explicitly selected later start date.
+ */
+export const clampDateRangeStartToData = (dateRange: DateRange, dataDates: Array<Date | string>): DateRange => {
+    const result = new DateRange(new Date(dateRange.dateStart), new Date(dateRange.dateEnd));
+    const rangeStart = Date.UTC(
+        dateRange.dateStart.getUTCFullYear(),
+        dateRange.dateStart.getUTCMonth(),
+        dateRange.dateStart.getUTCDate());
+    const rangeEnd = Date.UTC(
+        dateRange.dateEnd.getUTCFullYear(),
+        dateRange.dateEnd.getUTCMonth(),
+        dateRange.dateEnd.getUTCDate());
+
+    let firstDataDay: number | undefined;
+
+    dataDates.forEach(value => {
+        const date = value instanceof Date ? value : new Date(value);
+        if (Number.isNaN(date.getTime())) return;
+
+        const dateString = dateToString(date);
+        const [year, month, day] = dateString.split('-').map(Number);
+        const dataDay = Date.UTC(year, month - 1, day);
+
+        if (dataDay < rangeStart || dataDay > rangeEnd) return;
+        if (firstDataDay === undefined || dataDay < firstDataDay) firstDataDay = dataDay;
+    });
+
+    if (firstDataDay !== undefined && firstDataDay > rangeStart) {
+        result.dateStart = new Date(firstDataDay);
+    }
+
+    return result;
+}

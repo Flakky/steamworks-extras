@@ -83,14 +83,13 @@ const requestTrafficData = async (appID: string, date: Date) => {
 
     const objects: any[] = csvTextToArray(csvString);
 
+    let result: DateTraffic[] = [];
     if (objects.length <= 1) {
         console.debug(`No traffic results for ${formattedDate}`);
-        return false;
-    };
-
-    console.debug('Traffic results Objects: ', objects);
-
-    let result = constructTrafficDataFromObjects(objects, formattedDate);
+    } else {
+        console.debug('Traffic results Objects: ', objects);
+        result = constructTrafficDataFromObjects(objects, formattedDate);
+    }
 
     console.debug('Traffic results result: ', result);
 

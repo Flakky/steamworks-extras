@@ -16,7 +16,7 @@ import {
     getDOMLocal,
     sendMessageAsync,
 } from '../src/scripts/helpers';
-import { GetDataType, BackgroundMessage, BackgroundMessageType } from '../src/shared/types/background_requests';
+import { GetDataType, BackgroundMessage, BackgroundMessageType, BACKGROUND_ERROR_KEY } from '../src/shared/types/background_requests';
 import { DateSales } from '../src/shared/types/sales';
 
 // Mock the browser module
@@ -565,7 +565,80 @@ describe('sendMessageAsync', () => {
             payload: undefined,
         };
 
-        await expect(sendMessageAsync(message)).rejects.toEqual({ message: 'Error occurred' });
+        await expect(sendMessageAsync(message)).rejects.toThrow('Error occurred');
+    });
+
+    test('should reject when background reports an error', async () => {
+        const mockBrowser = {
+            runtime: {
+                sendMessage: jest.fn((message, callback) => {
+                    callback({ [BACKGROUND_ERROR_KEY]: 'Database is not ready' });
+                }),
+                lastError: null,
+            },
+        };
+        getBrowser.mockReturnValue(mockBrowser);
+
+        const message: BackgroundMessage = {
+            request: BackgroundMessageType.getStatus,
+            payload: undefined,
+        };
+
+        await expect(sendMessageAsync(message)).rejects.toThrow('Database is not ready');
+    });
+
+    test('should retry when background service worker is not reachable', async () => {
+        jest.useFakeTimers();
+
+        const mockBrowser: any = {
+            runtime: {
+                lastError: null,
+                sendMessage: jest.fn((message, callback) => {
+                    if (mockBrowser.runtime.sendMessage.mock.calls.length === 1) {
+                        mockBrowser.runtime.lastError = { message: 'Could not establish connection. Receiving end does not exist.' };
+                        callback(undefined);
+                        mockBrowser.runtime.lastError = null;
+                    }
+                    else {
+                        callback({ ok: true });
+                    }
+                }),
+            },
+        };
+        getBrowser.mockReturnValue(mockBrowser);
+
+        const message: BackgroundMessage = {
+            request: BackgroundMessageType.getStatus,
+            payload: undefined,
+        };
+
+        const promise = sendMessageAsync(message);
+        await jest.advanceTimersByTimeAsync(1000);
+
+        await expect(promise).resolves.toEqual({ ok: true });
+        expect(mockBrowser.runtime.sendMessage).toHaveBeenCalledTimes(2);
+
+        jest.useRealTimers();
+    });
+
+    test('should not retry other errors', async () => {
+        const mockBrowser = {
+            runtime: {
+                sendMessage: jest.fn((message, callback) => {
+                    callback(null);
+                }),
+                lastError: { message: 'Some other error' },
+            },
+        };
+        getBrowser.mockReturnValue(mockBrowser);
+
+        const message: BackgroundMessage = {
+            request: BackgroundMessageType.getStatus,
+            payload: undefined,
+        };
+
+        await expect(sendMessageAsync(message)).rejects.toThrow('Some other error');
+        expect(mockBrowser.runtime.sendMessage).toHaveBeenCalledTimes(1);
     });
 });
 

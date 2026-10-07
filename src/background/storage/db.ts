@@ -12,120 +12,98 @@ const tables = [
     { name: 'Sales', key: 'key' } // Key is unique identifier
 ];
 
-const MAX_RETRY_COUNT = 200;
+const DATABASE_NAME = 'SteamworksExtras_GameStatsStorage';
+const DATABASE_READY_TIMEOUT = 60 * 1000;
+
+// Resolved once the database has every object store for all known apps.
+// Reads wait for this instead of polling a connection that may still be
+// in the middle of a version upgrade.
+let resolveStorageReady: () => void = () => { };
+let rejectStorageReady: (reason?: any) => void = () => { };
+const storageReady: Promise<void> = new Promise((resolve, reject) => {
+    resolveStorageReady = resolve;
+    rejectStorageReady = reject;
+});
+storageReady.catch(() => { }); // Rejection is reported to readers through waitForDatabaseReady
 
 export const initStorageForAppIDs = async (appIDs: string[]) => {
-    for (const appID of appIDs) {
-        try {
-            await initGameStatsStorage(appID, 1);
+    try {
+        let db = await openDatabase();
+
+        const storesToFix = getStoresToFix(db, appIDs);
+
+        if (storesToFix.length > 0) {
+            console.log(`Upgrading database to create or fix object stores: `, storesToFix.map(store => store.name));
+
+            const newVersion = db.version + 1;
+            db.close();
+
+            // All stores of all apps are created in a single upgrade, so the
+            // connection is never closed and reopened once per app.
+            db = await openDatabase(newVersion, (upgradeDB) => {
+                for (const store of storesToFix) {
+                    if (upgradeDB.objectStoreNames.contains(store.name)) {
+                        upgradeDB.deleteObjectStore(store.name);
+                    }
+                    upgradeDB.createObjectStore(store.name, { keyPath: store.key });
+                }
+            });
         }
-        catch (error) {
-            console.error(`Error while initializing game stats storage for app ${appID}: `, error);
-            setExtentionStatus(103, { error: error instanceof Error ? error.message : 'Unknown error' });
-        }
+
+        db.onversionchange = () => {
+            console.warn('Database version change requested elsewhere. Closing the connection.');
+            db.close();
+            if (gameStatsStorage === db) gameStatsStorage = undefined;
+        };
+
+        gameStatsStorage = db;
+
+        console.log(`Database initialized with version ${db.version} for apps: `, appIDs);
+
+        resolveStorageReady();
+    }
+    catch (error) {
+        console.error(`Error while initializing game stats storage: `, error);
+        setExtentionStatus(103, { error: error instanceof Error ? error.message : `${error}` });
+        rejectStorageReady(error);
     }
 }
 
-const initGameStatsStorage = (appID: string, index: number): Promise<void> => {
-    if (gameStatsStorage) {
-        gameStatsStorage.close();
-        gameStatsStorage = undefined;
+const openDatabase = (version?: number, upgrade?: (db: IDBDatabase) => void): Promise<IDBDatabase> => {
+    return new Promise((resolve, reject) => {
+        const request = version === undefined ? indexedDB.open(DATABASE_NAME) : indexedDB.open(DATABASE_NAME, version);
+
+        request.onupgradeneeded = () => {
+            if (upgrade) upgrade(request.result);
+        };
+
+        request.onsuccess = () => resolve(request.result);
+
+        request.onerror = () => reject(request.error);
+
+        request.onblocked = () => console.warn('Database open is blocked by another connection');
+    });
+}
+
+const getStoresToFix = (db: IDBDatabase, appIDs: string[]): { name: string, key: string | string[] }[] => {
+    const result: { name: string, key: string | string[] }[] = [];
+
+    for (const appID of appIDs) {
+        for (const table of tables) {
+            const storeName = `${appID}_${table.name}`;
+            if (!isObjectStoreCorrect(db, storeName, table.key)) {
+                result.push({ name: storeName, key: table.key });
+            }
+        }
     }
 
-    console.log(`Initializing game stats storage for app ${appID} with index ${index}`);
-
-    return new Promise((resolve, reject) => {
-        console.log(`Init database for app ${appID} with index ${index}`);
-
-        gameStatsStorage = undefined;
-
-        if (index > MAX_RETRY_COUNT) {
-            console.error(`Max retry count on DB open reached for app ${appID}`);
-            reject();
-            return;
-        }
-
-        let request: IDBOpenDBRequest | undefined = indexedDB.open("SteamworksExtras_GameStatsStorage", index);
-
-        request.onsuccess = (event) => {
-            if (request === undefined) return;
-            request = undefined;
-
-            console.log(`Database opened with index ${index}`);
-
-            gameStatsStorage = (event.target as IDBOpenDBRequest).result;
-
-            if (!gameStatsStorage) {
-                console.debug(`Database is not valid for app ${appID} with index ${index}. Trying next index...`);
-                initGameStatsStorage(appID, index + 1).then(resolve).catch(reject);
-            }
-
-            // Check for storage correct format
-            if (gameStatsStorage.objectStoreNames.length > 0) {
-                for (const table of tables) {
-                    const storeName = `${appID}_${table.name}`;
-                    if (!isObjectStoreCorrect(gameStatsStorage, storeName, table.key)) {
-                        console.warn(`Object store "${storeName}" is not correct. Closing and reopening the database...`);
-                        gameStatsStorage.close();
-                        gameStatsStorage = undefined;
-                        initGameStatsStorage(appID, index + 1).then(resolve).catch(reject);
-                        return;
-                    }
-                }
-            }
-
-            console.log(`Database initialized for app ${appID} with index ${index}`);
-            console.debug(gameStatsStorage.objectStoreNames);
-
-            resolve();
-        }
-
-        request.onupgradeneeded = (event) => {
-            if (request === undefined || request === null) return;
-            request = undefined;
-
-            gameStatsStorage = (event.target as IDBOpenDBRequest).result;
-
-            console.debug(`Database update for app ${appID} with index ${index}`);
-
-            for (const table of tables) {
-                try {
-                    gameStatsStorage.createObjectStore(`${appID}_${table.name}`, { keyPath: table.key });
-                } catch (e) {
-                    console.debug(`Table "${table.name}" already exists for app ${appID}: `, e);
-                }
-            }
-
-            gameStatsStorage.close();
-            gameStatsStorage = undefined;
-
-            initGameStatsStorage(appID, index).then(resolve).catch(reject);
-        }
-
-        request.onerror = (event) => {
-            if (request === undefined) return;
-            request = undefined;
-
-            console.debug(`Failed to open the database for app ${appID} with index ${index}:`, event);
-
-            gameStatsStorage = (event.target as IDBOpenDBRequest).result;
-
-            if (gameStatsStorage) {
-                gameStatsStorage.close();
-                gameStatsStorage = undefined;
-            }
-
-            return initGameStatsStorage(appID, index + 1).then(resolve).catch(reject);
-        }
-    });
+    return result;
 }
 
 const isObjectStoreCorrect = (storage: IDBDatabase, storeName: string, expectedKeyPath: string | string[]) => {
     if (!storage.objectStoreNames.contains(storeName)) return false;
 
     const objectStore = storage.transaction(storeName, 'readonly').objectStore(storeName);
-
-    console.debug(`Checking object store "${storeName}" with key path "${objectStore.keyPath}" (Expected: "${expectedKeyPath}")`);
 
     if (Array.isArray(expectedKeyPath) && Array.isArray(objectStore.keyPath)) {
         const keyPath = objectStore.keyPath as string[];
@@ -163,21 +141,23 @@ const deleteDatabase = async (): Promise<void> => {
     });
 };
 
-export const waitForDatabaseReady = (): Promise<void> => {
-    const wait = (resolve: () => void) => {
-        setTimeout(() => {
-            if (gameStatsStorage !== undefined && gameStatsStorage !== null && !gameStatsStorage.onversionchange) {
-                resolve();
-                return;
-            }
-            else console.warn(`Database is not ready, waiting...`);
-            wait(resolve);
-        }, 1000);
+export const waitForDatabaseReady = async (): Promise<void> => {
+    let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+
+    const timeout = new Promise<never>((_, reject) => {
+        timeoutHandle = setTimeout(() => reject(new Error('Database is not ready')), DATABASE_READY_TIMEOUT);
+    });
+
+    try {
+        await Promise.race([storageReady, timeout]);
+    }
+    finally {
+        clearTimeout(timeoutHandle);
     }
 
-    return new Promise((resolve, reject) => {
-        wait(resolve);
-    });
+    if (gameStatsStorage === undefined || gameStatsStorage === null) {
+        throw new Error('Game stats storage is closed');
+    }
 }
 
 export const readData = (appID: string, type: string, key: string | string[] | undefined = undefined, indexed: boolean = false): Promise<any> => {
@@ -270,6 +250,41 @@ export const writeData = (appID: string, type: string, data: any): Promise<void>
         transaction.onerror = (event) => {
             const target = (event.target as IDBOpenDBRequest)
             reject(`Failed to write to the database: ${target.error}`);
+        };
+    });
+}
+
+/**
+ * Replaces all records of a table in a single transaction, so concurrent
+ * readers see either the old or the new data and never an empty table.
+ */
+export const replaceData = (appID: string, type: string, data: any[]): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        if (gameStatsStorage === undefined || gameStatsStorage === null) {
+            reject('Game stats storage is not initialized');
+            return;
+        }
+
+        const dbName = `${appID}_${type}`;
+        const transaction = gameStatsStorage.transaction(dbName, "readwrite");
+        const objectStore = transaction.objectStore(dbName);
+
+        objectStore.clear();
+        for (const row of data) {
+            objectStore.put(row);
+        }
+
+        transaction.oncomplete = () => {
+            console.debug(`Data "${type}"(${appID}) replaced in storage: `, data);
+            resolve();
+        }
+
+        transaction.onerror = () => {
+            reject(`Failed to replace data in the database: ${transaction.error}`);
+        };
+
+        transaction.onabort = () => {
+            reject(`Replacing data in the database was aborted: ${transaction.error}`);
         };
     });
 }
