@@ -10,6 +10,7 @@
     ],
     "host_permissions": [
         "https://store.steampowered.com/*",
+        "https://api.steampowered.com/*",
         "https://partner.steampowered.com/*",
         "https://partner.steamgames.com/*",
         "https://steamcommunity.com/*"

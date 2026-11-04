@@ -78,7 +78,7 @@ const requestAllReviewsData = async (appID: string): Promise<Review[]> => {
     return reviews;
 }
 
-const requestAllReviews = async (appID: string): Promise<Review[]> => {
+export const requestAllReviews = async (appID: string): Promise<Review[]> => {
     let reviews: Review[] = [];
 
     let cursor: string = '*';
@@ -98,41 +98,37 @@ const requestAllReviews = async (appID: string): Promise<Review[]> => {
     return reviews;
 }
 
+// The store endpoint (store.steampowered.com/appreviews) redirects to the store front page
+// since late October 2026. IUserReviewsService is its official Web API replacement; it needs
+// no key and returns the same fields wrapped in "response", without "success".
+// Documentation: https://partner.steamgames.com/doc/webapi/IUserReviewsService
+const FILTER_RECENT = 1;
+const REVIEW_TYPE_ALL = 0;
+const PURCHASE_TYPE_ALL = 1;
+
 const requestReviews = async (appID: string, cursor: string): Promise<Record<string, any>> => {
-    // Request documentation: https://partner.steamgames.com/doc/store/getreviews
-
-    const request_data: Record<string, string> = {
-        'filter': 'recent',
-        'language': 'all',
-        'review_type': 'all',
-        'purchase_type': 'all',
-        'num_per_page': '100',
-        'cursor': cursor,
-        'json': '1'
-    }
-
-    const params = Object.keys(request_data)
-        .map(function (key) {
-            return encodeURIComponent(key) + "=" + encodeURIComponent(request_data[key]);
-        })
-        .join("&");
-
-    const request_url = `https://store.steampowered.com/appreviews/${appID}?${params}`;
-    const request_options = {
-        'method': 'POST',
-        'contentType': 'application/json',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+    const input = {
+        appid: Number(appID),
+        filter: FILTER_RECENT,
+        languages: ['all'],
+        review_type: REVIEW_TYPE_ALL,
+        purchase_type: PURCHASE_TYPE_ALL,
+        num_per_page: 100,
+        cursor: cursor
     };
+
+    const request_url = `https://api.steampowered.com/IUserReviewsService/GetAppReviews/v1/?input_json=${encodeURIComponent(JSON.stringify(input))}`;
 
     console.debug(`Sending review request to "${request_url}"`);
 
-    const response = await fetch(request_url, request_options);
+    const response = await fetch(request_url);
+    if (!response.ok) throw new Error(`Reviews request failed with status ${response.status}`);
 
-    const responseText = await response.text();
+    const page = (await response.json())?.response;
+    if (page === null || typeof page !== 'object') {
+        throw new Error(`Steam returned unexpected reviews response for app ${appID}`);
+    }
 
-    const responseObj = JSON.parse(responseText);
-
-    return responseObj;
+    // The last page has no "reviews" field; keep the old response shape for the caller
+    return { success: 1, reviews: [], ...page };
 }
